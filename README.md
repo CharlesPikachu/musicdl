@@ -2,7 +2,7 @@
 Music Downloader
 
 # How to run?
-### Step1-download the repository:
+### Step1-download this repository:
 Clone or download.
 ### Step2-Install some dependencies:
 "pip install -r requirements.txt" or  
