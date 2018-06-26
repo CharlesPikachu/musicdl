@@ -18,7 +18,7 @@ Python3.6
 # Record:
 ### 2018-06-27:
 Version: V1.0  
-Support: 
+Support:
 - [x] Wangyiyun
 - [x] QQ
 - [x] Kugou
