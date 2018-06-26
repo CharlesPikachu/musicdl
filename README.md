@@ -23,8 +23,8 @@ Support:
 - [x] QQ
 - [x] Kugou
 - [x] Qianqian
-- []  xiami
-- []  kuwo
+- [ ]  xiami
+- [ ]  kuwo
 
 # Running Screenshot:
 ![img](Screenshot.png)
