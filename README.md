@@ -1,5 +1,6 @@
 # Music-Downloader
-Music Downloader
+Music Downloader  
+If this repository is helpful, give me a star please, thank you for support.
 
 # How to run?
 ### Step1-download this repository:
@@ -22,6 +23,8 @@ Support:
 - [x] QQ
 - [x] Kugou
 - [x] Qianqian
+- []  xiami
+- []  kuwo
 
 # Running Screenshot:
 ![img](Screenshot.png)
