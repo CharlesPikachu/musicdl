@@ -35,23 +35,43 @@ class Download_Thread(threading.Thread):
 			self.__pause.wait()
 			if self.engine == '1':
 				self.show_start_info()
-				wangyiyun.wangyiyun().get(self.songname, num=self.num)
-				self.show_end_info()
+				try:
+					wangyiyun.wangyiyun().get(self.songname, num=self.num)
+					self.show_end_info()
+				except:
+					title = '资源不存在'
+					msg = '所要下载的资源不存在！'
+					messagebox.showerror(title, msg)
 			elif self.engine == '2':
 				self.show_start_info()
-				qq.qq().get(self.songname, num=self.num)
-				self.show_end_info()
+				try:
+					qq.qq().get(self.songname, num=self.num)
+					self.show_end_info()
+				except:
+					title = '资源不存在'
+					msg = '所要下载的资源不存在！'
+					messagebox.showerror(title, msg)
 			elif self.engine == '3':
 				self.show_start_info()
-				kugou.kugou().get(self.songname, num=self.num)
-				self.show_end_info()
+				try:
+					kugou.kugou().get(self.songname, num=self.num)
+					self.show_end_info()
+				except:
+					title = '资源不存在'
+					msg = '所要下载的资源不存在！'
+					messagebox.showerror(title, msg)
 			elif self.engine == '4':
 				self.show_start_info()
-				qianqian.qianqian().get(self.songname, num=self.num)
-				self.show_end_info()
+				try:
+					qianqian.qianqian().get(self.songname, num=self.num)
+					self.show_end_info()
+				except:
+					title = '资源不存在'
+					msg = '所要下载的资源不存在！'
+					messagebox.showerror(title, msg)
 			else:
 				title = '解析失败'
-				msg = '音乐搜索与下载平台解析失败！'
+				msg = '输入框参数解析失败！'
 				messagebox.showerror(title, msg)
 			self.pause()
 	def pause(self):
@@ -109,7 +129,7 @@ def Demo(options):
 	assert len(options) > 0
 	# 初始化
 	root = Tk()
-	root.title('音乐下载器——公众号:Charles的皮卡丘')
+	root.title('音乐下载器V1.0——公众号:Charles的皮卡丘')
 	root.resizable(False, False)
 	root.geometry('480x368+400+120')
 	image_path = './bgimgs/bg1_demo.jpg'
