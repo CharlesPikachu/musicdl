@@ -22,6 +22,7 @@ class Download_Thread(threading.Thread):
 		self.__pause.clear()
 		self.__running = threading.Event()
 		self.__running.set()
+		self.flag = False
 		# 对应关系:
 		# 	网易云音乐 -> '1'
 		# 	QQ音乐 -> '2'
@@ -33,6 +34,7 @@ class Download_Thread(threading.Thread):
 	def run(self):
 		while self.__running.isSet():
 			self.__pause.wait()
+			self.flag = True
 			if self.engine == '1':
 				self.show_start_info()
 				try:
@@ -118,10 +120,11 @@ def ShowAuthor():
 
 
 # 退出程序
-def stopDemo():
-	t_download.resume()
+def stopDemo(root):
+	if not t_download.flag:
+		t_download.resume()
 	t_download.stop()
-	exit(-1)
+	root.destroy()
 
 
 # 主界面
@@ -162,7 +165,7 @@ def Demo(options):
 	en_num.insert(0, '1')
 	en_num.place(relx=0.3, rely=0.15, anchor=CENTER)
 	# Label+OptionMenu组件
-	lb_engine = Label(root, text='搜索引擎:', font=('楷体', 10), bg='white')
+	lb_engine = Label(root, text='搜索平台:', font=('楷体', 10), bg='white')
 	lb_engine.place(relx=0.1, rely=0.25, anchor=CENTER)
 	op_engine_var = StringVar()
 	op_engine_var.set(options[0])
@@ -171,7 +174,7 @@ def Demo(options):
 	# Button组件
 	bt_download = Button(root, text='搜索并下载', bd=2, width=15, height=2, command=lambda: downloader(options, op_engine_var, en_songname_var, en_num_var), font=('楷体', 10))
 	bt_download.place(relx=0.3, rely=0.40, anchor=CENTER)
-	bt_download = Button(root, text='退出程序', bd=2, width=15, height=2, command=lambda: stopDemo(), font=('楷体', 10))
+	bt_download = Button(root, text='退出程序', bd=2, width=15, height=2, command=lambda: stopDemo(root), font=('楷体', 10))
 	bt_download.place(relx=0.3, rely=0.55, anchor=CENTER)
 	root.mainloop()
 
