@@ -121,8 +121,6 @@ def ShowAuthor():
 
 # 退出程序
 def stopDemo(root):
-	if not t_download.flag:
-		t_download.resume()
 	t_download.stop()
 	root.destroy()
 
@@ -143,7 +141,7 @@ def Demo(options):
 	# Menu
 	menubar = Menu(root)
 	filemenu = Menu(menubar, tearoff=False)
-	filemenu.add_command(label='退出', command=lambda: stopDemo(), font=('楷体', 10))
+	filemenu.add_command(label='退出', command=lambda: stopDemo(root), font=('楷体', 10))
 	menubar.add_cascade(label='文件', menu=filemenu)
 	filemenu = Menu(menubar, tearoff=False)
 	filemenu.add_command(label='关于作者', command=ShowAuthor, font=('楷体', 10))
