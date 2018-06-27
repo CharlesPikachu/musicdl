@@ -32,4 +32,5 @@ Support:
 # More:
 ## WeChat Official Accounts:
 Charles_pikachu  
+https://mp.weixin.qq.com/s/xKDZehx-tlndCO_m5kA4zw  
 ![img](pikachu.jpg)
