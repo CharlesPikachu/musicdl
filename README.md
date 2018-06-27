@@ -1,6 +1,6 @@
 # Music-Downloader
 Music Downloader  
-If this repository is helpful, give me a star please, thank you for support.
+You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 
 # How to run?
 ### Step1-download this repository:
