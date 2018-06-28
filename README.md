@@ -7,8 +7,8 @@ You can star this repository to keep track of the project if it's helpful for yo
 - [x] QQ
 - [x] Kugou
 - [x] Qianqian
-- [ ]  xiami
-- [ ]  kuwo
+- [ ] Xiami
+- [ ] Kuwo
 
 # How to run?
 ### Step1-download this repository:
@@ -26,7 +26,7 @@ Python3.6
 # Record:
 ### 2018-06-27:
 Version: V1.0  
-Four platform supported.
+Four platforms supported.
 
 # Running Screenshot:
 ![img](Screenshot.png)
