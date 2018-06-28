@@ -2,6 +2,14 @@
 Music Downloader  
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 
+Support:
+- [x] Wangyiyun
+- [x] QQ
+- [x] Kugou
+- [x] Qianqian
+- [ ]  xiami
+- [ ]  kuwo
+
 # How to run?
 ### Step1-download this repository:
 Clone or download.
@@ -11,20 +19,14 @@ Clone or download.
 ### Step3-Run main.py:
 "python main.py"
 
-# Platform:
+# Platform[Tested]:
 Windows  
 Python3.6  
 
 # Record:
 ### 2018-06-27:
 Version: V1.0  
-Support:
-- [x] Wangyiyun
-- [x] QQ
-- [x] Kugou
-- [x] Qianqian
-- [ ]  xiami
-- [ ]  kuwo
+Four platform supported.
 
 # Running Screenshot:
 ![img](Screenshot.png)
