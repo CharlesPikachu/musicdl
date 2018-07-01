@@ -26,8 +26,10 @@ Python3.6
 # Record:
 ### 2018-06-27:
 Version: V1.0  
-Four platforms supported.
-
+Four platforms supported.  
+### 2018-07-01:
+Version: V1.1  
+Optimize the code.  
 # Running Screenshot:
 ![img](Screenshot.png)
 
