@@ -50,6 +50,14 @@ class Cracker():
 		return (''.join(map(lambda xx: (hex(ord(xx))[2:]), str(os.urandom(size)))))[0:16]
 
 
+'''
+输入:
+	-songname: 歌名
+	-downnum: 歌曲下载数量
+	-savepath: 歌曲保存路径
+返回值:
+	-downednum: 歌曲实际下载数量
+'''
 class wangyiyun():
 	def __init__(self):
 		self.headers = {
@@ -67,10 +75,12 @@ class wangyiyun():
 		self.cracker = Cracker()
 		self.search_session = requests.Session()
 		self.search_session.headers.update(self.headers)
+	# 外部调用
 	def get(self, songname, downnum=1, savepath='./results'):
 		download_names, download_urls = self._search_by_songname(songname, downnum)
 		downednum = self._download(download_names, download_urls, savepath)
 		return downednum
+	# 下载
 	def _download(self, download_names, download_urls, savepath):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
@@ -93,6 +103,7 @@ class wangyiyun():
 					pass
 			time.sleep(random.random())
 		return min(downed_count, len(download_urls))
+	# 根据歌名搜索
 	def _search_by_songname(self, songname, downnum, search_type=1, limit=9, bit_rate=320000, csrf='', timeout=600):
 		params1 = {
 					's': songname,
@@ -126,6 +137,7 @@ class wangyiyun():
 				return download_names, download_urls
 		else:
 			return None
+	# post请求函数
 	def _post_requests(self, url, params, timeout):
 		post_data = self.cracker.get(params)
 		res = self.search_session.post(url, data=post_data, timeout=timeout)

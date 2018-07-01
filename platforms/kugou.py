@@ -8,7 +8,7 @@ import requests
 
 
 '''
-输入参数:
+输入:
 	-songname: 歌名
 	-downnum: 歌曲下载数量
 	-savepath: 歌曲保存路径
@@ -53,7 +53,8 @@ class kugou():
 	def _search_by_songname(self, songname, downnum):
 		res = requests.get(self.search_url.format(songname), headers=self.headers)
 		filehashs = re.findall('"FileHash":"(.*?)"', res.text)
-		download_names = re.findall('"SongName":"(.*?)"', res.text)
+		temp_names = re.findall('"SongName":"(.*?)"', res.text)
+		download_names = []
 		download_urls = []
 		for filehash in filehashs:
 			if len(download_urls) == downnum:
@@ -61,6 +62,7 @@ class kugou():
 			res = requests.get(self.hash_url.format(filehash))
 			paly_url = re.findall('"play_url":"(.*?)"', res.text)[0]
 			download_url = paly_url.replace("\\", "")
+			download_names.append(temp_names[len(download_urls)])
 			download_urls.append(download_url)
 		return download_names, download_urls
 
