@@ -1,11 +1,12 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
 # qq音乐
-import requests
 import os
-import time
 import re
+import time
 import urllib
+import random
+import requests
 
 
 class qq():
@@ -15,43 +16,59 @@ class qq():
 					}
 		self.search_url = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.top&searchid=34725291680541638&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=20&w={}&g_tk=5381&jsonpCallback=MusicJsonCallback703296236531272&loginUin=0&hostUin=0&format=jsonp&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq&needNewCode=0'
 		self.fcg_url = 'https://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?g_tk=5381&jsonpCallback=MusicJsonCallback9239412173137234&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq&needNewCode=0&cid=205361747&callback=MusicJsonCallback9239412173137234&uin=0&songmid={}&filename={}.m4a&guid=8208467632'
-		self.downloader_url = 'http://dl.stream.qqmusic.qq.com/{}.m4a?vkey={}&guid=8208467632&uin=0&fromtag=66'
-	def get(self, songname, savepath='./results', num=1):
-		# Step1
-		# 根据歌名搜索，获取所需的信息
-		res = requests.get(self.search_url.format(songname), headers=self.headers).text
-		media_mid_temp = re.findall('"media_mid":"(.*?)"', res)
-		media_mid = []
-		for i in range(len(media_mid_temp)):
-			media_mid.append('C400'+media_mid_temp[i])
-		songmid = re.findall('"lyric_hilight":".*?","mid":"(.*?)","mv"', res)
-		singer_temp = re.findall('"singer":\[.*?\]', res)
-		singer = []
-		for s in singer_temp:
-			singer.append(re.findall('"name":"(.*?)"', s)[0])
-		songname = re.findall('},"name":"(.*?)","newStatus"', res)
-		# Step2
-		# 获取下载地址
-		urls = []
-		del_idex = []
-		songname_keep = []
-		singer_keep = []
-		for m in range(len(media_mid)):
-			try:
-				fcg_res = requests.get(self.fcg_url.format(songmid[m], media_mid[m]), headers=self.headers)
-				vkey = re.findall('"vkey":"(.*?)"', fcg_res.text)[0]
-				urls.append(self.downloader_url.format(media_mid[m], vkey))
-				songname_keep.append(songname[m])
-				singer_keep.append(singer[m])
-			except:
-				pass
-			time.sleep(0.5)
-		# Step3
-		# 下载歌曲
-		if num > len(urls):
-			num = len(urls)
+		self.download_format_url = 'http://dl.stream.qqmusic.qq.com/{}.m4a?vkey={}&guid=8208467632&uin=0&fromtag=66'
+	def get(self, songname, downnum=1, savepath='./results'):
+		download_names, download_urls = self._search_by_songname(songname, downnum)
+		downednum = self._download(download_names, download_urls, savepath)
+		return downednum
+	# 下载
+	def _download(self, download_names, download_urls, savepath):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
-		for n in range(num):
-			filepath = './{}/{}'.format(savepath, songname_keep[n].replace("\\", "").replace("/", "").replace(" ", "")+'_'+singer_keep[n].replace("\\", "").replace("/", "").replace(" ", "")+'.mp3')
-			urllib.request.urlretrieve(urls[n], filepath)
+		downed_count = 0
+		for i in range(len(download_urls)):
+			download_name = download_names[i]
+			download_url = download_urls[i]
+			savename = 'qq_{}_{}.m4a'.format(str(i), download_name)
+			try:
+				# way1:
+				urllib.request.urlretrieve(download_url, os.path.join(savepath, savename))
+				downed_count += 1
+			except:
+				try:
+					# way2
+					with open(os.path.join(savepath, savename), 'wb') as f:
+						f.write(requests.get(download_url, headers=self.headers).content)
+					downed_count += 1
+				except:
+					pass
+			time.sleep(random.random())
+		return min(downed_count, len(download_urls))
+	# 根据歌名搜索
+	def _search_by_songname(self, songname, downnum):
+		res = requests.get(self.search_url.format(songname), headers=self.headers).text
+		media_mid_temp = re.findall('"media_mid":"(.*?)"', res)
+		media_mids = []
+		for i in range(len(media_mid_temp)):
+			media_mids.append('C400'+media_mid_temp[i])
+		songmids = re.findall('"lyric_hilight":".*?","mid":"(.*?)","mv"', res)
+		temp_names = re.findall('},"name":"(.*?)","newStatus"', res)
+		download_names = []
+		download_urls = []
+		for i in range(len(media_mids)):
+			if len(download_urls) == downnum:
+				break
+			try:
+				fcg_res = requests.get(self.fcg_url.format(songmids[i], media_mids[i]), headers=self.headers)
+				vkey = re.findall('"vkey":"(.*?)"', fcg_res.text)[0]
+				download_names.append(temp_names[i].replace("\\", "").replace("/", "").replace(" ", "").replace('.', ''))
+				download_urls.append(self.download_format_url.format(media_mids[i], vkey))
+			except:
+				pass
+			time.sleep(random.random())
+		return download_names, download_urls
+
+
+# 测试用
+if __name__ == '__main__':
+	qq().get(songname='尾戒', downnum=1, savepath='./results')

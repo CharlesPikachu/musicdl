@@ -1,16 +1,16 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
 # 网易云音乐
-from Crypto.Cipher import AES
-import requests
 import os
-# import click
 import re
 import json
+import time
+import urllib
+import random
 import base64
 import codecs
-import time
-import random
+import requests
+from Crypto.Cipher import AES
 
 
 # 用于算post的两个参数
@@ -50,22 +50,8 @@ class Cracker():
 		return (''.join(map(lambda xx: (hex(ord(xx))[2:]), str(os.urandom(size)))))[0:16]
 
 
-# 歌曲对象
-# songid：音乐ID
-# songname：音乐名
-# songnum：歌曲编号
-# songurl：歌曲下载地址
-class Song():
-	def __init__(self, songid, songname, songnum, songurl=None):
-		self.songid = songid
-		self.songname =songname
-		self.songnum = songnum
-		self.songurl = '' if songurl is None else songurl
-
-
-# 音乐爬取类
-class WYYSpider():
-	def __init__(self, timeout=60, cookies_path=None):
+class wangyiyun():
+	def __init__(self):
 		self.headers = {
 						'Accept': '*/*',
 						'Accept-Encoding': 'gzip,deflate,sdch',
@@ -76,129 +62,79 @@ class WYYSpider():
 						'Referer': 'http://music.163.com/search/',
 						'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.32 Safari/537.36'
 						}
-		self.session = requests.Session()
-		self.session.headers.update(self.headers)
-		if cookies_path:
-			self.session.cookies = self.get_cookies(cookies_path)
-		self.download_session = requests.Session()
-		self.timeout = timeout
-		self.cracker = Cracker()
 		self.search_url = 'http://music.163.com/weapi/cloudsearch/get/web?csrf_token='
-		self.url = 'http://music.163.com/weapi/song/enhance/player/url?csrf_token='
-	# 歌曲搜索
-	# keyword：关键词
-	# search_type：搜索类型
-	# limit：返回结果数量
-	def search(self, keyword, search_type, limit=9):
-		params = {
-				's': keyword,
-				'type': search_type,
-				'offset': 0,
-				'sub': 'false',
-				'limit': limit
+		self.player_url = 'http://music.163.com/weapi/song/enhance/player/url?csrf_token='
+		self.cracker = Cracker()
+		self.search_session = requests.Session()
+		self.search_session.headers.update(self.headers)
+	def get(self, songname, downnum=1, savepath='./results'):
+		download_names, download_urls = self._search_by_songname(songname, downnum)
+		downednum = self._download(download_names, download_urls, savepath)
+		return downednum
+	def _download(self, download_names, download_urls, savepath):
+		if not os.path.exists(savepath):
+			os.mkdir(savepath)
+		downed_count = 0
+		for i in range(len(download_urls)):
+			download_name = download_names[i].replace('/', '').replace('.', '').replace('\\', '').replace(' ', '')
+			download_url = download_urls[i]
+			savename = 'wangyiyun_{}_{}.mp3'.format(str(i), download_name)
+			try:
+				# way1:
+				urllib.request.urlretrieve(download_url, os.path.join(savepath, savename))
+				downed_count += 1
+			except:
+				try:
+					# way2
+					with open(os.path.join(savepath, savename), 'wb') as f:
+						f.write(requests.get(download_url, headers=self.headers).content)
+					downed_count += 1
+				except:
+					pass
+			time.sleep(random.random())
+		return min(downed_count, len(download_urls))
+	def _search_by_songname(self, songname, downnum, search_type=1, limit=9, bit_rate=320000, csrf='', timeout=600):
+		params1 = {
+					's': songname,
+					'type': search_type,
+					'offset': 0,
+					'sub': 'false',
+					'limit': limit
 				}
-		res = self.post_request(self.search_url, params)
-		try:
-			res = self.post_request(self.search_url, params)
-			return res
-		except:
-			return None
-	# 根据歌名搜索
-	def search_by_songname(self, songname, limit=9):
-		result = self.search(songname, search_type=1, limit=limit)
-		if result['result']['songCount'] < 1:
-			return None
-		else:
-			songs = result['result']['songs']
-			songs_class = []
-			songnum = 1
-			for s in songs:
-				songid, songname = s['id'], s['name']
-				song_class = Song(songid=songid, songname=songname, songnum=songnum)
-				songnum += 1
-				songs_class.append(song_class)
-			return songs_class
-	# 获得歌曲下载地址
-	def get_download_url(self, songid, bit_rate=320000):
-		csrf = ''
-		params = {
-				'ids': [songid],
-				'br': bit_rate,
-				'csrf_token': csrf
-				}
-		result = self.post_request(self.url, params)
-		songurl = result['data'][0]['url']
-		if songurl:
-			return songurl
+		res = self._post_requests(self.search_url, params1, timeout)
+		if res is not None:
+			if res['result']['songCount'] < 1:
+				return None
+			else:
+				download_names = []
+				download_urls = []
+				songs = res['result']['songs']
+				for song in songs:
+					if len(download_urls) == downnum:
+						break
+					songid, download_name = song['id'], song['name']
+					params2 = {
+								'ids': [songid],
+								'br': bit_rate,
+								'csrf_token': csrf
+							}
+					res = self._post_requests(self.player_url, params2, timeout)
+					download_url = res['data'][0]['url']
+					if download_url:
+						download_names.append(download_name)
+						download_urls.append(download_url)
+				return download_names, download_urls
 		else:
 			return None
-	# 根据歌曲下载地址下载歌曲
-	def download(self, songurl, songname, songnum, save_file='./results'):
-		if not os.path.exists(save_file):
-			os.makedirs(save_file)
-		try:
-			fpath = os.path.join(save_file, str(songnum)+'_'+str(songname)+'.mp3')
-		except:
-			valid_name = re.sub(r'[<>:"/\\|?*]', '', songname)
-			fpath = os.path.join(save_file, str(valid_name), '.mp3')
-		res = self.download_session.get(songurl, timeout=self.timeout, stream=True)
-		with open(fpath, 'wb') as f:
-			f.write(res.content)
-		# length = int(res.headers.get('content-length'))
-		# label = 'Downloading {}_{} {}kb'.format(songnum, songname, int(length/1024))
-		# with click.progressbar(length=length, label=label) as progressbar:
-		# 	with open(fpath, 'wb') as f:
-		# 		for chunk in res.iter_content(chunk_size=1024):
-		# 			if chunk:
-		# 				f.write(chunk)
-		# 				progressbar.update(1024)
-	# 请求函数
-	def post_request(self, url, params):
+	def _post_requests(self, url, params, timeout):
 		post_data = self.cracker.get(params)
-		res = self.session.post(url, data=post_data, timeout=self.timeout)
+		res = self.search_session.post(url, data=post_data, timeout=timeout)
 		if res.json()['code'] != 200:
-			pass
+			return None
 		else:
 			return res.json()
-	# 获得cookies
-	def get_cookies(self, cookies_path):
-		f=open(cookies_path, 'r')
-		cookies={}
-		for line in f.read().split(';'):
-			name, value = line.strip().split('=', 1)
-			cookies[name]=value
-		return cookies
 
 
-# 下载器类
-class wangyiyun():
-	def __init__(self, timeout=60, cookies_path=None, save_file='./results'):
-		self.spider = WYYSpider(timeout, cookies_path)
-		self.save_file = save_file
-		self.timeout = timeout
-	def get(self, songname, num=1):
-		self._download_song(songname, num)
-	def _download_song(self, songname, num):
-		songs = None
-		songs = self.spider.search_by_songname(songname)
-
-		try:
-			songs = self.spider.search_by_songname(songname)
-		except:
-			pass
-		if songs != None:
-			i = 0
-			for song in songs:
-				if i == num:
-					break
-				self._download_by_id(song.songid, song.songname, song.songnum, self.save_file)
-				time.sleep(random.random() * 2)
-				i += 1
-	def _download_by_id(self, songid, songname, songnum, save_file):
-		try:
-			url = self.spider.get_download_url(songid)
-			songname = songname.replace('/', '')
-			songname = songname.replace('.', '')
-			self.spider.download(url, songname, songnum, save_file)
-		except:
-			pass
+# 测试用
+if __name__ == '__main__':
+	wangyiyun().get(songname='尾戒', downnum=1, savepath='./results')

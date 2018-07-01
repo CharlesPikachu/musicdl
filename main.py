@@ -30,7 +30,7 @@ class Download_Thread(threading.Thread):
 		# 	千千音乐 -> '4'
 		self.engine = None
 		self.songname = None
-		self.num = 1
+		self.downnum = 1
 	def run(self):
 		while self.__running.isSet():
 			self.__pause.wait()
@@ -38,8 +38,8 @@ class Download_Thread(threading.Thread):
 			if self.engine == '1':
 				self.show_start_info()
 				try:
-					wangyiyun.wangyiyun().get(self.songname, num=self.num)
-					self.show_end_info()
+					downednum = wangyiyun.wangyiyun().get(self.songname, downnum=self.downnum)
+					self.show_end_info(downednum)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -47,8 +47,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '2':
 				self.show_start_info()
 				try:
-					qq.qq().get(self.songname, num=self.num)
-					self.show_end_info()
+					downednum = qq.qq().get(self.songname, downnum=self.downnum)
+					self.show_end_info(downednum)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -56,8 +56,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '3':
 				self.show_start_info()
 				try:
-					kugou.kugou().get(self.songname, num=self.num)
-					self.show_end_info()
+					downednum = kugou.kugou().get(self.songname, downnum=self.downnum)
+					self.show_end_info(downednum)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -65,8 +65,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '4':
 				self.show_start_info()
 				try:
-					qianqian.qianqian().get(self.songname, num=self.num)
-					self.show_end_info()
+					downednum = qianqian.qianqian().get(self.songname, downnum=self.downnum)
+					self.show_end_info(downednum)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -87,9 +87,9 @@ class Download_Thread(threading.Thread):
 		title = '开始下载'
 		msg = '搜索平台: {}\n已开始下载{}，请耐心等待。'.format(self.engine, self.songname)
 		messagebox.showinfo(title, msg)
-	def show_end_info(self, savepath='./results'):
+	def show_end_info(self, downednum, savepath='./results'):
 		title = '下载成功'
-		msg = '{}下载成功, 共{}歌曲被下载。'.format(self.songname, len(os.listdir(savepath)))
+		msg = '{}下载成功, 共{}歌曲被下载。'.format(self.songname, downednum)
 		messagebox.showinfo(title, msg)
 t_download = Download_Thread()
 t_download.start()
@@ -100,7 +100,7 @@ def downloader(options, op_engine_var, en_songname_var, en_num_var):
 	try:
 		engine = str(options.index(str(op_engine_var.get())) + 1)
 		songname = str(en_songname_var.get())
-		num = int(en_num_var.get())
+		downnum = int(en_num_var.get())
 	except:
 		title = '输入错误'
 		msg = '歌曲名或歌曲下载数量输入错误！'
@@ -108,7 +108,7 @@ def downloader(options, op_engine_var, en_songname_var, en_num_var):
 		return None
 	t_download.engine = engine
 	t_download.songname = songname
-	t_download.num = num
+	t_download.downnum = downnum
 	t_download.resume()
 
 
