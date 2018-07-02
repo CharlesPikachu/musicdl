@@ -7,7 +7,7 @@ You can star this repository to keep track of the project if it's helpful for yo
 - [x] QQ
 - [x] Kugou
 - [x] Qianqian
-- [ ] Xiami
+- [x] Xiami
 - [x] Kuwo
 
 # How to run?
@@ -30,6 +30,9 @@ Four platforms supported.
 ### 2018-07-01:
 Version: V1.1  
 Optimize the code, support kuwo.  
+### 2018-07-02:
+Version: V1.2  
+Optimize the code, support xiami.
 # Running Screenshot:
 ![img](Screenshot.png)
 

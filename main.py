@@ -1,3 +1,4 @@
+# 代码仅供学习交流，不得用于商业/非法使用
 # 作者: Charles
 # 公众号: Charles的皮卡丘
 # 音乐下载器
@@ -7,6 +8,7 @@
 # 	酷狗: kugou.kugou()
 # 	千千: qianqian.qianqian()
 # 	酷我: kuwo.kuwo()
+# 	虾米: xiami.xiami()
 import os
 import threading
 from platforms import *
@@ -30,6 +32,7 @@ class Download_Thread(threading.Thread):
 		# 	酷狗音乐 -> '3'
 		# 	千千音乐 -> '4'
 		# 	酷我音乐 -> '5'
+		# 	虾米音乐 -> '6'
 		self.engine = None
 		self.songname = None
 		self.downnum = 1
@@ -77,6 +80,15 @@ class Download_Thread(threading.Thread):
 				self.show_start_info()
 				try:
 					downednum = kuwo.kuwo().get(self.songname, downnum=self.downnum)
+					self.show_end_info(downednum)
+				except:
+					title = '资源不存在'
+					msg = '所要下载的资源不存在！'
+					messagebox.showerror(title, msg)
+			elif self.engine == '6':
+				self.show_start_info()
+				try:
+					downednum = xiami.xiami().get(self.songname, downnum=self.downnum)
 					self.show_end_info(downednum)
 				except:
 					title = '资源不存在'
@@ -141,7 +153,7 @@ def Demo(options):
 	assert len(options) > 0
 	# 初始化
 	root = Tk()
-	root.title('音乐下载器V1.1——公众号:Charles的皮卡丘')
+	root.title('音乐下载器V1.2——公众号:Charles的皮卡丘')
 	root.resizable(False, False)
 	root.geometry('480x368+400+120')
 	image_path = './bgimgs/bg1_demo.jpg'
@@ -190,5 +202,5 @@ def Demo(options):
 
 
 if __name__ == '__main__':
-	options = ["1.网易云音乐", "2.QQ音乐", "3.酷狗音乐", "4.千千音乐", "5.酷我音乐"]
+	options = ["1.网易云音乐", "2.QQ音乐", "3.酷狗音乐", "4.千千音乐", "5.酷我音乐", "6.虾米音乐"]
 	Demo(options)
