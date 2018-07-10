@@ -96,7 +96,7 @@ class Download_Thread(threading.Thread):
 					messagebox.showerror(title, msg)
 			else:
 				title = '解析失败'
-				msg = '输入框参数解析失败！'
+				msg = '平台选项参数解析失败！'
 				messagebox.showerror(title, msg)
 			self.pause()
 	def pause(self):
