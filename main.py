@@ -195,8 +195,8 @@ def Demo(options):
 	# Button组件
 	bt_download = Button(root, text='搜索并下载', bd=2, width=15, height=2, command=lambda: downloader(options, op_engine_var, en_songname_var, en_num_var), font=('楷体', 10))
 	bt_download.place(relx=0.3, rely=0.40, anchor=CENTER)
-	bt_download = Button(root, text='退出程序', bd=2, width=15, height=2, command=lambda: stopDemo(root), font=('楷体', 10))
-	bt_download.place(relx=0.3, rely=0.55, anchor=CENTER)
+	bt_quit = Button(root, text='退出程序', bd=2, width=15, height=2, command=lambda: stopDemo(root), font=('楷体', 10))
+	bt_quit.place(relx=0.3, rely=0.55, anchor=CENTER)
 	root.mainloop()
 
 
