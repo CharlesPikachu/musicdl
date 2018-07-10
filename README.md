@@ -40,4 +40,5 @@ Optimize the code, support xiami.
 ## WeChat Official Accounts:
 Charles_pikachu  
 https://mp.weixin.qq.com/s/xKDZehx-tlndCO_m5kA4zw  
+https://mp.weixin.qq.com/s/9KeLzUU6beAJ2XZ0CMIpHA  
 ![img](pikachu.jpg)
