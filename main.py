@@ -10,11 +10,28 @@
 # 	酷我: kuwo.kuwo()
 # 	虾米: xiami.xiami()
 import os
+import ctypes
+import inspect
 import threading
 from platforms import *
 from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
+
+
+# 尝试解决线程残留问题
+def _async_raise(tid, exctype):
+	tid = ctypes.c_long(tid)
+	if not inspect.isclass(exctype):
+		exctype = type(exctype)
+	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
+	if res == 0:
+		raise ValueError("invalid thread id")
+	elif res != 1:
+		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+		raise SystemError("PyThreadState_SetAsyncExc failed")
+def stop_thread(thread):
+	_async_raise(thread.ident, SystemExit)
 
 
 # 下载器类
@@ -104,7 +121,6 @@ class Download_Thread(threading.Thread):
 	def resume(self):
 		self.__pause.set()
 	def stop(self):
-		self.__pause.clear()
 		self.__running.clear()
 	def show_start_info(self):
 		title = '开始下载'
@@ -115,11 +131,12 @@ class Download_Thread(threading.Thread):
 		msg = '{}下载成功, 共{}歌曲被下载。'.format(self.songname, downednum)
 		messagebox.showinfo(title, msg)
 t_download = Download_Thread()
-t_download.start()
 
 
 # 下载器
 def downloader(options, op_engine_var, en_songname_var, en_num_var):
+	if t_download.flag is False:
+		t_download.start()
 	try:
 		engine = str(options.index(str(op_engine_var.get())) + 1)
 		songname = str(en_songname_var.get())
@@ -145,6 +162,7 @@ def ShowAuthor():
 # 退出程序
 def stopDemo(root):
 	t_download.stop()
+	root.quit()
 	root.destroy()
 
 
