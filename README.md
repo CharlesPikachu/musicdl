@@ -33,6 +33,7 @@ Optimize the code, support kuwo.
 ### 2018-07-02:
 Version: V1.2  
 Optimize the code, support xiami.
+
 # Running Screenshot:
 ![img](Screenshot.png)
 
