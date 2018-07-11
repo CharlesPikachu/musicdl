@@ -53,6 +53,7 @@ class Download_Thread(threading.Thread):
 		self.engine = None
 		self.songname = None
 		self.downnum = 1
+		self.savepath = './results'
 	def run(self):
 		while self.__running.isSet():
 			self.__pause.wait()
@@ -128,7 +129,7 @@ class Download_Thread(threading.Thread):
 		messagebox.showinfo(title, msg)
 	def show_end_info(self, downednum, savepath='./results'):
 		title = '下载成功'
-		msg = '{}下载成功, 共{}歌曲被下载。'.format(self.songname, downednum)
+		msg = '{}下载成功, 共{}歌曲被下载。\n歌曲保存在{}。'.format(self.songname, downednum, savepath)
 		messagebox.showinfo(title, msg)
 t_download = Download_Thread()
 
