@@ -61,8 +61,8 @@ class Download_Thread(threading.Thread):
 			if self.engine == '1':
 				self.show_start_info()
 				try:
-					downednum = wangyiyun.wangyiyun().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = wangyiyun.wangyiyun().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -70,8 +70,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '2':
 				self.show_start_info()
 				try:
-					downednum = qq.qq().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = qq.qq().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -79,8 +79,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '3':
 				self.show_start_info()
 				try:
-					downednum = kugou.kugou().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = kugou.kugou().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -88,8 +88,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '4':
 				self.show_start_info()
 				try:
-					downednum = qianqian.qianqian().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = qianqian.qianqian().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -97,8 +97,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '5':
 				self.show_start_info()
 				try:
-					downednum = kuwo.kuwo().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = kuwo.kuwo().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -106,8 +106,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '6':
 				self.show_start_info()
 				try:
-					downednum = xiami.xiami().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = xiami.xiami().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
