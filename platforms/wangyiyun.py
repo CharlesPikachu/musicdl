@@ -1,6 +1,7 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
-# 网易云音乐
+# 网易云音乐:
+# 	-https://music.163.com/
 import os
 import re
 import json

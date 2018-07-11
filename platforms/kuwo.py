@@ -1,6 +1,7 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
-# 酷我音乐
+# 酷我音乐:
+# 	-http://yinyue.kuwo.cn/
 import re
 import os
 import urllib

@@ -1,6 +1,7 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
-# 千千音乐
+# 千千音乐:
+# 	http://music.taihe.com/
 import re
 import os
 import json
