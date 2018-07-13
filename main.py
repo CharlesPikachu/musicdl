@@ -10,11 +10,28 @@
 # 	酷我: kuwo.kuwo()
 # 	虾米: xiami.xiami()
 import os
+import ctypes
+import inspect
 import threading
 from platforms import *
 from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
+
+
+# 尝试解决线程残留问题
+def _async_raise(tid, exctype):
+	tid = ctypes.c_long(tid)
+	if not inspect.isclass(exctype):
+		exctype = type(exctype)
+	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
+	if res == 0:
+		raise ValueError("invalid thread id")
+	elif res != 1:
+		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+		raise SystemError("PyThreadState_SetAsyncExc failed")
+def stop_thread(thread):
+	_async_raise(thread.ident, SystemExit)
 
 
 # 下载器类
@@ -36,6 +53,7 @@ class Download_Thread(threading.Thread):
 		self.engine = None
 		self.songname = None
 		self.downnum = 1
+		self.savepath = './results'
 	def run(self):
 		while self.__running.isSet():
 			self.__pause.wait()
@@ -43,8 +61,8 @@ class Download_Thread(threading.Thread):
 			if self.engine == '1':
 				self.show_start_info()
 				try:
-					downednum = wangyiyun.wangyiyun().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = wangyiyun.wangyiyun().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -52,8 +70,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '2':
 				self.show_start_info()
 				try:
-					downednum = qq.qq().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = qq.qq().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -61,8 +79,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '3':
 				self.show_start_info()
 				try:
-					downednum = kugou.kugou().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = kugou.kugou().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -70,8 +88,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '4':
 				self.show_start_info()
 				try:
-					downednum = qianqian.qianqian().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = qianqian.qianqian().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -79,8 +97,8 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '5':
 				self.show_start_info()
 				try:
-					downednum = kuwo.kuwo().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = kuwo.kuwo().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
@@ -88,15 +106,15 @@ class Download_Thread(threading.Thread):
 			elif self.engine == '6':
 				self.show_start_info()
 				try:
-					downednum = xiami.xiami().get(self.songname, downnum=self.downnum)
-					self.show_end_info(downednum)
+					downednum = xiami.xiami().get(self.songname, downnum=self.downnum, savepath=self.savepath)
+					self.show_end_info(downednum, savepath=self.savepath)
 				except:
 					title = '资源不存在'
 					msg = '所要下载的资源不存在！'
 					messagebox.showerror(title, msg)
 			else:
 				title = '解析失败'
-				msg = '输入框参数解析失败！'
+				msg = '平台选项参数解析失败！'
 				messagebox.showerror(title, msg)
 			self.pause()
 	def pause(self):
@@ -104,7 +122,6 @@ class Download_Thread(threading.Thread):
 	def resume(self):
 		self.__pause.set()
 	def stop(self):
-		self.__pause.clear()
 		self.__running.clear()
 	def show_start_info(self):
 		title = '开始下载'
@@ -112,14 +129,15 @@ class Download_Thread(threading.Thread):
 		messagebox.showinfo(title, msg)
 	def show_end_info(self, downednum, savepath='./results'):
 		title = '下载成功'
-		msg = '{}下载成功, 共{}歌曲被下载。'.format(self.songname, downednum)
+		msg = '{}下载成功, 共{}歌曲被下载。\n歌曲保存在{}。'.format(self.songname, downednum, savepath)
 		messagebox.showinfo(title, msg)
 t_download = Download_Thread()
-t_download.start()
 
 
 # 下载器
 def downloader(options, op_engine_var, en_songname_var, en_num_var):
+	if t_download.flag is False:
+		t_download.start()
 	try:
 		engine = str(options.index(str(op_engine_var.get())) + 1)
 		songname = str(en_songname_var.get())
@@ -145,6 +163,7 @@ def ShowAuthor():
 # 退出程序
 def stopDemo(root):
 	t_download.stop()
+	root.quit()
 	root.destroy()
 
 
@@ -195,8 +214,8 @@ def Demo(options):
 	# Button组件
 	bt_download = Button(root, text='搜索并下载', bd=2, width=15, height=2, command=lambda: downloader(options, op_engine_var, en_songname_var, en_num_var), font=('楷体', 10))
 	bt_download.place(relx=0.3, rely=0.40, anchor=CENTER)
-	bt_download = Button(root, text='退出程序', bd=2, width=15, height=2, command=lambda: stopDemo(root), font=('楷体', 10))
-	bt_download.place(relx=0.3, rely=0.55, anchor=CENTER)
+	bt_quit = Button(root, text='退出程序', bd=2, width=15, height=2, command=lambda: stopDemo(root), font=('楷体', 10))
+	bt_quit.place(relx=0.3, rely=0.55, anchor=CENTER)
 	root.mainloop()
 
 

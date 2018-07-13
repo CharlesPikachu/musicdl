@@ -1,6 +1,7 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
-# 酷狗音乐
+# 酷狗音乐:
+# 	-http://www.kugou.com/
 import re
 import os
 import urllib

@@ -1,6 +1,7 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
-# 虾米音乐
+# 虾米音乐:
+# 	-https://www.xiami.com/
 import re
 import os
 import json

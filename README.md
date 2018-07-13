@@ -3,12 +3,12 @@ Music Downloader
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 
 # Support:
-- [x] Wangyiyun
-- [x] QQ
-- [x] Kugou
-- [x] Qianqian
-- [x] Xiami
-- [x] Kuwo
+- [x] [Wangyiyun](https://music.163.com/)
+- [x] [QQ](https://y.qq.com/)
+- [x] [Kugou](http://www.kugou.com/)
+- [x] [Qianqian](http://music.taihe.com/)
+- [x] [Xiami](https://www.xiami.com/)
+- [x] [Kuwo](http://yinyue.kuwo.cn/)
 
 # How to run?
 ### Step1-download this repository:
@@ -33,6 +33,7 @@ Optimize the code, support kuwo.
 ### 2018-07-02:
 Version: V1.2  
 Optimize the code, support xiami.
+
 # Running Screenshot:
 ![img](Screenshot.png)
 
@@ -40,4 +41,5 @@ Optimize the code, support xiami.
 ## WeChat Official Accounts:
 Charles_pikachu  
 https://mp.weixin.qq.com/s/xKDZehx-tlndCO_m5kA4zw  
+https://mp.weixin.qq.com/s/9KeLzUU6beAJ2XZ0CMIpHA  
 ![img](pikachu.jpg)

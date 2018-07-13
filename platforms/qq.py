@@ -1,6 +1,7 @@
 # 作者： Charles
 # 公众号： Charles的皮卡丘
-# qq音乐
+# qq音乐:
+# 	-https://y.qq.com/
 import os
 import re
 import time
