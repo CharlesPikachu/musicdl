@@ -1,7 +1,7 @@
 # 代码仅供学习交流，不得用于商业/非法使用
 # 作者: Charles
 # 公众号: Charles的皮卡丘
-# 音乐下载器
+# 音乐下载器-Demo版
 # 目前支持的平台:
 # 	网易云: wangyiyun.wangyiyun()
 # 	QQ: qq.qq()
@@ -172,7 +172,7 @@ def Demo(options):
 	assert len(options) > 0
 	# 初始化
 	root = Tk()
-	root.title('音乐下载器V1.2——公众号:Charles的皮卡丘')
+	root.title('音乐下载器V1.3——公众号:Charles的皮卡丘')
 	root.resizable(False, False)
 	root.geometry('480x368+400+120')
 	image_path = './bgimgs/bg1_demo.jpg'

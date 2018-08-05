@@ -5,9 +5,11 @@
 import os
 import re
 import time
+import click
 import urllib
 import random
 import requests
+from contextlib import closing
 
 
 '''
@@ -15,6 +17,7 @@ import requests
 	-songname: 歌名
 	-downnum: 歌曲下载数量
 	-savepath: 歌曲保存路径
+	-app: Cmd/Demo中使用
 返回值:
 	-downednum: 歌曲实际下载数量
 '''
@@ -27,12 +30,17 @@ class qq():
 		self.fcg_url = 'https://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?g_tk=5381&jsonpCallback=MusicJsonCallback9239412173137234&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq&needNewCode=0&cid=205361747&callback=MusicJsonCallback9239412173137234&uin=0&songmid={}&filename={}.m4a&guid=8208467632'
 		self.download_format_url = 'http://dl.stream.qqmusic.qq.com/{}.m4a?vkey={}&guid=8208467632&uin=0&fromtag=66'
 	# 外部调用
-	def get(self, songname, downnum=1, savepath='./results'):
+	def get(self, songname, downnum=1, savepath='./results', app='demo'):
 		download_names, download_urls = self._search_by_songname(songname, downnum)
-		downednum = self._download(download_names, download_urls, savepath)
+		if app == 'demo':
+			downednum = self._download_demo(download_names, download_urls, savepath)
+		elif app == 'cmd':
+			downednum = self._download_cmd(download_names, download_urls, savepath)
+		else:
+			raise ValueError('app parameter error...')
 		return downednum
-	# 下载
-	def _download(self, download_names, download_urls, savepath):
+	# 下载-demo版
+	def _download_demo(self, download_names, download_urls, savepath):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
 		downed_count = 0
@@ -53,7 +61,34 @@ class qq():
 				except:
 					pass
 			time.sleep(random.random())
-		return min(downed_count, len(download_urls))
+		return downed_count
+	# 下载-cmd版
+	def _download_cmd(self, download_names, download_urls, savepath):
+		if not os.path.exists(savepath):
+			os.mkdir(savepath)
+		downed_count = 0
+		for i in range(len(download_urls)):
+			download_name = download_names[i]
+			download_url = download_urls[i]
+			savename = 'qq_{}_{}.m4a'.format(str(i), download_name)
+			try:
+				with closing(requests.get(download_url, headers=self.headers, stream=True, verify=False)) as res:
+					total_size = int(res.headers['content-length'])
+					if res.status_code == 200:
+						label = '[FileSize]:%0.2f MB' % (total_size/(1024*1024))
+						with click.progressbar(length=total_size, label=label) as progressbar:
+							with open(os.path.join(savepath, savename), "wb") as f:
+								for chunk in res.iter_content(chunk_size=1024):
+									if chunk:
+										f.write(chunk)
+										progressbar.update(1024)
+					else:
+						raise RuntimeError('Connect error...')
+				downed_count += 1
+			except:
+				pass
+			time.sleep(random.random())
+		return downed_count
 	# 根据歌名搜索
 	def _search_by_songname(self, songname, downnum):
 		res = requests.get(self.search_url.format(songname), headers=self.headers).text

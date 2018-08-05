@@ -16,8 +16,8 @@ Clone or download.
 ### Step2-Install some dependencies:
 "pip install -r requirements.txt" or  
 "py -3 -m pip install -r requirements.txt"  
-### Step3-Run main.py:
-"python main.py"
+### Step3-Run Demo.py or Cmd.py:
+"python Demo.py" or "python Cmd.py"
 
 # Platform[Tested]:
 Windows  
@@ -33,9 +33,13 @@ Optimize the code, support kuwo.
 ### 2018-07-02:
 Version: V1.2  
 Optimize the code, support xiami.
+### 2018-08-05:
+Version: V1.3  
+Support cmd.
 
 # Running Screenshot:
-![img](Screenshot.png)
+![img](./Screenshot/Screenshot1.png)
+![img](./Screenshot/Screenshot2.png)
 
 # More:
 ## WeChat Official Accounts:

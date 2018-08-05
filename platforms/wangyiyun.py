@@ -6,12 +6,14 @@ import os
 import re
 import json
 import time
+import click
 import urllib
 import random
 import base64
 import codecs
 import requests
 from Crypto.Cipher import AES
+from contextlib import closing
 
 
 # 用于算post的两个参数
@@ -56,6 +58,7 @@ class Cracker():
 	-songname: 歌名
 	-downnum: 歌曲下载数量
 	-savepath: 歌曲保存路径
+	-app: Cmd/Demo中使用
 返回值:
 	-downednum: 歌曲实际下载数量
 '''
@@ -77,12 +80,17 @@ class wangyiyun():
 		self.search_session = requests.Session()
 		self.search_session.headers.update(self.headers)
 	# 外部调用
-	def get(self, songname, downnum=1, savepath='./results'):
+	def get(self, songname, downnum=1, savepath='./results', app='demo'):
 		download_names, download_urls = self._search_by_songname(songname, downnum)
-		downednum = self._download(download_names, download_urls, savepath)
+		if app == 'demo':
+			downednum = self._download_demo(download_names, download_urls, savepath)
+		elif app == 'cmd':
+			downednum = self._download_cmd(download_names, download_urls, savepath)
+		else:
+			raise ValueError('app parameter error...')
 		return downednum
-	# 下载
-	def _download(self, download_names, download_urls, savepath):
+	# 下载-demo版
+	def _download_demo(self, download_names, download_urls, savepath):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
 		downed_count = 0
@@ -98,12 +106,39 @@ class wangyiyun():
 				try:
 					# way2
 					with open(os.path.join(savepath, savename), 'wb') as f:
-						f.write(requests.get(download_url, headers=self.headers).content)
+						f.write(requests.get(download_url).content)
 					downed_count += 1
 				except:
 					pass
 			time.sleep(random.random())
-		return min(downed_count, len(download_urls))
+		return downed_count
+	# 下载-cmd版
+	def _download_cmd(self, download_names, download_urls, savepath):
+		if not os.path.exists(savepath):
+			os.mkdir(savepath)
+		downed_count = 0
+		for i in range(len(download_urls)):
+			download_name = download_names[i].replace('/', '').replace('.', '').replace('\\', '').replace(' ', '')
+			download_url = download_urls[i]
+			savename = 'wangyiyun_{}_{}.mp3'.format(str(i), download_name)
+			try:
+				with closing(requests.get(download_url, stream=True, verify=False)) as res:
+					total_size = int(res.headers['content-length'])
+					if res.status_code == 200:
+						label = '[FileSize]:%0.2f MB' % (total_size/(1024*1024))
+						with click.progressbar(length=total_size, label=label) as progressbar:
+							with open(os.path.join(savepath, savename), "wb") as f:
+								for chunk in res.iter_content(chunk_size=1024):
+									if chunk:
+										f.write(chunk)
+										progressbar.update(1024)
+					else:
+						raise RuntimeError('Connect error...')
+				downed_count += 1
+			except:
+				pass
+			time.sleep(random.random())
+		return downed_count
 	# 根据歌名搜索
 	def _search_by_songname(self, songname, downnum, search_type=1, limit=9, bit_rate=320000, csrf='', timeout=600):
 		params1 = {
