@@ -71,7 +71,15 @@ class wangyiyun():
 						'Connection': 'keep-alive',
 						'Content-Type': 'application/x-www-form-urlencoded',
 						'Host': 'music.163.com',
-						'Referer': 'http://music.163.com/search/',
+						'cookie':'_iuqxldmzr_=32; _ntes_nnid=0e6e1606eb78758c48c3fc823c6c57dd,1527314455632; '
+								'_ntes_nuid=0e6e1606eb78758c48c3fc823c6c57dd; __utmc=94650624; __utmz=94650624.1527314456.1.1.'
+								'utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); WM_TID=blBrSVohtue8%2B6VgDkxOkJ2G0VyAgyOY;'
+								' JSESSIONID-WYYY=Du06y%5Csx0ddxxx8n6G6Dwk97Dhy2vuMzYDhQY8D%2BmW3vlbshKsMRxS%2BJYEnvCCh%5CKY'
+								'x2hJ5xhmAy8W%5CT%2BKqwjWnTDaOzhlQj19AuJwMttOIh5T%5C05uByqO%2FWM%2F1ZS9sqjslE2AC8YD7h7Tt0Shufi'
+								'2d077U9tlBepCx048eEImRkXDkr%3A1527321477141; __utma=94650624.1687343966.1527314456.1527314456'
+								'.1527319890.2; __utmb=94650624.3.10.1527319890',
+						'Origin': 'https://music.163.com',
+						'Referer': 'https://music.163.com/',
 						'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.32 Safari/537.36'
 						}
 		self.search_url = 'http://music.163.com/weapi/cloudsearch/get/web?csrf_token='
@@ -166,7 +174,10 @@ class wangyiyun():
 								'csrf_token': csrf
 							}
 					res = self._post_requests(self.player_url, params2, timeout)
-					download_url = res['data'][0]['url']
+					try:
+						download_url = res['data'][0]['url']
+					except:
+						download_url = self.song_url.format(songid)
 					if download_url:
 						download_names.append(download_name)
 						download_urls.append(download_url)
@@ -176,7 +187,7 @@ class wangyiyun():
 	# post请求函数
 	def _post_requests(self, url, params, timeout):
 		post_data = self.cracker.get(params)
-		res = self.search_session.post(url, data=post_data, timeout=timeout)
+		res = self.search_session.post(url, data=post_data, timeout=timeout, headers=self.headers)
 		if res.json()['code'] != 200:
 			return None
 		else:
@@ -185,4 +196,4 @@ class wangyiyun():
 
 # 测试用
 if __name__ == '__main__':
-	wangyiyun().get(songname='尾戒', downnum=1, savepath='./results')
+	wangyiyun().get(songname='尾戒', downnum=1, savepath='./results', app='cmd')
