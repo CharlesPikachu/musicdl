@@ -11,13 +11,22 @@ You can star this repository to keep track of the project if it's helpful for yo
 - [x] [Wangyiyun](https://music.163.com/)
 
 # How to run?
-### Step1-download this repository:
+#### Step1
+```sh
+Download this repository:
 Clone or download.
-### Step2-Install some dependencies:
+```
+#### Step2
+```sh
+Install some dependencies:  
 "pip install -r requirements.txt" or  
 "py -3 -m pip install -r requirements.txt"  
-### Step3-Run Demo.py or Cmd.py:
+```
+#### Step3
+```sh
+Run Demo.py or Cmd.py:  
 "python Demo.py" or "python Cmd.py"
+```
 
 # Platform[Tested]
 - Windows  
