@@ -27,7 +27,7 @@ Install some dependencies:
 #### Step3
 ```sh
 Run cmd.py:  
-"python Demo.py" or "python Cmd.py"
+"python cmd.py" or "python3 cmd.py"
 ```
 
 # Platform[Tested]
