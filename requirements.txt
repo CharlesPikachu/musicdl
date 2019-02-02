@@ -1,4 +1,3 @@
 pycryptodome
-pillow
 requests
 click

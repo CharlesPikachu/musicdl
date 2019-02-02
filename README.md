@@ -1,6 +1,8 @@
 # Music-Downloader
+```sh
 Music Downloader  
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
+```
 
 # Support
 - [x] [QQ](https://y.qq.com/)
@@ -24,7 +26,7 @@ Install some dependencies:
 ```
 #### Step3
 ```sh
-Run Demo.py or Cmd.py:  
+Run cmd.py:  
 "python Demo.py" or "python Cmd.py"
 ```
 
@@ -33,26 +35,27 @@ Run Demo.py or Cmd.py:
 - Python3.6  
 
 # Record
-### 2018-06-27
+#### 2018-06-27
 - Version: V1.0  
 - Detail: Four platforms supported.  
-### 2018-07-01
+#### 2018-07-01
 - Version: V1.1  
 - Detail: Optimize the code, support kuwo.  
-### 2018-07-02
+#### 2018-07-02
 - Version: V1.2  
 - Detail: Optimize the code, support xiami.
-### 2018-08-05
+#### 2018-08-05
 - Version: V1.3  
 - Detail: Support cmd.
+#### 2019-02-02
+- Version: V2.0.1
+- Detail: Optimize, more humane.
 
 # Running Screenshot
-#### Demo.py
-![img](./Screenshot/Screenshot1.png)
 #### Cmd.py
-![img](./Screenshot/Screenshot2.png)
+![img](./Screenshot/cmd.png)
 
 # More
-### WeChat Official Accounts
-Charles_pikachu  
+#### WeChat Official Accounts
+*Charles_pikachu*  
 ![img](pikachu.jpg)
