@@ -15,7 +15,10 @@ Author:
 	代码仅供学习交流, 不得用于商业/非法使用.
 '''
 import sys
-from platforms import *
+try:
+	from platforms import *
+except:
+	from .platforms import *
 
 
 '''音乐下载器类'''
