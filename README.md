@@ -39,7 +39,7 @@ pip install git+https://github.com/CharlesPikachu/Music-Downloader.git@master
 ```sh
 Write a python script like the following:
 from MusicDownloader import cmd
-md = MusicDownloader()
+md = cmd.MusicDownloader()
 md.run()
 Then, just run the python script~
 ```
