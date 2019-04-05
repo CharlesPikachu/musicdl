@@ -83,8 +83,11 @@ class xiami():
 			if need_down_list is not None:
 				for download_name in need_down_list:
 					songid = self.search_results.get(download_name)
-					res = requests.get(self.playlist_url.format(songid), headers=self.headers)
-					songinfos = json.loads(res.text)
+					try:
+						res = requests.get(self.playlist_url.format(songid), headers=self.headers)
+						songinfos = json.loads(res.text)
+					except:
+						continue
 					location = songinfos['data']['trackList'][0]['location']
 					if not location:
 						continue
