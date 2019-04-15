@@ -27,7 +27,7 @@ class MusicDownloader():
 		self.INFO = '''************************************************************
 Author: Charles
 微信公众号: Charles的皮卡丘
-Function: 音乐下载器 V2.0.1
+Function: 音乐下载器 V2.0.2
 操作帮助:
 	输入r: 返回主菜单(即重新选择平台号)
 	输入q: 退出程序
@@ -39,11 +39,11 @@ Function: 音乐下载器 V2.0.1
 		self.RESOURCES = ['网易云音乐', 'QQ音乐', '酷狗音乐', '虾米音乐', '酷我音乐', '千千音乐']
 		self.platform_now = None
 		self.platform_now_name = None
-		self.is_select_platform = True
+		self.is_select_platform = False
 	'''外部调用'''
 	def run(self):
 		self.platform_now, self.platform_now_name = self.__selectPlatform()
-		self.is_select_platform = False
+		self.is_select_platform = True
 		while True:
 			print(self.INFO)
 			self.__userSearch()
@@ -75,13 +75,17 @@ Function: 音乐下载器 V2.0.1
 		if songname is None:
 			return
 		results = self.platform_now.get(mode='search', songname=songname)
+		if len(results) == 0:
+			print('<Warning>--未检索到歌曲%s的相关信息, 请重新输入--<Warning>' % songname)
+			return
 		while True:
 			print('[%s-INFO]: 搜索结果如下 -->' % self.platform_now_name)
 			for idx, result in enumerate(sorted(results.keys())):
 				print('[%d]. %s' % (idx+1, result))
-			need_down_numbers = self.__input('[%s-INFO]: 请输入需要下载的歌曲编号(1-%d) --> ' % (self.platform_now_name, len(results.keys()))).split(',')
+			need_down_numbers = self.__input('[%s-INFO]: 请输入需要下载的歌曲编号(1-%d) --> ' % (self.platform_now_name, len(results.keys())))
 			if need_down_numbers is None:
 				return
+			need_down_numbers = need_down_numbers.split(',')
 			numbers_legal = [str(i) for i in range(1, len(results.keys())+1)]
 			error_flag = False
 			for number in need_down_numbers:
@@ -109,8 +113,10 @@ Function: 音乐下载器 V2.0.1
 			print('Bye...')
 			sys.exit(-1)
 		elif user_input.lower() == 'r':
+			self.is_select_platform = False
 			if not self.is_select_platform:
 				self.platform_now, self.platform_now_name = self.__selectPlatform()
+				self.is_select_platform = True
 			return None
 		else:
 			return user_input
