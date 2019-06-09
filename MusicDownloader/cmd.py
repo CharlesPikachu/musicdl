@@ -29,7 +29,7 @@ class MusicDownloader():
 		self.INFO = '''************************************************************
 Author: Charles
 微信公众号: Charles的皮卡丘
-Function: 音乐下载器 V2.0.2
+Function: 音乐下载器 V2.0.3
 操作帮助:
 	输入r: 返回主菜单(即重新选择平台号)
 	输入q: 退出程序
