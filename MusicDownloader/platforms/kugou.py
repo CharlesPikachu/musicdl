@@ -10,6 +10,7 @@ Author:
 '''
 import re
 import os
+import time
 import click
 import requests
 from contextlib import closing
@@ -34,8 +35,17 @@ class kugou():
 		self.headers = {
 					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.146 Safari/537.36'
 					}
+		self.down_headers = {
+					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.146 Safari/537.36',
+					'Host': 'webfs.yun.kugou.com',
+					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+					'Accept-Encoding': 'gzip, deflate, br',
+					'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+					'Cache-Control': 'max-age=0',
+					'Connection': 'keep-alive'
+					}
 		self.search_url = 'http://songsearch.kugou.com/song_search_v2?keyword={}&page=1&pagesize=30'
-		self.hash_url = 'http://www.kugou.com/yy/index.php?r=play/getdata&hash={}'
+		self.hash_url = 'https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash={}&album_id={}&dfid=&mid=ccbb9592c3177be2f3977ff292e0f145&platid=4'
 		self.search_results = {}
 	'''外部调用'''
 	def get(self, mode='search', **kwargs):
@@ -49,10 +59,10 @@ class kugou():
 			savepath = kwargs.get('savepath') if kwargs.get('savepath') is not None else './results'
 			if need_down_list is not None:
 				for download_name in need_down_list:
-					filehash = self.search_results.get(download_name)
-					res = requests.get(self.hash_url.format(filehash))
-					paly_url = re.findall('"play_url":"(.*?)"', res.text)[0]
-					download_url = paly_url.replace("\\", "")
+					filehash, album_id = self.search_results.get(download_name)
+					res = requests.get(self.hash_url.format(filehash, album_id))
+					play_url = re.findall('"play_url":"(.*?)"', res.text)[0]
+					download_url = play_url.replace("\\", "")
 					if not download_url:
 						continue
 					res = self.__download(download_name, download_url, savepath)
@@ -76,7 +86,7 @@ class kugou():
 		savename += '.mp3'
 		try:
 			print('[kugou-INFO]: 正在下载 --> %s' % savename.split('.')[0])
-			with closing(requests.get(download_url, headers=self.headers, stream=True, verify=False)) as res:
+			with closing(requests.get(download_url, headers=self.down_headers, stream=True, verify=False)) as res:
 				total_size = int(res.headers['content-length'])
 				if res.status_code == 200:
 					label = '[FileSize]:%0.2f MB' % (total_size/(1024*1024))
@@ -99,17 +109,18 @@ class kugou():
 			filehash = song.get('FileHash')
 			singers = song.get('SingerName')
 			album = song.get('AlbumName')
+			album_id = song.get('AlbumID')
 			download_name = '%s--%s--%s' % (song.get('SongName'), singers, album)
 			count = 0
 			while download_name in results:
 				count += 1
 				download_name = '%s(%d)--%s--%s' % (song.get('SongName'), count, singers, album)
-			results[download_name] = filehash
+			results[download_name] = [filehash, album_id]
 		return results
 
 
 '''测试用'''
 if __name__ == '__main__':
 	kg = kugou()
-	res = kg.get(mode='search', songname='尾戒')
-	kg.get(mode='download', need_down_list=list(res.keys())[:2])
+	res = kg.get(mode='search', songname='那些年')
+	kg.get(mode='download', need_down_list=list(res.keys())[:5])

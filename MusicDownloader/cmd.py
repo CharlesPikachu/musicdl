@@ -15,6 +15,8 @@ Author:
 	代码仅供学习交流, 不得用于商业/非法使用.
 '''
 import sys
+import warnings
+warnings.filterwarnings('ignore')
 try:
 	from platforms import *
 except:
