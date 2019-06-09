@@ -17,3 +17,9 @@
 #### 2019-03-05
 - Version: V2.0.1
 - Detail: Support pip install.
+#### 2019-04-15
+- Version: V2.0.2
+- Detail: fix some bugs in xiami.
+#### 2019-06-09
+- Version: V2.0.3
+- Detail: fix some bugs in kugou.
