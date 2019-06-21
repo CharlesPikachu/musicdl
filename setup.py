@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 setup(
 	name='MusicDownloader',
 	version=MusicDownloader.__version__,
-	description='MusicDownloader which supports qq, wangyiyun, xiami, kuwo, kugou and xiami.',
+	description='MusicDownloader which supports qq, wangyiyun, xiami, kuwo, kugou and qianqian.',
 	classifiers=[
 			'License :: OSI Approved :: MIT License',
 			'Programming Language :: Python',
