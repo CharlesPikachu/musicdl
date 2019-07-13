@@ -7,6 +7,7 @@ Function:
 		--千千: qianqian.qianqian()
 		--酷我: kuwo.kuwo()
 		--虾米: xiami.xiami()
+		--百度无损: baiduFlac.baiduFlac()
 Author:
 	Charles
 微信公众号:
