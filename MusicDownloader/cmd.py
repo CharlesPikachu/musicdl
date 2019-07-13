@@ -29,7 +29,7 @@ class MusicDownloader():
 		self.INFO = '''************************************************************
 Author: Charles
 微信公众号: Charles的皮卡丘
-Function: 音乐下载器 V2.0.3
+Function: 音乐下载器 V2.0.4
 操作帮助:
 	输入r: 返回主菜单(即重新选择平台号)
 	输入q: 退出程序
@@ -38,7 +38,7 @@ Function: 音乐下载器 V2.0.3
 	当前路径下的results文件夹内
 ************************************************************
 '''
-		self.RESOURCES = ['网易云音乐', 'QQ音乐', '酷狗音乐', '虾米音乐', '酷我音乐', '千千音乐']
+		self.RESOURCES = ['网易云音乐', 'QQ音乐', '酷狗音乐', '虾米音乐', '酷我音乐', '千千音乐', '百度无损音乐']
 		self.platform_now = None
 		self.platform_now_name = None
 		self.is_select_platform = False
@@ -48,7 +48,8 @@ Function: 音乐下载器 V2.0.3
 		self.is_select_platform = True
 		while True:
 			print(self.INFO)
-			self.__userSearch()
+			num_downed, num_need_down = self.__userSearch()
+			print('[%s-INFO]: 下载成功%s/%s首歌曲, 歌曲保存在results文件夹下...' % (self.platform_now_name, num_downed, num_need_down))
 	'''选择平台'''
 	def __selectPlatform(self):
 		while True:
@@ -69,6 +70,8 @@ Function: 音乐下载器 V2.0.3
 				return kuwo.kuwo(), 'kuwo'
 			elif platform_idx == '6':
 				return qianqian.qianqian(), 'qianqian'
+			elif platform_idx == '7':
+				return baiduFlac.baiduFlac(), 'baiduFlac'
 			else:
 				print('<ERROR>--平台号输入有误, 请重新输入--<ERROR>')
 	'''用户搜索操作'''
@@ -101,7 +104,8 @@ Function: 音乐下载器 V2.0.3
 			for number in need_down_numbers:
 				need_down_list.append(sorted(results.keys())[int(number)-1])
 			break
-		return self.__download(need_down_list)
+		downed_list = self.__download(need_down_list)
+		return len(downed_list), len(need_down_list)
 	'''下载用户选择的歌曲'''
 	def __download(self, need_down_list):
 		return self.platform_now.get(mode='download', need_down_list=need_down_list)

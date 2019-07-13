@@ -4,6 +4,11 @@ Music Downloader
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 ```
 
+# Statement
+```sh
+This repository is created just for learning python(Commercial prohibition).
+```
+
 # Support
 - [x] [QQ](https://y.qq.com/)
 - [x] [Kuwo](http://yinyue.kuwo.cn/)
@@ -11,6 +16,7 @@ You can star this repository to keep track of the project if it's helpful for yo
 - [x] [Xiami](https://www.xiami.com/)
 - [x] [Qianqian](http://music.taihe.com/)
 - [x] [Wangyiyun](https://music.163.com/)
+- [x] [baiduFlac](http://music.baidu.com/)
 
 # Usage
 ### Take it as a software
