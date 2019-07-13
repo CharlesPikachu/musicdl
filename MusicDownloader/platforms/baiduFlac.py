@@ -120,5 +120,5 @@ class baiduFlac():
 '''测试用'''
 if __name__ == '__main__':
 	baiduflac_downloader = baiduFlac()
-	res = baiduflac_downloader.get(mode='search', songname='尾戒')
+	res = baiduflac_downloader.get(mode='search', songname='最好的我们')
 	baiduflac_downloader.get(mode='download', need_down_list=list(res.keys())[:2])
