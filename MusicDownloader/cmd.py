@@ -30,7 +30,7 @@ class MusicDownloader():
 		self.INFO = '''************************************************************
 Author: Charles
 微信公众号: Charles的皮卡丘
-Function: 音乐下载器 V2.0.4
+Function: 音乐下载器 V2.0.5
 操作帮助:
 	输入r: 返回主菜单(即重新选择平台号)
 	输入q: 退出程序
@@ -49,8 +49,11 @@ Function: 音乐下载器 V2.0.4
 		self.is_select_platform = True
 		while True:
 			print(self.INFO)
-			num_downed, num_need_down = self.__userSearch()
-			print('[%s-INFO]: 下载成功%s/%s首歌曲, 歌曲保存在results文件夹下...' % (self.platform_now_name, num_downed, num_need_down))
+			try:
+				num_downed, num_need_down = self.__userSearch()
+				print('[%s-INFO]: 下载成功%s/%s首歌曲, 歌曲保存在results文件夹下...' % (self.platform_now_name, num_downed, num_need_down))
+			except:
+				pass
 	'''选择平台'''
 	def __selectPlatform(self):
 		while True:

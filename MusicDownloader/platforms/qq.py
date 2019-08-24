@@ -35,13 +35,8 @@ class qq():
 					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.146 Safari/537.36',
 					"referer": "http://y.qq.com"
 					}
-		self.ios_headers = {
-							'User-Agent': "Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46",
-							"referer": "http://y.qq.com"
-						}
 		self.search_url = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp'
-		self.fcg_url = 'http://base.music.qq.com/fcgi-bin/fcg_musicexpress.fcg'
-		self.download_format_url = "http://dl.stream.qqmusic.qq.com/{}{}.mp3?vkey={}&guid={}&fromtag=1"
+		self.fcg_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?data=%7B%22req%22%3A%7B%22module%22%3A%22CDN.SrfCdnDispatchServer%22%2C%22method%22%3A%22GetCdnDispatch%22%2C%22param%22%3A%7B%7D%7D%2C%22req_0%22%3A%7B%22module%22%3A%22vkey.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%2200%22%2C%22songmid%22%3A%5B%22{}%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%2200%22%7D%7D%7D'
 		self.search_results = {}
 	'''外部调用'''
 	def get(self, mode='search', **kwargs):
@@ -56,20 +51,10 @@ class qq():
 			if need_down_list is not None:
 				for download_name in need_down_list:
 					songmid, media_mid = self.search_results.get(download_name)
-					guid = str(random.randrange(1000000000, 10000000000))
-					params = {
-								"guid": guid,
-								"format": "json",
-								"json": 3
-							}
-					fcg_res = requests.get(self.fcg_url, params=params, headers=self.ios_headers)
-					vkey = fcg_res.json()['key']
-					for quality in ["M800", "M500", "C400"]:
-						download_url = self.download_format_url.format(quality, songmid, vkey, guid)
-						res = self.__download(download_name, download_url, savepath)
-						if res:
-							break
-						print('[qq-INFO]: %s-%s下载失败, 将尝试降低歌曲音质重新下载...' % (download_name, quality))
+					fcg_res = requests.get(self.fcg_url.format(songmid), headers=self.headers)
+					fcg_res_json = fcg_res.json()
+					download_url = str(fcg_res_json["req"]["data"]["freeflowsip"][0]) + str(fcg_res_json["req_0"]["data"]["midurlinfo"][0]["purl"])
+					res = self.__download(download_name, download_url, savepath)
 					if res:
 						downed_list.append(download_name)
 			return downed_list
@@ -84,10 +69,10 @@ class qq():
 									 .replace('|', '').replace('？', '').replace('*', '')
 		savename = 'qq_{}'.format(download_name)
 		count = 0
-		while os.path.isfile(os.path.join(savepath, savename+'.mp3')):
+		while os.path.isfile(os.path.join(savepath, savename+'.m4a')):
 			count += 1
 			savename = 'qq_{}_{}'.format(download_name, count)
-		savename += '.mp3'
+		savename += '.m4a'
 		try:
 			print('[qq-INFO]: 正在下载 --> %s' % savename.split('.')[0])
 			with closing(requests.get(download_url, headers=self.headers, stream=True, verify=False)) as res:

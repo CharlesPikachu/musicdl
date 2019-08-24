@@ -24,5 +24,8 @@
 - Version: V2.0.3
 - Detail: fix some bugs in kugou.
 #### 2019-07-13
-- Version: v2.0.4
+- Version: V2.0.4
 - Detail: support baiduFlac.
+#### 2019-08-24
+- Version: V2.0.5
+- Detail: fix some bugs and api errors.
