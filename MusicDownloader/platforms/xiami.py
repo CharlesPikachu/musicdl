@@ -92,14 +92,14 @@ class xiami():
 					if not location:
 						continue
 					download_url = self.parser.parse(location)
-					res = self.__download(download_name, download_url, savepath)
+					res = self.__download(download_name, download_url, savepath, '.mp3')
 					if res:
 						downed_list.append(download_name)
 			return downed_list
 		else:
 			raise ValueError('mode in xiami().get must be <search> or <download>...')
 	'''下载'''
-	def __download(self, download_name, download_url, savepath):
+	def __download(self, download_name, download_url, savepath, extension):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
 		download_name = download_name.replace('<', '').replace('>', '').replace('\\', '').replace('/', '') \
@@ -107,10 +107,10 @@ class xiami():
 									 .replace('|', '').replace('？', '').replace('*', '')
 		savename = 'xiami_{}'.format(download_name)
 		count = 0
-		while os.path.isfile(os.path.join(savepath, savename+'.mp3')):
+		while os.path.isfile(os.path.join(savepath, savename+extension)):
 			count += 1
 			savename = 'xiami_{}_{}'.format(download_name, count)
-		savename += '.mp3'
+		savename += extension
 		try:
 			print('[xiami-INFO]: 正在下载 --> %s' % savename.split('.')[0])
 			with closing(requests.get(download_url, headers=self.headers, stream=True, verify=False)) as res:

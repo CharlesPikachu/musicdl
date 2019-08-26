@@ -54,14 +54,14 @@ class kuwo():
 					mp3dl = re.findall(r'<mp3dl>(.*?)</mp3dl>', res.text)[0]
 					mp3path = re.findall(r'<mp3path>(.*?)</mp3path>', res.text)[0]
 					download_url = 'http://' + mp3dl + '/resource/' + mp3path
-					res = self.__download(download_name, download_url, savepath)
+					res = self.__download(download_name, download_url, savepath, '.mp3')
 					if res:
 						downed_list.append(download_name)
 			return downed_list
 		else:
 			raise ValueError('mode in kuwo().get must be <search> or <download>...')
 	'''下载'''
-	def __download(self, download_name, download_url, savepath):
+	def __download(self, download_name, download_url, savepath, extension='.mp3'):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
 		download_name = download_name.replace('<', '').replace('>', '').replace('\\', '').replace('/', '') \
@@ -69,10 +69,10 @@ class kuwo():
 									 .replace('|', '').replace('？', '').replace('*', '')
 		savename = 'kuwo_{}'.format(download_name)
 		count = 0
-		while os.path.isfile(os.path.join(savepath, savename+'.mp3')):
+		while os.path.isfile(os.path.join(savepath, savename+extension)):
 			count += 1
 			savename = 'kuwo_{}_{}'.format(download_name, count)
-		savename += '.mp3'
+		savename += extension
 		try:
 			print('[kuwo-INFO]: 正在下载 --> %s' % savename.split('.')[0])
 			with closing(requests.get(download_url, headers=self.headers, stream=True, verify=False)) as res:

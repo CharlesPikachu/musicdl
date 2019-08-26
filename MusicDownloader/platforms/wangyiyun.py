@@ -122,7 +122,7 @@ class wangyiyun():
 						download_url = res['data'][0]['url']
 					except:
 						download_url = self.song_url.format(songid)
-					res = self.__download(download_name, download_url, savepath)
+					res = self.__download(download_name, download_url, savepath, '.mp3')
 					if res:
 						downed_list.append(download_name)
 						time.sleep(random.random())
@@ -130,7 +130,7 @@ class wangyiyun():
 		else:
 			raise ValueError('mode in wangyiyun().get must be <search> or <download>...')
 	'''下载'''
-	def __download(self, download_name, download_url, savepath):
+	def __download(self, download_name, download_url, savepath, extension='.mp3'):
 		if not os.path.exists(savepath):
 			os.mkdir(savepath)
 		download_name = download_name.replace('<', '').replace('>', '').replace('\\', '').replace('/', '') \
@@ -138,10 +138,10 @@ class wangyiyun():
 									 .replace('|', '').replace('？', '').replace('*', '')
 		savename = 'wangyiyun_{}'.format(download_name)
 		count = 0
-		while os.path.isfile(os.path.join(savepath, savename+'.mp3')):
+		while os.path.isfile(os.path.join(savepath, savename+extension)):
 			count += 1
 			savename = 'wangyiyun_{}_{}'.format(download_name, count)
-		savename += '.mp3'
+		savename += extension
 		try:
 			print('[wangyiyun-INFO]: 正在下载 --> %s' % savename.split('.')[0])
 			with closing(requests.get(download_url, stream=True, verify=False)) as res:
