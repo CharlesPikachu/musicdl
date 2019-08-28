@@ -29,3 +29,6 @@
 #### 2019-08-24
 - Version: V2.0.5
 - Detail: fix some bugs and api errors.
+#### 2019-08-28
+- Version: V2.0.5
+- Detail: support migu.

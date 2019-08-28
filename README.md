@@ -17,6 +17,7 @@ This repository is created just for learning python(Commercial prohibition).
 - [x] [Qianqian](http://music.taihe.com/)
 - [x] [Wangyiyun](https://music.163.com/)
 - [x] [baiduFlac](http://music.baidu.com/)
+- [x] [Migu](http://www.migu.cn/)
 
 # Usage
 ### Take it as a software

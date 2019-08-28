@@ -8,6 +8,7 @@ Function:
 		--酷我: kuwo.kuwo()
 		--虾米: xiami.xiami()
 		--百度无损: baiduFlac.baiduFlac()
+		--咪咕音乐: migu.migu()
 Author:
 	Charles
 微信公众号:
@@ -30,7 +31,7 @@ class MusicDownloader():
 		self.INFO = '''************************************************************
 Author: Charles
 微信公众号: Charles的皮卡丘
-Function: 音乐下载器 V2.0.5
+Function: 音乐下载器 V2.0.6
 操作帮助:
 	输入r: 返回主菜单(即重新选择平台号)
 	输入q: 退出程序
@@ -39,7 +40,7 @@ Function: 音乐下载器 V2.0.5
 	当前路径下的results文件夹内
 ************************************************************
 '''
-		self.RESOURCES = ['网易云音乐', 'QQ音乐', '酷狗音乐', '虾米音乐', '酷我音乐', '千千音乐', '百度无损音乐']
+		self.RESOURCES = ['网易云音乐', 'QQ音乐', '酷狗音乐', '虾米音乐', '酷我音乐', '千千音乐', '百度无损音乐', '咪咕音乐']
 		self.platform_now = None
 		self.platform_now_name = None
 		self.is_select_platform = False
@@ -76,6 +77,8 @@ Function: 音乐下载器 V2.0.5
 				return qianqian.qianqian(), 'qianqian'
 			elif platform_idx == '7':
 				return baiduFlac.baiduFlac(), 'baiduFlac'
+			elif platform_idx == '8':
+				return migu.migu(), 'migu'
 			else:
 				print('<ERROR>--平台号输入有误, 请重新输入--<ERROR>')
 	'''用户搜索操作'''
@@ -132,6 +135,7 @@ Function: 音乐下载器 V2.0.5
 			return user_input
 
 
+'''run'''
 if __name__ == '__main__':
 	try:
 		MusicDownloader().run()
