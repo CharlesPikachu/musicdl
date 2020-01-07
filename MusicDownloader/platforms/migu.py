@@ -31,12 +31,10 @@ Return:
 '''
 class migu():
 	def __init__(self):
-		self.ios_headers = {
-							'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
-							"referer": "http://music.migu.cn/"
-							}
-		self.search_url = 'http://pd.musicapp.migu.cn/MIGUM2.0/v1.0/content/search_all.do'
-		self.download_url_format = 'http://app.pd.nf.migu.cn/MIGUM2.0/v1.0/content/sub/listenSong.do?toneFlag={}&netType=00&userId=15548614588710179085069&ua=Android_migu&version=5.1&copyrightId=0&contentId={}&resourceType={}&channel=0'
+		self.headers = {
+							'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Mobile Safari/537.36'
+						}
+		self.search_url = 'http://m.music.migu.cn/migu/remoting/scr_search_tag?rows=20&type=2&keyword={}&pgc=1'
 		self.search_results = {}
 	'''外部调用'''
 	def get(self, mode='search', **kwargs):
@@ -50,13 +48,8 @@ class migu():
 			savepath = kwargs.get('savepath') if kwargs.get('savepath') is not None else './results'
 			if need_down_list is not None:
 				for download_name in need_down_list:
-					qualities = self.search_results.get(download_name)[2]
-					for quality in qualities:
-						download_url = self.download_url_format.format(quality.get('formatType', 'SQ'), self.search_results.get(download_name)[0], quality.get('resourceType', 'E'))
-						res = self.__download(download_name, download_url, savepath, extension='.flac' if quality.get('formatType', '') == 'SQ' else '.mp3')
-						if res:
-							break
-						print('[migu-INFO]: %s-%s下载失败, 将尝试降低歌曲音质重新下载...' % (download_name, quality.get('formatType', '')))
+					download_url = self.search_results.get(download_name)[-1]
+					res = self.__download(download_name, download_url, savepath, extension='.mp3')
 					if res:
 						downed_list.append(download_name)
 			return downed_list
@@ -77,7 +70,7 @@ class migu():
 		savename += extension
 		try:
 			print('[migu-INFO]: 正在下载 --> %s' % savename.split('.')[0])
-			with closing(requests.get(download_url, headers=self.ios_headers, stream=True, verify=False)) as res:
+			with closing(requests.get(download_url, headers=self.headers, stream=True, verify=False)) as res:
 				total_size = int(res.headers['content-length'])
 				if res.status_code == 200:
 					label = '[FileSize]:%0.2f MB' % (total_size/(1024*1024))
@@ -94,35 +87,25 @@ class migu():
 			return False
 	'''根据歌名搜索'''
 	def __searchBySongname(self, songname):
-		params = {
-					'ua': "Android_migu",
-					"version": "5.0.1",
-					"text": songname,
-					"pageNo": 1,
-					"pageSize": 15,
-					"searchSwitch": '{"song":1,"album":0,"singer":0,"tagSong":0,"mvSong":0,"songlist":0,"bestShow":1}'
-				}
-		res = requests.get(self.search_url, params=params, headers=self.ios_headers)
+		res = requests.get(self.search_url.format(songname), headers=self.headers)
 		results = {}
-		for item in res.json().get('songResultData').get('result'):
+		for item in res.json().get('musics'):
 			songid = item.get('id', '')
-			songname = item.get('name', '')
-			singers = [singer.get("name", "") for singer in item.get("singers", [])]
-			singers = ','.join(singers)
-			album = item.get("albums", [{}])[0].get("name", "")
-			content_id = item.get('contentId', '')
-			qualities = sorted(item.get('rateFormats', []), key=lambda x: int(x["size"]), reverse=True)
+			songname = item.get('songName', '')
+			singers = item.get('singerName', '')
+			album = item.get('albumName', '')
 			download_name = '%s--%s--%s' % (songname, singers, album)
 			count = 0
 			while download_name in results:
 				count += 1
-				download_name = '%s(%d)--%s--%s' % (infos[i][1], count, singers, album)
-			results[download_name] = [content_id, songid, qualities]
+				download_name = '%s(%d)--%s--%s' % (songname, count, singers, album)
+			download_url = item.get('mp3')
+			results[download_name] = [songid, download_url]
 		return results
 
 
 '''测试用'''
 if __name__ == '__main__':
 	mg = migu()
-	res = mg.get(mode='search', songname='尾戒')
+	res = mg.get(mode='search', songname='那些年')
 	mg.get(mode='download', need_down_list=list(res.keys())[:2])
