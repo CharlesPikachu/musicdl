@@ -1,23 +1,25 @@
 # Music-Downloader
-```sh
+```
 Music Downloader  
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 ```
 
 # Statement
-```sh
+```
 This repository is created just for learning python(Commercial prohibition).
 ```
 
-# Support
-- [x] [QQ](https://y.qq.com/)
-- [x] [Kuwo](http://yinyue.kuwo.cn/)
-- [x] [Kugou](http://www.kugou.com/)
-- [x] [Xiami](https://www.xiami.com/)
-- [x] [Qianqian](http://music.taihe.com/)
-- [x] [Wangyiyun](https://music.163.com/)
-- [x] [baiduFlac](http://music.baidu.com/)
-- [x] [Migu](http://www.migu.cn/)
+# Support List
+|  Websites                             |   Support?         |  in Chinese    |
+|  :----:                               |   :----:           |  :----:        |
+|  [QQ](https://y.qq.com/)              |   [x]              |  QQ音乐        |
+|  [Kuwo](http://yinyue.kuwo.cn/)       |   [x]              |  酷我音乐      |
+|  [Kugou](http://www.kugou.com/)       |   [x]              |  酷狗音乐      |
+|  [Xiami](https://www.xiami.com/)      |   [x]              |  虾米音乐      |
+|  [Qianqian](http://music.taihe.com/)  |   [x]              |  千千音乐      |
+|  [Migu](http://www.migu.cn/)          |   [x]              |  咪咕音乐      |
+|  [Wangyiyun](https://music.163.com/)  |   [x]              |  网易云音乐    |
+|  [baiduFlac](http://music.baidu.com/) |   [x]              |  百度无损音乐  |
 
 # Usage
 ### Take it as a software
@@ -52,8 +54,10 @@ Then, just run the python script~
 ```
 
 # Environment
-- Windows/Linux
-- Python3.5+(have installed necessary dependencies.)
+```
+OS: Windows/Linux
+Python: Python3.5+(have installed necessary dependencies.)
+```
 
 # Running Screenshot
 #### Cmd.py
