@@ -26,9 +26,12 @@ This repository is created just for learning python(Commercial prohibition).
 |  [baiduFlac](http://music.baidu.com/) |   ✓                |  ✓                   |  百度无损音乐        |
 
 # Quick Start
+Run as following command:
 ```
-run "python musicdl.py"
+python musicdl.py
 ```
+Then, just enjoy it:
+![img](https://github.com/CharlesPikachu/Music-Downloader/record/screenshot.jpg)
 
 # Install
 #### Pip install
@@ -50,4 +53,4 @@ see → [click](./record)
 # More
 #### WeChat Official Accounts
 *Charles_pikachu*  
-![img](pikachu.jpg)
+![img](https://github.com/CharlesPikachu/Music-Downloader/pikachu.jpg)
