@@ -10,3 +10,4 @@
 |  [咪咕音乐](http://www.migu.cn/)          |   ✓                |  ✓                   |
 |  [网易云音乐](https://music.163.com/)     |   ✓                |  ✓                   |
 |  [百度无损音乐](http://music.baidu.com/)  |   ✓                |  ✓                   |
+|  [JOOX音乐](https://www.joox.com/limits)  |   ✗                |  ✗                   |

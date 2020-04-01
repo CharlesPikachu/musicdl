@@ -32,12 +32,12 @@ class musicdl():
 		self.logger_handle = Logger(self.config['logfilepath'])
 		self.initializeAllSources()
 	'''非开发人员外部调用'''
-	def run(self):
+	def run(self, target_srcs=None):
 		while True:
 			print(BASICINFO)
 			# 音乐搜索
 			user_input = self.dealInput('请输入歌曲搜索的关键词: ')
-			target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami']
+			target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami'] if target_srcs is None else target_srcs
 			search_results = self.search(user_input, target_srcs)
 			# 打印搜索结果
 			title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']

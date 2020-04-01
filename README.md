@@ -24,7 +24,7 @@ This repository is created just for learning python(Commercial prohibition).
 |  [Migu](http://www.migu.cn/)          |   ✓                |  ✓                   |  咪咕音乐            |
 |  [Netease](https://music.163.com/)    |   ✓                |  ✓                   |  网易云音乐          |
 |  [baiduFlac](http://music.baidu.com/) |   ✓                |  ✓                   |  百度无损音乐        |
-|  [Joox](https://www.joox.com/limits)  |   ✗                |  ✗                   |  JOOX音乐            |
+|  [JOOX](https://www.joox.com/limits)  |   ✗                |  ✗                   |  JOOX音乐            |
 
 # Install
 #### Pip install
@@ -47,9 +47,7 @@ from musicdl import musicdl
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami']
 client = musicdl.musicdl(config=config)
-search_results = client.search('说好不哭', target_srcs)
-for key, value in search_results.items():
-    client.download(value)
+client.run(target_srcs)
 ```
 
 # Screenshot
