@@ -117,6 +117,8 @@ class netease():
 			task = Downloader(songinfo, self.session)
 			if task.start():
 				self.logger_handle.info('成功从%s下载到了 ——> %s...' % (self.source, songinfo['savename']))
+			else:
+				self.logger_handle.info('无法从%s下载 ——> %s...' % (self.source, songinfo['savename']))
 	'''初始化'''
 	def __initialize(self):
 		self.headers = {

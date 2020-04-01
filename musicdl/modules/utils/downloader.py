@@ -23,20 +23,22 @@ class Downloader():
 	'''外部调用'''
 	def start(self):
 		songinfo, session, headers = self.songinfo, self.session, self.headers
-		is_success = False
 		checkDir(songinfo['savedir'])
-		with closing(session.get(songinfo['download_url'], headers=headers, stream=True, verify=False)) as response:
-			total_size = int(response.headers['content-length'])
-			chunk_size = 1024
-			if response.status_code == 200:
-				label = '[FileSize]: %0.2fMB' % (total_size/1024/1024)
-				with click.progressbar(length=total_size, label=label) as progressbar:
-					with open(os.path.join(songinfo['savedir'], songinfo['savename']+'.'+songinfo['ext']), "wb") as fp:
-						for chunk in response.iter_content(chunk_size=chunk_size):
-							if chunk:
-								fp.write(chunk)
-								progressbar.update(chunk_size)
-				is_success = True
+		try:
+			with closing(session.get(songinfo['download_url'], headers=headers, stream=True, verify=False)) as response:
+				total_size = int(response.headers['content-length'])
+				chunk_size = 1024
+				if response.status_code == 200:
+					label = '[FileSize]: %0.2fMB' % (total_size/1024/1024)
+					with click.progressbar(length=total_size, label=label) as progressbar:
+						with open(os.path.join(songinfo['savedir'], songinfo['savename']+'.'+songinfo['ext']), "wb") as fp:
+							for chunk in response.iter_content(chunk_size=chunk_size):
+								if chunk:
+									fp.write(chunk)
+									progressbar.update(chunk_size)
+					is_success = True
+		except:
+			is_success = False
 		return is_success
 	'''初始化'''
 	def __initialize(self, source):
@@ -77,6 +79,6 @@ class Downloader():
 							'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Mobile Safari/537.36'
 						}
 		elif source == 'xiami':
-			pass
+			self.headers = {}
 		else:
 			raise ValueError('Unsupport download music from source <%s>...' % source)
