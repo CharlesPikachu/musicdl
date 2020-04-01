@@ -31,7 +31,7 @@ Run as following command:
 python musicdl.py
 ```
 Then, just enjoy it:
-![img](https://github.com/CharlesPikachu/Music-Downloader/record/screenshot.jpg)
+![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/record/screenshot.jpg)
 
 # Install
 #### Pip install
@@ -53,4 +53,4 @@ see → [click](./record)
 # More
 #### WeChat Official Accounts
 *Charles_pikachu*  
-![img](https://github.com/CharlesPikachu/Music-Downloader/pikachu.jpg)
+![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/pikachu.jpg)
