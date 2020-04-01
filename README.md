@@ -40,7 +40,7 @@ run "pip install git+https://github.com/CharlesPikachu/Music-Downloader.git@mast
 ```
 
 # Quick Start
-```
+```python
 from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
