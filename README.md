@@ -19,19 +19,11 @@ This repository is created just for learning python(Commercial prohibition).
 |  [QQ](https://y.qq.com/)              |   ✓                |  ✓                   |  QQ音乐              |
 |  [Kuwo](http://yinyue.kuwo.cn/)       |   ✓                |  ✓                   |  酷我音乐            |
 |  [Kugou](http://www.kugou.com/)       |   ✓                |  ✓                   |  酷狗音乐            |
-|  [Xiami](https://www.xiami.com/)      |   ✓                |  ✓                   |  虾米音乐            |
+|  [Xiami](https://www.xiami.com/)      |   ✗                |  ✗                   |  虾米音乐            |
 |  [Qianqian](http://music.taihe.com/)  |   ✓                |  ✓                   |  千千音乐            |
 |  [Migu](http://www.migu.cn/)          |   ✓                |  ✓                   |  咪咕音乐            |
-|  [Wangyiyun](https://music.163.com/)  |   ✓                |  ✓                   |  网易云音乐          |
+|  [Netease](https://music.163.com/)    |   ✓                |  ✓                   |  网易云音乐          |
 |  [baiduFlac](http://music.baidu.com/) |   ✓                |  ✓                   |  百度无损音乐        |
-
-# Quick Start
-Run as following command:
-```sh
-python musicdl.py
-```
-Then, just enjoy it:
-![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/record/screenshot.jpg)
 
 # Install
 #### Pip install
@@ -46,6 +38,9 @@ Step2: cd Music-Downloader -> run "python setup.py install"
 (2) Online
 run "pip install git+https://github.com/CharlesPikachu/Music-Downloader.git@master"
 ```
+
+# Screenshot
+![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/record/screenshot.jpg)
 
 # Develop Log
 see → [click](./record)
