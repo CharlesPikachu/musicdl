@@ -27,27 +27,6 @@ python setup.py install
 ```
 
 ## 快速开始
-#### 自定义平台
-通过安装musicdl, 你可以自定义平台进行音乐搜索和下载, 示例代码如下:
-```python
-from musicdl import musicdl
-
-config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
-target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami']
-client = musicdl.musicdl(config=config)
-client.run(target_srcs)
-```
-target_srcs是一个列表对象, 用于自定义平台:
-```
-baiduFlac: 百度无损音乐
-kugou: 酷狗音乐
-kuwo: 酷我音乐
-qq: qq音乐
-qianqian: 千千音乐
-netease: 网易云音乐
-migu: 咪咕音乐
-xiami: 虾米音乐
-```
 #### 歌曲搜索
 实现音乐搜索功能的示例代码如下:
 ```python
@@ -100,3 +79,24 @@ print(search_results)
 client.download([search_results['migu'][0]])
 ```
 注意, download函数传入的参数必须是一个列表对象.
+#### 自定义平台
+通过安装musicdl, 你可以自定义平台进行音乐搜索和下载, 示例代码如下:
+```python
+from musicdl import musicdl
+
+config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
+target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami']
+client = musicdl.musicdl(config=config)
+client.run(target_srcs)
+```
+target_srcs是一个列表对象, 用于自定义平台:
+```
+baiduFlac: 百度无损音乐
+kugou: 酷狗音乐
+kuwo: 酷我音乐
+qq: qq音乐
+qianqian: 千千音乐
+netease: 网易云音乐
+migu: 咪咕音乐
+xiami: 虾米音乐
+```
