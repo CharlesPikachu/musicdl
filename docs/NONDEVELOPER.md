@@ -3,11 +3,11 @@
 ## 项目下载
 运行如下命令下载项目:
 ```sh
-git clone https://github.com/CharlesPikachu/Music-Downloader
+git clone https://github.com/CharlesPikachu/Music-Downloader.git
 ```
 
 ## 配置文件
-在musicdl文件中有json格式的配置文件, 各参数含义如下:
+在musicdl文件夹中有config.json文件, 该文件为配置文件, 文件中各参数含义如下:
 ```
 logfilepath: 日志文件保存路径
 proxies: 设置代理, 支持的代理格式参见https://requests.readthedocs.io/en/master/user/advanced/#proxies
