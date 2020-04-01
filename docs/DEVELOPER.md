@@ -40,7 +40,7 @@ search_results = client.search('说好不哭', target_srcs)
 - logfilepath: 日志文件保存路径
 - proxies: 设置代理, 支持的代理格式参见[requests设置代理](https://requests.readthedocs.io/en/master/user/advanced/#proxies)
 - search_size_per_source: 在各个平台搜索时的歌曲搜索数量
-- savedir: 下载的音乐保存路径
+- savedir: 下载的音乐保存路径  
 target_srcs是一个列表对象, 用于指定音乐搜索的平台:
 - baiduFlac: 百度无损音乐
 - kugou: 酷狗音乐
@@ -53,7 +53,7 @@ target_srcs是一个列表对象, 用于指定音乐搜索的平台:
 search_results为歌曲搜索的结果, 是一个字典对象, 格式如下:
 ```python
 {
-	搜索平台: 歌曲信息
+    搜索平台: 歌曲信息
 }
 ```
 下载各平台搜索结果的示例代码如下:

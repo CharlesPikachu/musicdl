@@ -24,6 +24,7 @@ This repository is created just for learning python(Commercial prohibition).
 |  [Migu](http://www.migu.cn/)          |   ✓                |  ✓                   |  咪咕音乐            |
 |  [Netease](https://music.163.com/)    |   ✓                |  ✓                   |  网易云音乐          |
 |  [baiduFlac](http://music.baidu.com/) |   ✓                |  ✓                   |  百度无损音乐        |
+|  [Joox](https://www.joox.com/limits)  |   ✗                |  ✗                   |  JOOX音乐            |
 
 # Install
 #### Pip install
