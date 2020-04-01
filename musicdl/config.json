@@ -1,0 +1,6 @@
+{
+	"logfilepath": "musicdl.log",
+	"proxies": {"https": "127.0.0.1:1080"},
+	"search_size_per_source": 5,
+	"savedir": "downloaded"
+}

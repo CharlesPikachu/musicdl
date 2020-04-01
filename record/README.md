@@ -1,4 +1,5 @@
-# Log
+# Develop Log
+
 #### 2018-06-27
 ```
 v1.0: support four platforms.
@@ -46,4 +47,8 @@ update to v2.0.6: support migu.
 #### 2020-01-07
 ```
 update to v2.0.7: fix the bugs in migu.
+```
+#### 2020-04-01
+```
+update to v2.1.0: optimize, more humane, add docs, etc.
 ```
