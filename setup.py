@@ -34,7 +34,7 @@ setup(
 	author_email='charlesjzc@qq.com',
 	license='MIT',
 	include_package_data=True,
-	install_requires=['requests >= 2.22.0', 'pycryptodome >= 3.8.1', 'click >= 7.0', 'PyExecJS >= 0.7.2'],
+	install_requires=['requests >= 2.22.0', 'pycryptodome >= 3.8.1', 'click >= 7.0', 'prettytable >= 0.7.2'],
 	zip_safe=True,
 	packages=find_packages()
 )

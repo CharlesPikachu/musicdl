@@ -27,7 +27,7 @@ This repository is created just for learning python(Commercial prohibition).
 
 # Quick Start
 Run as following command:
-```
+```sh
 python musicdl.py
 ```
 Then, just enjoy it:
