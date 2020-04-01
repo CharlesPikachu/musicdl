@@ -6,7 +6,7 @@ You can star this repository to keep track of the project if it's helpful for yo
 
 # Documents
 #### In Chinese
-still on the way
+https://musicdl.readthedocs.io/
 
 # Statement
 ```
@@ -39,11 +39,20 @@ Step2: cd Music-Downloader -> run "python setup.py install"
 run "pip install git+https://github.com/CharlesPikachu/Music-Downloader.git@master"
 ```
 
+# Quick Start
+```
+from musicdl import musicdl
+
+config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
+target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami']
+client = musicdl.musicdl(config=config)
+search_results = client.search('说好不哭', target_srcs)
+for key, value in search_results.items():
+    client.download(value)
+```
+
 # Screenshot
 ![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/record/screenshot.jpg)
-
-# Develop Log
-see → [click](./record)
 
 # More
 #### WeChat Official Accounts
