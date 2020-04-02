@@ -101,7 +101,7 @@ class musicdl():
 				search_results.update({'xiami': self.xiami.search(keyword)})
 			except:
 				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('xiami', keyword))
-		if joox in target_srcs:
+		if 'joox' in target_srcs:
 			try:
 				search_results.update({'joox': self.joox.search(keyword)})
 			except:
