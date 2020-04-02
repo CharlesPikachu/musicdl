@@ -82,7 +82,9 @@ class Downloader():
 			self.headers = {
 							'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36'
 						}
-		elif source == 'JOOX':
-			self.headers = {}
+		elif source == 'joox':
+			self.headers = {
+							'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/605.1.15 (KHTML, like Gecko)'
+						}
 		else:
 			raise ValueError('Unsupport download music from source <%s>...' % source)

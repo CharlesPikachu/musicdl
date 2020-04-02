@@ -33,7 +33,7 @@ python setup.py install
 from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
-target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'JOOX']
+target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'joox']
 client = musicdl.musicdl(config=config)
 search_results = client.search('说好不哭', target_srcs)
 ```
@@ -54,7 +54,7 @@ qianqian: 千千音乐
 netease: 网易云音乐
 migu: 咪咕音乐
 xiami: 虾米音乐
-JOOX: JOOX音乐
+joox: JOOX音乐
 ```
 search_results为歌曲搜索的结果, 是一个字典对象, 格式如下:
 ```python
@@ -68,7 +68,7 @@ search_results为歌曲搜索的结果, 是一个字典对象, 格式如下:
 from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
-target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'JOOX']
+target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'joox']
 client = musicdl.musicdl(config=config)
 search_results = client.search('说好不哭', target_srcs)
 for key, value in search_results.items():
@@ -86,7 +86,7 @@ client.download([search_results['migu'][0]])
 from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
-target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'JOOX']
+target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'joox']
 client = musicdl.musicdl(config=config)
 client.run(target_srcs)
 ```
@@ -100,5 +100,5 @@ qianqian: 千千音乐
 netease: 网易云音乐
 migu: 咪咕音乐
 xiami: 虾米音乐
-JOOX: JOOX音乐
+joox: JOOX音乐
 ```
