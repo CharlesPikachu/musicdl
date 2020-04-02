@@ -7,9 +7,9 @@
 
 我的Github账号是: https://github.com/CharlesPikachu  
 
-我知乎账号是: https://www.zhihu.com/people/charles_pikachu
+我的知乎账号是: https://www.zhihu.com/people/charles_pikachu
 
-我B站账号是: https://space.bilibili.com/406756145
+我的B站账号是: https://space.bilibili.com/406756145
 
 个人邮箱: charlesblwx@gmail.com
 ```
