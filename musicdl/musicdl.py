@@ -37,7 +37,7 @@ class musicdl():
 			print(BASICINFO)
 			# 音乐搜索
 			user_input = self.dealInput('请输入歌曲搜索的关键词: ')
-			target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami'] if target_srcs is None else target_srcs
+			target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'JOOX'] if target_srcs is None else target_srcs
 			search_results = self.search(user_input, target_srcs)
 			# 打印搜索结果
 			title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']
@@ -96,6 +96,11 @@ class musicdl():
 				search_results.update({'migu': self.migu.search(keyword)})
 			except:
 				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('migu', keyword))
+		if 'xiami' in target_srcs:
+			try:
+				search_results.update({'xiami': self.xiami.search(keyword)})
+			except:
+				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('xiami', keyword))
 		return search_results
 	'''音乐下载'''
 	def download(self, songinfos):
@@ -114,6 +119,8 @@ class musicdl():
 				self.qq.download([songinfo])
 			elif songinfo['source'] == 'migu':
 				self.migu.download([songinfo])
+			elif songinfo['source'] == 'xiami':
+				self.xiami.download([songinfo])
 	'''初始化所有支持的搜索/下载源'''
 	def initializeAllSources(self):
 		self.baiduFlac = baiduFlac(self.config, self.logger_handle)
@@ -123,6 +130,7 @@ class musicdl():
 		self.qianqian = qianqian(self.config, self.logger_handle)
 		self.qq = qq(self.config, self.logger_handle)
 		self.migu = migu(self.config, self.logger_handle)
+		self.xiami = xiami(self.config, self.logger_handle)
 	'''处理用户输入'''
 	def dealInput(self, tip=''):
 		user_input = input(tip)

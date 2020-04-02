@@ -6,7 +6,11 @@ Author:
 微信公众号:
 	Charles的皮卡丘
 '''
+import re
+import time
+import json
 import requests
+from hashlib import md5
 from ..utils.misc import *
 from ..utils.downloader import Downloader
 
@@ -24,38 +28,33 @@ class xiami():
 	def search(self, keyword):
 		self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
 		cfg = self.config.copy()
+		token = self.__getToken()
+		search_url = self.base_url.format(action=self.actions['searchsongs'])
 		params = {
-					'query': keyword,
-					'method': 'baidu.ting.search.common',
-					'format': 'json',
-					'page_no': '1',
-					'page_size': cfg['search_size_per_source']
+					'key': keyword,
+					'pagingVO': {'page': '1', 'pageSize': str(cfg['search_size_per_source'])}
 				}
-		response = self.session.get(self.search_url, headers=self.headers, params=params)
-		all_items = response.json()['song_list']
+		response = self.session.get(search_url, headers=self.headers, params=self.__xiamiSign(params, token))
+		all_items = response.json()['data']['data']['songs']
 		songinfos = []
 		for item in all_items:
-			params = {
-						'songIds': item['song_id']
-					}
-			response = self.session.get(self.player_url, headers=self.headers, params=params)
-			response_json = response.json()
-			if response_json.get('errorCode') != 22000: continue
-			song_list = response_json['data']['songList']
-			if not song_list: continue
-			download_url = song_list[0]['songLink']
+			download_url = ''
+			for file in item['listenFiles']:
+				if not file['downloadFileSize']: continue
+				filesize = str(round(int(file['downloadFileSize'])/1024/1024, 2)) + 'MB'
+				download_url = file['listenFile']
+				ext = file['format']
+				duration = int(file.get('length', 0)) / 1000
+				break
 			if not download_url: continue
-			filesize = str(round(int(song_list[0]['size'])/1024/1024, 2)) + 'MB'
-			ext = song_list[0]['format']
-			duration = int(song_list[0].get('time', 0))
 			songinfo = {
 						'source': self.source,
-						'songid': str(item['song_id']),
-						'singers': filterBadCharacter(item.get('author', '-')),
-						'album': filterBadCharacter(item.get('album_title', '-')),
-						'songname': filterBadCharacter(item.get('title', '-')).split('–')[0].strip(),
+						'songid': str(item['songId']),
+						'singers': filterBadCharacter(item.get('artistName', '-')),
+						'album': filterBadCharacter(item.get('albumName', '-')),
+						'songname': filterBadCharacter(item.get('songName', '-')).split('–')[0].strip(),
 						'savedir': cfg['savedir'],
-						'savename': '_'.join([self.source, filterBadCharacter(item.get('title', '-')).split('–')[0].strip()]),
+						'savename': '_'.join([self.source, filterBadCharacter(item.get('songName', '-')).split('–')[0].strip()]),
 						'download_url': download_url,
 						'filesize': filesize,
 						'ext': ext,
@@ -72,10 +71,46 @@ class xiami():
 				self.logger_handle.info('成功从%s下载到了 ——> %s...' % (self.source, songinfo['savename']))
 			else:
 				self.logger_handle.info('无法从%s下载 ——> %s...' % (self.source, songinfo['savename']))
+	'''虾米签名'''
+	def __xiamiSign(self, params, token=''):
+		appkey = '23649156'
+		t = str(int(time.time() * 1000))
+		request_str = {
+						'header': {'appId': '200', 'platformId': 'h5'},
+						'model': params
+					}
+		data = json.dumps({'requestStr': json.dumps(request_str)})
+		sign = '%s&%s&%s&%s' % (token, t, appkey, data)
+		sign = md5(sign.encode('utf-8')).hexdigest()
+		params = {
+					't': t,
+					'appKey': appkey,
+					'sign': sign,
+					'data': data
+				}
+		return params
+	'''获得请求所需的token'''
+	def __getToken(self):
+		action = self.actions['getsongdetail']
+		url = self.base_url.format(action=action)
+		params = {'songId': '1'}
+		response = self.session.get(url, params=self.__xiamiSign(params))
+		cookies = response.cookies.get_dict()
+		return cookies['_m_h5_tk'].split('_')[0]
 	'''初始化'''
 	def __initialize(self):
 		self.headers = {
-						'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) XIAMI-MUSIC/3.1.1 Chrome/56.0.2924.87 Electron/1.6.11 Safari/537.36',
-						'Cookie': '_m_h5_tk=15d3402511a022796d88b249f83fb968_1511163656929; _m_h5_tk_enc=b6b3e64d81dae577fc314b5c5692df3c'
+						'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36',
+						'Referer': 'http://h.xiami.com',
+						'Connection': 'keep-alive',
+						'Accept-Language': 'zh-CN,zh;q=0.8,gl;q=0.6,zh-TW;q=0.4',
+						'Accept-Encoding': 'gzip,deflate,sdch',
+						'Accept': '*/*'
 					}
-		self.search_url = 'https://acs.m.xiami.com/h5/mtop.alimusic.search.searchservice.searchsongs/1.0/'
+		self.base_url = 'https://acs.m.xiami.com/h5/{action}/1.0/'
+		self.actions = {
+						'searchsongs': 'mtop.alimusic.search.searchservice.searchsongs',
+						'getsongdetail': 'mtop.alimusic.music.songservice.getsongdetail',
+						'getsongs': 'mtop.alimusic.music.songservice.getsongs',
+						'getsonglyrics': 'mtop.alimusic.music.lyricservice.getsonglyrics'
+					}

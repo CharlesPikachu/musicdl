@@ -19,7 +19,7 @@ This repository is created just for learning python(Commercial prohibition).
 |  [QQ](https://y.qq.com/)              |   ✓                |  ✓                   |  QQ音乐              |
 |  [Kuwo](http://yinyue.kuwo.cn/)       |   ✓                |  ✓                   |  酷我音乐            |
 |  [Kugou](http://www.kugou.com/)       |   ✓                |  ✓                   |  酷狗音乐            |
-|  [Xiami](https://www.xiami.com/)      |   ✗                |  ✗                   |  虾米音乐            |
+|  [Xiami](https://www.xiami.com/)      |   ✓                |  ✓                   |  虾米音乐            |
 |  [Qianqian](http://music.taihe.com/)  |   ✓                |  ✓                   |  千千音乐            |
 |  [Migu](http://www.migu.cn/)          |   ✓                |  ✓                   |  咪咕音乐            |
 |  [Netease](https://music.163.com/)    |   ✓                |  ✓                   |  网易云音乐          |

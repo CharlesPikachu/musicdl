@@ -79,6 +79,10 @@ class Downloader():
 							'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Mobile Safari/537.36'
 						}
 		elif source == 'xiami':
+			self.headers = {
+							'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36'
+						}
+		elif source == 'JOOX':
 			self.headers = {}
 		else:
 			raise ValueError('Unsupport download music from source <%s>...' % source)
