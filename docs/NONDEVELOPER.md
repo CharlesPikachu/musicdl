@@ -23,4 +23,5 @@ python musicdl.py
 然后根据相应的提示进行操作即可.
 
 ## 版本发布
+- [v2.1.2](https://github.com/CharlesPikachu/Music-Downloader/releases/download/v2.1.2/musicdl.zip)
 - [v2.1.1](https://github.com/CharlesPikachu/Music-Downloader/releases/download/v2.1.1/musicdl.zip)
