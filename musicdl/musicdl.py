@@ -21,7 +21,7 @@ Author: Charles
 	输入q: 退出程序
 	下载多首歌曲: 选择想要下载的歌曲时,输入{1,2,5}可同时下载第1,2,5首歌
 歌曲保存路径:
-	当前路径下的results文件夹内
+	当前路径下的%s文件夹内
 ************************************************************'''
 
 
@@ -34,7 +34,7 @@ class musicdl():
 	'''非开发人员外部调用'''
 	def run(self, target_srcs=None):
 		while True:
-			print(BASICINFO)
+			print(BASICINFO % self.config.get('savedir'))
 			# 音乐搜索
 			user_input = self.dealInput('请输入歌曲搜索的关键词: ')
 			target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'joox'] if target_srcs is None else target_srcs
