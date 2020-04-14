@@ -8,7 +8,8 @@ Author:
 '''
 import sys
 import os
-os.chdir(os.path.dirname(sys.argv[0]))
+if os.path.dirname(sys.argv[0]):
+    os.chdir(os.path.dirname(sys.argv[0]))
 if __name__ == '__main__': from modules import *
 else: from .modules import *
 
