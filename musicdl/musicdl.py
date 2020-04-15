@@ -13,7 +13,7 @@ else: from .modules import *
 
 '''basic info'''
 BASICINFO = '''************************************************************
-Function: 音乐下载器 V2.1.2
+Function: 音乐下载器 V2.1.4
 Author: Charles
 微信公众号: Charles的皮卡丘
 操作帮助:
