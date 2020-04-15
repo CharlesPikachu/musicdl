@@ -25,6 +25,7 @@ class Downloader():
 		songinfo, session, headers = self.songinfo, self.session, self.headers
 		checkDir(songinfo['savedir'])
 		try:
+			is_success = False
 			with closing(session.get(songinfo['download_url'], headers=headers, stream=True, verify=False)) as response:
 				total_size = int(response.headers['content-length'])
 				chunk_size = 1024
