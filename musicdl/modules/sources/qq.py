@@ -63,9 +63,16 @@ class qq():
 						filesize = item['size%s' % quality[-1]]
 					break
 			if not download_url:
-				response = self.session.get(self.fcg_url.format(item['songmid']))
+				params = {
+							'data': json.dumps({
+												"req": {"module": "CDN.SrfCdnDispatchServer", "method": "GetCdnDispatch", "param": {"guid": "3982823384", "calltype": 0, "userip": ""}},
+												"req_0": {"module": "vkey.GetVkeyServer", "method": "CgiGetVkey", "param": {"guid": "3982823384", "songmid": [item['songmid']], "songtype": [0], "uin": "0", "loginflag": 1, "platform": "20"}},
+												"comm": {"uin": 0, "format": "json", "ct": 24, "cv": 0}
+											})
+						}
+				response = self.session.get(self.fcg_url, headers=self.ios_headers, params=params)
 				response_json = response.json()
-				if response_json['code'] == 0:
+				if response_json['code'] == 0 and response_json['req']['code'] == 0 and response_json['req_0']['code'] == 0:
 					ext = '.m4a'
 					download_url = str(response_json["req"]["data"]["freeflowsip"][0]) + str(response_json["req_0"]["data"]["midurlinfo"][0]["purl"])
 					filesize = item['size128']
@@ -108,9 +115,4 @@ class qq():
 					}
 		self.search_url = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp'
 		self.mobile_fcg_url = 'https://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg'
-		self.fcg_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?data=%7B%22req%22%3A%7B%22module \
-						%22%3A%22CDN.SrfCdnDispatchServer%22%2C%22method%22%3A%22GetCdnDispatch \
-						%22%2C%22param%22%3A%7B%7D%7D%2C%22req_0%22%3A%7B%22module%22%3A%22vkey. \
-						GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22 \
-						guid%22%3A%2200%22%2C%22songmid%22%3A%5B%22{}%22%5D%2C%22songtype%22%3A%5 \
-						B0%5D%2C%22uin%22%3A%2200%22%7D%7D%7D'
+		self.fcg_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg'
