@@ -7,6 +7,7 @@ Author:
 	Charles的皮卡丘
 '''
 import json
+import time
 import base64
 import requests
 from ..utils.misc import *
@@ -38,10 +39,15 @@ class joox():
 		songinfos = []
 		for item in all_items:
 			params = {
-						'songid': item['songid']
+						'songid': item['songid'],
+						'lang': 'zh_cn',
+						'country': 'hk',
+						'from_type': '-1',
+						'channel_id': '-1',
+						'_': str(int(time.time()*1000))
 					}
 			response = self.session.get(self.songinfo_url, headers=self.headers, params=params)
-			response_json = response.json()
+			response_json = json.loads(response.text.replace('MusicInfoCallback(', '')[:-1])
 			if response_json.get('code') != 0: continue
 			for q_key in [('r320Url', '320'), ('r192Url', '192'), ('mp3Url', '128')]:
 				download_url = response_json.get(q_key[0], '')
@@ -77,7 +83,9 @@ class joox():
 	'''初始化'''
 	def __initialize(self):
 		self.headers = {
-						'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/605.1.15 (KHTML, like Gecko)'
+						'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/605.1.15 (KHTML, like Gecko)',
+						'Cookie': 'wmid=142420656; user_type=1; country=id; session_key=2a5d97d05dc8fe238150184eaf3519ad;',
+						'X-Forwarded-For': '36.73.34.109'
 					}
 		self.search_url = 'https://api-jooxtt.sanook.com/web-fcgi-bin/web_search'
-		self.songinfo_url = 'https://api-jooxtt.sanook.com/web-fcgi-bin/web_get_songinfo'
+		self.songinfo_url = 'https://api.joox.com/web-fcgi-bin/web_get_songinfo'
