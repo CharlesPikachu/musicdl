@@ -110,7 +110,7 @@ class qq():
 							'Referer': 'http://y.qq.com'
 						}
 		self.headers = {
-						'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.146 Safari/537.36',
+						'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
 						'Referer': 'http://y.qq.com'
 					}
 		self.search_url = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp'
