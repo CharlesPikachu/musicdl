@@ -31,7 +31,7 @@ setup(
 			'Operating System :: OS Independent'],
 	author='Charles',
 	url='https://github.com/CharlesPikachu/Music-Downloader',
-	author_email='charlesjzc@qq.com',
+	author_email='charlesblwx@gmail.com',
 	license='MIT',
 	include_package_data=True,
 	install_requires=['requests >= 2.22.0', 'pycryptodome >= 3.8.1', 'click >= 7.0', 'prettytable >= 0.7.2'],
