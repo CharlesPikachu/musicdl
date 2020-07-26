@@ -6,9 +6,7 @@ Author:
 微信公众号:
 	Charles的皮卡丘
 '''
-import re
 import time
-import json
 import requests
 from ..utils.misc import *
 from ..utils.downloader import Downloader
@@ -28,7 +26,6 @@ class kugou():
 		self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
 		cfg = self.config.copy()
 		params = {
-					'callback': 'jQuery1124018638456262994435_%s' % str(int(time.time() * 1000) - 2),
 					'keyword': keyword,
 					'page': '1',
 					'pagesize': cfg['search_size_per_source'],
@@ -42,13 +39,11 @@ class kugou():
 					'_': str(int(time.time() * 1000))
 				}
 		response = self.session.get(self.search_url, headers=self.search_headers, params=params)
-		response_json = json.loads(re.findall(r'[(](.*)[)]', response.text)[0])
-		all_items = response_json['data']['lists']
+		all_items = response.json()['data']['lists']
 		songinfos = []
 		for item in all_items:
 			params = {
 						'r': 'play/getdata',
-						'callback': 'jQuery19107306344625120932_%s' % str(int(time.time() * 1000) - 1),
 						'hash': str(item['FileHash']),
 						'album_id': str(item['AlbumID']),
 						'dfid': '1aAcF31Utj2l0ZzFPO0Yjss0',
@@ -56,9 +51,8 @@ class kugou():
 						'platid': '4',
 						'_': str(int(time.time() * 1000))
 					}
-			self.session = requests.Session()
 			response = self.session.get(self.hash_url, headers=self.hash_headers, params=params)
-			response_json = json.loads(re.findall(r'[(](.*)[)]', response.text)[0])
+			response_json = response.json()
 			if response_json.get('err_code') != 0: continue
 			download_url = response_json['data']['play_url'].replace('\\', '')
 			if not download_url: continue
