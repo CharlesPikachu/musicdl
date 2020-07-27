@@ -13,7 +13,7 @@ https://musicdl.readthedocs.io/
 This repository is created just for learning python(Commercial prohibition).
 All the apis used in this repository are from public network. So, if you want to download the paid songs, 
 please open a paid member on corresponding music platform by yourself (respect the music copyright please).
-Finally, if there is any infringement, please contact me to delete this repository.
+Finally, if there are any infringements, please contact me to delete this repository.
 ```
 
 # Support List
