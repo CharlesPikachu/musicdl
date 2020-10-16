@@ -1,6 +1,6 @@
 # Music Downloader
 ```
-Music Downloader
+A lightweight music downloader written by pure python.
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 ```
 
@@ -38,7 +38,7 @@ run "pip install musicdl"
 ```sh
 (1) Offline
 Step1: git clone https://github.com/CharlesPikachu/musicdl.git
-Step2: cd Music-Downloader -> run "python setup.py install"
+Step2: cd musicdl -> run "python setup.py install"
 (2) Online
 run "pip install git+https://github.com/CharlesPikachu/musicdl.git@master"
 ```
