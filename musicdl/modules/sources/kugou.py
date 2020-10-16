@@ -23,7 +23,7 @@ class kugou():
 		self.__initialize()
 	'''歌曲搜索'''
 	def search(self, keyword):
-		self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+		self.logger_handle.info('正在%s中搜索 ——> %s' % (self.source, keyword))
 		cfg = self.config.copy()
 		params = {
 					'keyword': keyword,
@@ -77,12 +77,12 @@ class kugou():
 	'''歌曲下载'''
 	def download(self, songinfos):
 		for songinfo in songinfos:
-			self.logger_handle.info('正在从%s下载 ——> %s...' % (self.source, songinfo['savename']))
+			self.logger_handle.info('正在从%s下载 ——> %s' % (self.source, songinfo['savename']))
 			task = Downloader(songinfo, self.session)
 			if task.start():
-				self.logger_handle.info('成功从%s下载到了 ——> %s...' % (self.source, songinfo['savename']))
+				self.logger_handle.info('成功从%s下载到了 ——> %s' % (self.source, songinfo['savename']))
 			else:
-				self.logger_handle.info('无法从%s下载 ——> %s...' % (self.source, songinfo['savename']))
+				self.logger_handle.info('无法从%s下载 ——> %s' % (self.source, songinfo['savename']))
 	'''初始化'''
 	def __initialize(self):
 		self.search_headers = {

@@ -37,7 +37,7 @@ class Logger():
 
 '''打印表格'''
 def printTable(title, items):
-	assert isinstance(title, list) and isinstance(items, list), '<title> and <items> should be list in printTable...'
+	assert isinstance(title, list) and isinstance(items, list), 'title and items should be list in function printTable'
 	table = PrettyTable(title)
 	for item in items: table.add_row(item)
 	print(table)

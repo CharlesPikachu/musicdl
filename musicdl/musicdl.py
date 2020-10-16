@@ -13,7 +13,7 @@ else: from .modules import *
 
 '''basic info'''
 BASICINFO = '''************************************************************
-Function: 音乐下载器 V2.1.6
+Function: 音乐下载器 V2.1.7
 Author: Charles
 微信公众号: Charles的皮卡丘
 操作帮助:
@@ -65,47 +65,47 @@ class musicdl():
 			try:
 				search_results.update({'baiduFlac': self.baiduFlac.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('baiduFlac', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('baiduFlac', keyword))
 		if 'kugou' in target_srcs:
 			try:
 				search_results.update({'kugou': self.kugou.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('kugou', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('kugou', keyword))
 		if 'kuwo' in target_srcs:
 			try:
 				search_results.update({'kuwo': self.kuwo.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('kuwo', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('kuwo', keyword))
 		if 'netease' in target_srcs:
 			try:
 				search_results.update({'netease': self.netease.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('netease', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('netease', keyword))
 		if 'qianqian' in target_srcs:
 			try:
 				search_results.update({'qianqian': self.qianqian.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('qianqian', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('qianqian', keyword))
 		if 'qq' in target_srcs:
 			try:
 				search_results.update({'qq': self.qq.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('qq', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('qq', keyword))
 		if 'migu' in target_srcs:
 			try:
 				search_results.update({'migu': self.migu.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('migu', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('migu', keyword))
 		if 'xiami' in target_srcs:
 			try:
 				search_results.update({'xiami': self.xiami.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('xiami', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('xiami', keyword))
 		if 'joox' in target_srcs:
 			try:
 				search_results.update({'joox': self.joox.search(keyword)})
 			except:
-				self.logger_handle.warning('无法在%s中搜索 ——> %s...' % ('joox', keyword))
+				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('joox', keyword))
 		return search_results
 	'''音乐下载'''
 	def download(self, songinfos):
@@ -143,7 +143,7 @@ class musicdl():
 	def dealInput(self, tip=''):
 		user_input = input(tip)
 		if user_input.lower() == 'q':
-			self.logger_handle.info('ByeBye...')
+			self.logger_handle.info('ByeBye')
 			sys.exit()
 		elif user_input.lower() == 'r':
 			self.initializeAllSources()

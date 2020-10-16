@@ -1,6 +1,6 @@
-# Music-Downloader
+# Music Downloader
 ```
-Music Downloader  
+Music Downloader
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 ```
 
@@ -37,10 +37,10 @@ run "pip install musicdl"
 #### Source code install
 ```sh
 (1) Offline
-Step1: git clone https://github.com/CharlesPikachu/Music-Downloader.git
+Step1: git clone https://github.com/CharlesPikachu/musicdl.git
 Step2: cd Music-Downloader -> run "python setup.py install"
 (2) Online
-run "pip install git+https://github.com/CharlesPikachu/Music-Downloader.git@master"
+run "pip install git+https://github.com/CharlesPikachu/musicdl.git@master"
 ```
 
 # Quick Start
@@ -54,9 +54,9 @@ client.run(target_srcs)
 ```
 
 # Screenshot
-![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/record/screenshot.jpg)
+![img](./screenshot/screenshot.jpg)
 
 # More
 #### WeChat Official Accounts
 *Charles_pikachu*  
-![img](https://github.com/CharlesPikachu/Music-Downloader/blob/master/pikachu.jpg)
+![img](pikachu.jpg)
