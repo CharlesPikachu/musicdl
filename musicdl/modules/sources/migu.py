@@ -7,18 +7,15 @@ Author:
 	Charles的皮卡丘
 '''
 import requests
+from .base import Base
 from ..utils.misc import *
-from ..utils.downloader import Downloader
 
 
 '''咪咕音乐下载类'''
-class migu():
+class migu(Base):
 	def __init__(self, config, logger_handle, **kwargs):
+		super(migu, self).__init__(config, logger_handle, **kwargs)
 		self.source = 'migu'
-		self.session = requests.Session()
-		self.session.proxies.update(config['proxies'])
-		self.config = config
-		self.logger_handle = logger_handle
 		self.__initialize()
 	'''歌曲搜索'''
 	def search(self, keyword):
@@ -65,15 +62,6 @@ class migu():
 					}
 			songinfos.append(songinfo)
 		return songinfos
-	'''歌曲下载'''
-	def download(self, songinfos):
-		for songinfo in songinfos:
-			self.logger_handle.info('正在从%s下载 ——> %s' % (self.source, songinfo['savename']))
-			task = Downloader(songinfo, self.session)
-			if task.start():
-				self.logger_handle.info('成功从%s下载到了 ——> %s' % (self.source, songinfo['savename']))
-			else:
-				self.logger_handle.info('无法从%s下载 ——> %s' % (self.source, songinfo['savename']))
 	'''初始化'''
 	def __initialize(self):
 		self.headers = {
