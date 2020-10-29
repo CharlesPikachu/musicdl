@@ -3,7 +3,7 @@
 ## 项目下载
 运行如下命令下载项目:
 ```sh
-git clone https://github.com/CharlesPikachu/Music-Downloader.git
+git clone https://github.com/CharlesPikachu/musicdl.git
 ```
 
 ## 配置文件

@@ -10,16 +10,16 @@ pip install musicdl --upgrade
 #### 在线安装
 运行如下命令即可在线安装:
 ```sh
-pip install git+https://github.com/CharlesPikachu/Music-Downloader.git@master
+pip install git+https://github.com/CharlesPikachu/musicdl.git@master
 ```
 #### 离线安装
-利用如下命令下载Music-Downloader源代码到本地:
+利用如下命令下载musicdl源代码到本地:
 ```sh
-git clone https://github.com/CharlesPikachu/Music-Downloader.git
+git clone https://github.com/CharlesPikachu/musicdl.git
 ```
-接着, 切到Music-Downloader目录下:
+接着, 切到musicdl目录下:
 ```sh
-cd Music-Downloader
+cd musicdl
 ```
 最后运行如下命令进行安装:
 ```sh
