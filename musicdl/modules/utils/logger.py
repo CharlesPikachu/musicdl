@@ -13,6 +13,7 @@ from prettytable import PrettyTable
 '''打印日志类'''
 class Logger():
 	def __init__(self, logfilepath, **kwargs):
+		setattr(self, 'logfilepath', logfilepath)
 		logging.basicConfig(level=logging.INFO,
 							format='%(asctime)s %(levelname)-8s %(message)s',
 							datefmt='%Y-%m-%d %H:%M:%S',
@@ -21,18 +22,30 @@ class Logger():
 	@staticmethod
 	def log(level, message):
 		logging.log(level, message)
-	@staticmethod
-	def debug(message):
-		Logger.log(logging.DEBUG, message)
-	@staticmethod
-	def info(message):
-		Logger.log(logging.INFO, message)
-	@staticmethod
-	def warning(message):
-		Logger.log(logging.WARNING, message)
-	@staticmethod
-	def error(message):
-		Logger.log(logging.ERROR, message)
+	def debug(self, message, disable_print=False):
+		if disable_print:
+			fp = open(self.logfilepath, 'a')
+			fp.write(message + '\n')
+		else:
+			Logger.log(logging.DEBUG, message)
+	def info(self, message, disable_print=False):
+		if disable_print:
+			fp = open(self.logfilepath, 'a')
+			fp.write(message + '\n')
+		else:
+			Logger.log(logging.INFO, message)
+	def warning(self, message, disable_print=False):
+		if disable_print:
+			fp = open(self.logfilepath, 'a')
+			fp.write(message + '\n')
+		else:
+			Logger.log(logging.WARNING, message)
+	def error(self, message, disable_print=False):
+		if disable_print:
+			fp = open(self.logfilepath, 'a')
+			fp.write(message + '\n')
+		else:
+			Logger.log(logging.ERROR, message)
 
 
 '''打印表格'''

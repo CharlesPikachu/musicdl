@@ -64,47 +64,56 @@ class musicdl():
 		if 'baiduFlac' in target_srcs:
 			try:
 				search_results.update({'baiduFlac': self.baiduFlac.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('baiduFlac', keyword))
 		if 'kugou' in target_srcs:
 			try:
 				search_results.update({'kugou': self.kugou.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('kugou', keyword))
 		if 'kuwo' in target_srcs:
 			try:
 				search_results.update({'kuwo': self.kuwo.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('kuwo', keyword))
 		if 'netease' in target_srcs:
 			try:
 				search_results.update({'netease': self.netease.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('netease', keyword))
 		if 'qianqian' in target_srcs:
 			try:
 				search_results.update({'qianqian': self.qianqian.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('qianqian', keyword))
 		if 'qq' in target_srcs:
 			try:
 				search_results.update({'qq': self.qq.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('qq', keyword))
 		if 'migu' in target_srcs:
 			try:
 				search_results.update({'migu': self.migu.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('migu', keyword))
 		if 'xiami' in target_srcs:
 			try:
 				search_results.update({'xiami': self.xiami.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('xiami', keyword))
 		if 'joox' in target_srcs:
 			try:
 				search_results.update({'joox': self.joox.search(keyword)})
-			except:
+			except Exception as err:
+				self.logger_handle.error(str(err), True)
 				self.logger_handle.warning('无法在%s中搜索 ——> %s' % ('joox', keyword))
 		return search_results
 	'''音乐下载'''
