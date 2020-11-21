@@ -63,6 +63,7 @@ class migu(Base):
                 'duration': duration
             }
             songinfos.append(songinfo)
+            if len(songinfos) == cfg['search_size_per_source']: break
         return songinfos
     '''初始化'''
     def __initialize(self):
