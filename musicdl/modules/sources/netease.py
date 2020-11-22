@@ -89,6 +89,14 @@ class netease(Base):
             if response_json.get('code') != 200: continue
             download_url = response_json['data'][0]['url']
             if not download_url: continue
+            params = {
+                'csrf_token': '',
+                'id': item['id'],
+                'lv': '-1',
+                'tv': '-1'
+            }
+            response = self.session.post(self.lyric_url, headers=self.headers, data=self.cracker.get(params))
+            lyric = response.json().get('lrc', {}).get('lyric', '')
             filesize = str(round(int(item[q]['size'])/1024/1024, 2)) + 'MB'
             ext = download_url.split('.')[-1]
             duration = int(item.get('dt', 0) / 1000)
@@ -101,6 +109,7 @@ class netease(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('name', '-'))]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': seconds2hms(duration)
@@ -122,3 +131,4 @@ class netease(Base):
         }
         self.search_url = 'http://music.163.com/weapi/cloudsearch/get/web?csrf_token='
         self.player_url = 'http://music.163.com/weapi/song/enhance/player/url?csrf_token='
+        self.lyric_url = 'https://music.163.com/weapi/song/lyric'

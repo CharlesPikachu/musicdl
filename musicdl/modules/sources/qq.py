@@ -6,6 +6,7 @@ Author:
 微信公众号:
     Charles的皮卡丘
 '''
+import base64
 import random
 import requests
 from .base import Base
@@ -74,6 +75,18 @@ class qq(Base):
                     download_url = str(response_json["req"]["data"]["freeflowsip"][0]) + str(response_json["req_0"]["data"]["midurlinfo"][0]["purl"])
                     filesize = item['size128']
             if (not download_url) or (filesize == '-MB') or (filesize == 0): continue
+            params = {
+                'songmid': str(item['songmid']),
+                'g_tk': '5381',
+                'loginUin': '0',
+                'hostUin': '0',
+                'format': 'json',
+                'inCharset': 'utf8',
+                'outCharset': 'utf-8',
+                'platform': 'yqq'
+            }
+            response = self.session.get(self.lyric_url, headers={'Referer': 'https://y.qq.com/portal/player.html'}, params=params)
+            lyric = base64.b64decode(response.json().get('lyric', '')).decode('utf-8')
             filesize = str(round(filesize/1024/1024, 2)) + 'MB'
             duration = int(item.get('interval', 0))
             songinfo = {
@@ -85,6 +98,7 @@ class qq(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('songname', '-'))]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': seconds2hms(duration)
@@ -104,3 +118,4 @@ class qq(Base):
         self.search_url = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp'
         self.mobile_fcg_url = 'https://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg'
         self.fcg_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg'
+        self.lyric_url = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg'

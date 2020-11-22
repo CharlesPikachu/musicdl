@@ -42,8 +42,16 @@ class qianqian(Base):
             response = self.session.get(self.tracklink_url, headers=self.headers, params=params)
             response_json = response.json()
             if response_json.get('errno') != 22000: continue
-            download_url = response_json['data']['path']
+            if 'path' in response_json['data']:
+                download_url = response_json['data']['path']
+            else:
+                download_url = response_json['data']['trail_audio_info']['path']
             if not download_url: continue
+            lyric_url, lyric = response_json['data'].get('lyric', ''), ''
+            if lyric_url:
+                response = self.session.get(lyric_url, headers=self.headers)
+                response.encoding = 'utf-8'
+                lyric = response.text
             filesize = str(round(int(response_json['data']['size'])/1024/1024, 2)) + 'MB'
             ext = response_json['data']['format']
             duration = int(response_json['data']['duration'])
@@ -56,6 +64,7 @@ class qianqian(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('title', '-')).split('–')[0].strip()]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': seconds2hms(duration)

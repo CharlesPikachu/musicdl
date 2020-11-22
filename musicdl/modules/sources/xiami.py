@@ -36,14 +36,19 @@ class xiami(Base):
         songinfos = []
         for item in all_items:
             download_url = ''
-            for file in item['listenFiles']:
-                if not file['downloadFileSize']: continue
-                filesize = str(round(int(file['downloadFileSize'])/1024/1024, 2)) + 'MB'
-                download_url = file['listenFile']
-                ext = file['format']
-                duration = int(file.get('length', 0)) / 1000
+            for file_info in item['listenFiles']:
+                if not file_info['downloadFileSize']: continue
+                filesize = str(round(int(file_info['downloadFileSize'])/1024/1024, 2)) + 'MB'
+                download_url = file_info['listenFile']
+                ext = file_info['format']
+                duration = int(file_info.get('length', 0)) / 1000
                 break
             if not download_url: continue
+            lyric_url, lyric = item.get('lyricInfo', {}).get('lyricFile', ''), ''
+            if lyric_url:
+                response = self.session.get(lyric_url, headers=self.headers)
+                response.encoding = 'utf-8'
+                lyric = response.text
             songinfo = {
                 'source': self.source,
                 'songid': str(item['songId']),
@@ -53,6 +58,7 @@ class xiami(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('songName', '-')).split('–')[0].strip()]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': seconds2hms(duration)
