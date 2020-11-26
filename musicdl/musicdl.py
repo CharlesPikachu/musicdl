@@ -8,6 +8,7 @@ Author:
 '''
 import sys
 import copy
+import threading
 if __name__ == '__main__':
     from modules import *
     from __init__ import __version__
@@ -65,13 +66,23 @@ class musicdl():
             self.download(songinfos)
     '''音乐搜索'''
     def search(self, keyword, target_srcs):
-        search_results = {}
+        def threadSearch(search_api, keyword, target_src, search_results):
+            search_results.update({target_src: search_api(keyword)})
+        task_pool, search_results = [], {}
         for target_src in target_srcs:
+            task = threading.Thread(
+                target=threadSearch,
+                args=(getattr(self, target_src).search, keyword, target_src, search_results)
+            )
             try:
-                search_results.update({target_src: getattr(self, target_src).search(keyword)})
+                task.start()
             except Exception as err:
                 self.logger_handle.error(str(err), True)
                 self.logger_handle.warning('无法在%s中搜索 ——> %s...' % (target_src, keyword))
+                continue
+            task_pool.append(task)
+        for task in task_pool:
+            task.join()                
         return search_results
     '''音乐下载'''
     def download(self, songinfos):
