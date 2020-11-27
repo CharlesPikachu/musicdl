@@ -52,6 +52,13 @@ class joox(Base):
                 filesize = str(round(int(json.loads(response_json['kbps_map'])[q_key[1]])/1024/1024, 2)) + 'MB'
                 ext = 'mp3' if q_key[0] in ['r320Url', 'mp3Url'] else 'm4a'
             if not download_url: continue
+            params = {
+                'musicid': str(item['songid']),
+                'country': 'hk',
+                'lang': 'zh_cn',
+            }
+            response = self.session.get(self.lyric_url, headers=self.lyric_headers, params=params)
+            lyric = base64.b64decode(response.json().get('lyric', '')).decode('utf-8')
             duration = int(item.get('playtime', 0))
             songinfo = {
                 'source': self.source,
@@ -62,10 +69,12 @@ class joox(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(response_json.get('msong', '-'))]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': seconds2hms(duration)
             }
+            if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
         return songinfos
     '''初始化'''
@@ -75,5 +84,10 @@ class joox(Base):
             'Cookie': 'wmid=142420656; user_type=1; country=id; session_key=2a5d97d05dc8fe238150184eaf3519ad;',
             'X-Forwarded-For': '36.73.34.109'
         }
+        self.lyric_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Origin': 'https://www.joox.com'
+        }
         self.search_url = 'https://api-jooxtt.sanook.com/web-fcgi-bin/web_search'
         self.songinfo_url = 'https://api.joox.com/web-fcgi-bin/web_get_songinfo'
+        self.lyric_url = 'https://api-jooxtt.sanook.com/web-fcgi-bin/web_lyric'

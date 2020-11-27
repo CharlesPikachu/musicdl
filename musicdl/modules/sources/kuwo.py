@@ -47,6 +47,12 @@ class kuwo(Base):
             if response_json.get('code') != 200: continue
             download_url = response_json['url']
             if not download_url: continue
+            params = {
+                'musicId': str(item['rid'])
+            }
+            self.lyric_headers.update({'Referer': f'http://m.kuwo.cn/yinyue/{str(item["rid"])}'})
+            response = self.session.get(self.lyric_url, headers=self.lyric_headers, params=params)
+            lyric = response.json().get('data', {}).get('lrclist', '')
             filesize = '-MB'
             ext = download_url.split('.')[-1]
             duration = int(item.get('duration', 0))
@@ -59,10 +65,12 @@ class kuwo(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('name', '-'))]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': seconds2hms(duration)
             }
+            if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
         return songinfos
     '''初始化'''
@@ -74,5 +82,10 @@ class kuwo(Base):
             'Referer': 'http://www.kuwo.cn/search/list',
             'Cookie': 'kw_token=0HQ0UGKNAKR;'
         }
+        self.lyric_headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
+            'Referer': 'http://m.kuwo.cn/yinyue/'
+        }
         self.search_url = 'http://www.kuwo.cn/api/www/search/searchMusicBykeyWord'
         self.player_url = 'http://www.kuwo.cn/url'
+        self.lyric_url = 'http://m.kuwo.cn/newh5/singles/songinfoandlrc'

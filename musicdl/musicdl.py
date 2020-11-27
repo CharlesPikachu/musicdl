@@ -43,7 +43,10 @@ class musicdl():
             print(BASICINFO % (__version__, self.config.get('savedir')))
             # 音乐搜索
             user_input = self.dealInput('请输入歌曲搜索的关键词: ')
-            target_srcs = ['baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 'netease', 'migu', 'xiami', 'joox'] if target_srcs is None else target_srcs
+            target_srcs = [
+                'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+                'netease', 'migu', 'xiami', 'joox', 'yiting',
+            ] if target_srcs is None else target_srcs
             search_results = self.search(user_input, target_srcs)
             # 打印搜索结果
             title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']
@@ -67,22 +70,21 @@ class musicdl():
     '''音乐搜索'''
     def search(self, keyword, target_srcs):
         def threadSearch(search_api, keyword, target_src, search_results):
-            search_results.update({target_src: search_api(keyword)})
+            try:
+                search_results.update({target_src: search_api(keyword)})
+            except Exception as err:
+                self.logger_handle.error(str(err), True)
+                self.logger_handle.warning('无法在%s中搜索 ——> %s...' % (target_src, keyword))
         task_pool, search_results = [], {}
         for target_src in target_srcs:
             task = threading.Thread(
                 target=threadSearch,
                 args=(getattr(self, target_src).search, keyword, target_src, search_results)
             )
-            try:
-                task.start()
-            except Exception as err:
-                self.logger_handle.error(str(err), True)
-                self.logger_handle.warning('无法在%s中搜索 ——> %s...' % (target_src, keyword))
-                continue
             task_pool.append(task)
+            task.start()
         for task in task_pool:
-            task.join()                
+            task.join()
         return search_results
     '''音乐下载'''
     def download(self, songinfos):
@@ -96,9 +98,12 @@ class musicdl():
             'joox': joox,
             'migu': migu,
             'kugou': kugou,
+            'lizhi': lizhi,
             'xiami': xiami,
+            'yiting': yiting,
             'netease': netease,
             'qianqian': qianqian,
+            'fivesing': fivesing,
             'baiduFlac': baiduFlac,
         }
         for key, value in supported_sources.items():

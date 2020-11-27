@@ -53,6 +53,15 @@ class kugou(Base):
             if response_json.get('err_code') != 0: continue
             download_url = response_json['data']['play_url'].replace('\\', '')
             if not download_url: continue
+            params = {
+                'cmd': '100',
+                'timelength': '999999',
+                'hash': item.get('FileHash', '')
+            }
+            self.lyric_headers.update({'Referer': f'http://m.kugou.com/play/info/{str(item["ID"])}'})
+            response = self.session.get(self.lyric_url, headers=self.lyric_headers, params=params)
+            response.encoding = 'utf-8'
+            lyric = response.text
             filesize = str(round(int(response_json['data']['filesize'])/1024/1024, 2)) + 'MB'
             ext = download_url.split('.')[-1]
             duration = int(item.get('Duration', 0))
@@ -66,9 +75,11 @@ class kugou(Base):
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('SongName', '-'))]),
                 'download_url': download_url,
                 'filesize': filesize,
+                'lyric': lyric,
                 'ext': ext,
                 'duration': seconds2hms(duration)
             }
+            if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
         return songinfos
     '''初始化'''
@@ -81,5 +92,10 @@ class kugou(Base):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
             'Referer':'https://www.kugou.com/song/'
         }
+        self.lyric_headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X] AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
+            'Referer': 'http://m.kugou.com/play/info/'
+        }
         self.search_url = 'http://songsearch.kugou.com/song_search_v2'
         self.hash_url = 'https://wwwapi.kugou.com/yy/index.php'
+        self.lyric_url = 'http://m.kugou.com/app/i/krc.php'

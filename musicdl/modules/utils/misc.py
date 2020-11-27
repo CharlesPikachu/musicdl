@@ -7,6 +7,7 @@ Author:
     Charles的皮卡丘
 '''
 import os
+import re
 import json
 
 
@@ -24,11 +25,16 @@ def loadConfig(filepath='config.json'):
     return json.load(f)
 
 
-'''清楚可能出问题的字符'''
+'''清除可能出问题的字符'''
 def filterBadCharacter(string):
     need_removed_strs = ['<em>', '</em>', '<', '>', '\\', '/', '?', ':', '"', '：', '|', '？', '*']
     for item in need_removed_strs:
         string = string.replace(item, '')
+    try:
+        rule = re.compile(u'[\U00010000-\U0010ffff]')
+    except:
+        rule = re.compile(u'[\uD800-\uDBFF][\uDC00-\uDFFF]')
+    string = rule.sub('', string)
     return string.strip().encode('utf-8', 'ignore').decode('utf-8')
 
 

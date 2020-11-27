@@ -103,6 +103,7 @@ class qq(Base):
                 'ext': ext,
                 'duration': seconds2hms(duration)
             }
+            if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
         return songinfos
     '''初始化'''

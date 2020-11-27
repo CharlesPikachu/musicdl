@@ -10,7 +10,6 @@ import click
 import warnings
 import requests
 from .misc import *
-from contextlib import closing
 warnings.filterwarnings('ignore')
 
 
@@ -26,17 +25,16 @@ class Downloader():
         checkDir(songinfo['savedir'])
         try:
             is_success = False
-            with closing(session.get(songinfo['download_url'], headers=headers, stream=True, verify=False)) as response:
-                total_size = int(response.headers['content-length'])
-                chunk_size = 1024
+            with session.get(songinfo['download_url'], headers=headers, stream=True, verify=False) as response:
                 if response.status_code == 200:
+                    total_size, chunk_size = int(response.headers['content-length']), 1024
                     label = '[FileSize]: %0.2fMB' % (total_size / 1024 / 1024)
                     with click.progressbar(length=total_size, label=label) as progressbar:
                         with open(os.path.join(songinfo['savedir'], songinfo['savename']+'.'+songinfo['ext']), 'wb') as fp:
                             for chunk in response.iter_content(chunk_size=chunk_size):
                                 if chunk:
                                     fp.write(chunk)
-                                    progressbar.update(chunk_size)
+                                    progressbar.update(len(chunk))
                     is_success = True
         except:
             is_success = False
@@ -76,5 +74,14 @@ class Downloader():
         self.baiduFlac_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
             'Referer': 'http://music.baidu.com/',
+        }
+        self.yiting_headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
+        }
+        self.fivesing_headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
+        }
+        self.lizhi_headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
         }
         self.headers = getattr(self, f'{source}_headers')

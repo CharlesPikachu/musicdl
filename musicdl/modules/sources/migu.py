@@ -48,6 +48,11 @@ class migu(Base):
                 filesize = str(round(int(rate['size'])/1024/1024, 2)) + 'MB'
                 break
             if not download_url: continue
+            lyric_url, lyric = item.get('lyricUrl', ''), ''
+            if lyric_url:
+                response = self.session.get(lyric_url, headers=self.headers)
+                response.encoding = 'utf-8'
+                lyric = response.text
             duration = '-:-:-'
             songinfo = {
                 'source': self.source,
@@ -58,10 +63,12 @@ class migu(Base):
                 'savedir': cfg['savedir'],
                 'savename': '_'.join([self.source, filterBadCharacter(item.get('name', '-'))]),
                 'download_url': download_url,
+                'lyric': lyric,
                 'filesize': filesize,
                 'ext': ext,
                 'duration': duration
             }
+            if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
             if len(songinfos) == cfg['search_size_per_source']: break
         return songinfos
