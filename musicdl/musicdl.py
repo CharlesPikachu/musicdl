@@ -44,7 +44,7 @@ class musicdl():
             # 音乐搜索
             user_input = self.dealInput('请输入歌曲搜索的关键词: ')
             target_srcs = [
-                'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+                'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian',
                 'netease', 'migu', 'xiami', 'joox', 'yiting',
             ] if target_srcs is None else target_srcs
             search_results = self.search(user_input, target_srcs)
@@ -121,7 +121,20 @@ class musicdl():
             return user_input
 
 
+def run_main():
+    import sys
+    from warnings import warn
+    config_file = "config.json"
+    if len(sys.argv) <= 1:
+      warn("default config is used. ({}).".format(config_file))
+    else:
+      if len(sys.argv) > 2:
+        warn("Only the last one is used.")
+      config_file = sys.argv[-1]
+
+    dl_client = musicdl(config_file)
+    dl_client.run()
+
 '''run'''
 if __name__ == '__main__':
-    dl_client = musicdl('config.json')
-    dl_client.run()
+    run_main()
