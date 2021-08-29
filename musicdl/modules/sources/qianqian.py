@@ -24,20 +24,22 @@ class qianqian(Base):
         self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
         cfg = self.config.copy()
         params = {
-            'sign': self.__calcSign(keyword),
+            'sign': self.__calcSign(keyword, '16073360'),
             'word': keyword,
-            'timestamp': str(int(time.time()))
+            'timestamp': str(int(time.time())),
+            'appid': '16073360',
         }
         response = self.session.get(self.search_url, headers=self.headers, params=params)
+        print(response.json())
+        
         all_items = response.json()['data']['typeTrack']
         songinfos = []
         for item in all_items:
             params = {
-                'sign': self.__calcSign(keyword),
+                'sign': self.__calcSign(keyword, '16073360', item['TSID']),
                 'TSID': item['TSID'],
                 'timestamp': str(int(time.time())),
-                'from': 'web',
-                's_protocol': '1',
+                'appid': '16073360',
             }
             response = self.session.get(self.tracklink_url, headers=self.headers, params=params)
             response_json = response.json()
@@ -74,24 +76,28 @@ class qianqian(Base):
             if len(songinfos) == cfg['search_size_per_source']: break
         return songinfos
     '''计算sign值'''
-    def __calcSign(self, keyword):
+    def __calcSign(self, keyword, appid, TSID=None):
         secret = '0b50b02fd0d73a9c4c8c3a781c30845f'
-        e = {
-            'word': keyword,
-            'timestamp': str(int(time.time()))
-        }
-        n = list(e.keys())
-        n.sort()
-        i = f'{n[0]}={e[n[0]]}'
-        for r in range(1, len(n)):
-            o = n[r]
-            i += f'&{o}={e[o]}'
-        sign = hashlib.md5((i + secret).encode('utf-8')).hexdigest()
+        if TSID is None:
+            e = {
+                'word': keyword,
+                'appid': appid,
+                'timestamp': str(int(time.time()))
+            }
+            n = list(e.keys())
+            n.sort()
+            i = f'{n[0]}={e[n[0]]}'
+            for r in range(1, len(n)):
+                o = n[r]
+                i += f'&{o}={e[o]}'
+            sign = hashlib.md5((i + secret).encode('utf-8')).hexdigest()
+        else:
+            sign = hashlib.md5((f'TSID={TSID}&appid={appid}&timestamp={str(int(time.time()))}{secret}').encode('utf-8')).hexdigest()
         return sign
     '''初始化'''
     def __initialize(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36',
             'Referer': 'https://music.taihe.com/'
         }
         self.search_url = 'https://music.taihe.com/v1/search'

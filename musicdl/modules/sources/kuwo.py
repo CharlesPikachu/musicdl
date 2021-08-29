@@ -21,14 +21,16 @@ class kuwo(Base):
     '''歌曲搜索'''
     def search(self, keyword):
         self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+        response = self.session.get('http://kuwo.cn/search/list?key=hello', headers=self.headers)
+        cookies, token = response.cookies, response.cookies.get('kw_token')
+        self.headers['csrf'] = token
         cfg = self.config.copy()
         params = {
             'key': keyword,
             'pn': '1',
             'rn': cfg['search_size_per_source'],
-            'reqId': 'ffa3dc80-73c2-11ea-a715-7de8a8cc7b68'
         }
-        response = self.session.get(self.search_url, headers=self.headers, params=params)
+        response = self.session.get(self.search_url, headers=self.headers, params=params, cookies=cookies)
         all_items = response.json()['data']['list']
         songinfos = []
         for item in all_items:
@@ -76,11 +78,12 @@ class kuwo(Base):
     '''初始化'''
     def __initialize(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36',
-            'csrf': '0HQ0UGKNAKR',
-            'Host': 'www.kuwo.cn',
-            'Referer': 'http://www.kuwo.cn/search/list',
-            'Cookie': 'kw_token=0HQ0UGKNAKR;'
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip,deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.8,gl;q=0.6,zh-TW;q=0.4',
+            'Host': 'kuwo.cn',
+            'Referer': 'http://kuwo.cn',
         }
         self.lyric_headers = {
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
