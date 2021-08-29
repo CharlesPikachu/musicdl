@@ -30,8 +30,6 @@ class qianqian(Base):
             'appid': '16073360',
         }
         response = self.session.get(self.search_url, headers=self.headers, params=params)
-        print(response.json())
-        
         all_items = response.json()['data']['typeTrack']
         songinfos = []
         for item in all_items:
