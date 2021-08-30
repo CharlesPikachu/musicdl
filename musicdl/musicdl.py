@@ -6,8 +6,10 @@ Author:
 微信公众号:
     Charles的皮卡丘
 '''
+import os
 import sys
 import copy
+import time
 import threading
 if __name__ == '__main__':
     from modules import *
@@ -37,7 +39,7 @@ class musicdl():
         self.config = loadConfig('config.json') if config is None else config
         self.logger_handle = Logger(self.config['logfilepath'])
         self.initializeAllSources()
-    '''非开发人员外部调用'''
+    '''非开发人员外部调用-手动输入版'''
     def run(self, target_srcs=None):
         while True:
             print(BASICINFO % (__version__, self.config.get('savedir')))
@@ -50,9 +52,7 @@ class musicdl():
             search_results = self.search(user_input, target_srcs)
             # 打印搜索结果
             title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']
-            items = []
-            records = {}
-            idx = 0
+            items, records, idx = [], {}, 0
             for key, values in search_results.items():
                 for value in values:
                     items.append([str(idx), value['singers'], value['songname'], value['filesize'], value['duration'], value['album'], value['source']])
@@ -67,6 +67,31 @@ class musicdl():
                 songinfo = records.get(item, '')
                 if songinfo: songinfos.append(songinfo)
             self.download(songinfos)
+    '''非开发人员外部调用-语音版'''
+    def runbyspeech(self, target_srcs=None, baiduspeech_params=None):
+        assert baiduspeech_params is not None, 'please visit to https://console.bce.baidu.com/ai/?fromai=1#/ai/speech/overview/index to obtain AppID, AppKey and SecretKey'
+        sr_api = SpeechRecognition(**baiduspeech_params)
+        while True:
+            print(BASICINFO % (__version__, self.config.get('savedir')))
+            # 音乐搜索
+            sr_api.synthesisspeak('请问您想听的歌曲名是什么呢?')
+            time.sleep(4)
+            target_srcs = ['migu'] if target_srcs is None else target_srcs
+            sr_api.record()
+            user_input = sr_api.recognition()
+            self.logger_handle.info(f'识别结果为: {user_input}')
+            search_results = self.search(user_input, target_srcs)
+            # 音乐下载
+            songinfos, songpaths = [], []
+            for key, values in search_results.items():
+                for value in values:
+                    songinfos.append(value)
+                    songpaths.append(os.path.join(value['savedir'], value['savename']+'.'+value['ext']))
+            sr_api.synthesisspeak(f'共搜索到{len(songinfos)}首和{user_input}相关的歌曲, 将依次为您下载播放.')
+            self.download(songinfos)
+            # 音乐播放
+            for songpath in songpaths:
+                sr_api.synthesisspeak(audiopath=songpath)
     '''音乐搜索'''
     def search(self, keyword, target_srcs):
         def threadSearch(search_api, keyword, target_src, search_results):

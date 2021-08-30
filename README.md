@@ -60,9 +60,9 @@ client.run(target_srcs)
 ```
 
 # Screenshot
-![img](./screenshot/screenshot.jpg)
+![img](./docs/screenshot.jpg)
 
 # More
 #### WeChat Official Accounts
 *Charles_pikachu*  
-![img](pikachu.jpg)
+![img](./docs/pikachu.jpg)
