@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - name: "Zhenchao Jin"
+title: "musicdl: A lightweight music downloader written by pure python"
+date-released: 2018-06-26
+url: "https://github.com/CharlesPikachu/musicdl"
+license: MIT License
