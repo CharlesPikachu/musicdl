@@ -1,6 +1,8 @@
 # Music Downloader
+```
 A lightweight music downloader written by pure python.
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
+```
 
 
 # Documents
@@ -9,10 +11,12 @@ https://musicdl.readthedocs.io/
 
 
 # Statement
+```
 This repository is created just for learning python(Commercial prohibition).
 All the apis used in this repository are from public network. So, if you want to download the paid songs, 
 please open a paid member on corresponding music platform by yourself (respect the music copyright please).
 Finally, if there are any infringements, please contact me to delete this repository.
+```
 
 
 # Support List
