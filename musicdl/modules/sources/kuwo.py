@@ -34,21 +34,18 @@ class kuwo(Base):
         all_items = response.json()['data']['list']
         songinfos = []
         for item in all_items:
-            params = {
-                'format': 'mp3',
-                'rid': str(item['rid']),
-                'response': 'url',
-                'type': 'convert_url3',
-                'br': '128kmp3',
-                'from': 'web',
-                't': str(int(time.time()*1000)),
-                'reqId': 'de97aac1-73c3-11ea-a715-7de8a8cc7b68'
-            }
-            response = self.session.get(self.player_url, headers=self.headers, params=params)
-            response_json = response.json()
-            if response_json.get('code') != 200: continue
-            download_url = response_json['url']
-            if not download_url: continue
+            for br in ['320kmp3', '192kmp3', '128kmp3']:
+                params = {
+                    'format': 'mp3',
+                    'br': br,
+                    'rid': str(item['rid']),
+                    'type': 'convert_url',
+                    'response': 'url',
+                }
+                download_url = self.session.get(self.player_url, params=params).text
+                if not (download_url.startswith('http://') or download_url.startswith('https://')): continue
+                break
+            if not (download_url.startswith('http://') or download_url.startswith('https://')): continue
             params = {
                 'musicId': str(item['rid'])
             }
@@ -90,5 +87,5 @@ class kuwo(Base):
             'Referer': 'http://m.kuwo.cn/yinyue/'
         }
         self.search_url = 'http://www.kuwo.cn/api/www/search/searchMusicBykeyWord'
-        self.player_url = 'http://www.kuwo.cn/url'
+        self.player_url = 'http://antiserver.kuwo.cn/anti.s'
         self.lyric_url = 'http://m.kuwo.cn/newh5/singles/songinfoandlrc'
