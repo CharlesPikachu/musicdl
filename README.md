@@ -1,13 +1,22 @@
-# Music Downloader
+<div align="center">
+  <img src="./docs/logo.png" width="600"/>
+</div>
+<br />
+
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/musicdl)](https://pypi.org/project/musicdl/)
+[![PyPI](https://img.shields.io/pypi/v/musicdl)](https://pypi.org/project/musicdl)
+[![license](https://img.shields.io/github/license/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE)
+[![issue resolution](https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/issues)
+[![open issues](https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/issues)
+
+Documents: https://musicdl.readthedocs.io/
+
+
+# Musicdl
 ```
 A lightweight music downloader written by pure python.
 You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
 ```
-
-
-# Documents
-#### In Chinese
-https://musicdl.readthedocs.io/
 
 
 # Statement
