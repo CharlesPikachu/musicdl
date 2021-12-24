@@ -3,6 +3,7 @@
 </div>
 <br />
 
+[![docs](https://img.shields.io/badge/docs-latest-blue)](https://musicdl.readthedocs.io/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/musicdl)](https://pypi.org/project/musicdl/)
 [![PyPI](https://img.shields.io/pypi/v/musicdl)](https://pypi.org/project/musicdl)
 [![license](https://img.shields.io/github/license/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE)

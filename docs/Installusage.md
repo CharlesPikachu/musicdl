@@ -1,17 +1,21 @@
 # 安装使用
 
+
 ## PIP安装
 在终端运行如下命令即可(请保证python在环境变量中):
 ```sh
 pip install musicdl --upgrade
 ```
 
+
 ## 源代码安装
+
 #### 在线安装
 运行如下命令即可在线安装:
 ```sh
 pip install git+https://github.com/CharlesPikachu/musicdl.git@master
 ```
+
 #### 离线安装
 利用如下命令下载musicdl源代码到本地:
 ```sh
@@ -26,7 +30,9 @@ cd musicdl
 python setup.py install
 ```
 
+
 ## 快速开始
+
 #### 歌曲搜索
 实现音乐搜索功能的示例代码如下:
 ```python
@@ -68,6 +74,7 @@ search_results为歌曲搜索的结果, 是一个字典对象, 格式如下:
     搜索平台: 歌曲信息
 }
 ```
+
 #### 歌曲下载
 下载各平台音乐搜索结果的示例代码如下:
 ```python
@@ -88,7 +95,8 @@ for key, value in search_results.items():
 print(search_results)
 client.download([search_results['migu'][0]])
 ```
-注意, download函数传入的参数必须是一个列表对象.
+注意, download函数传入的参数必须是一个列表对象。
+
 #### 自定义平台
 通过安装musicdl, 你可以自定义平台进行音乐搜索和下载, 示例代码如下:
 ```python
