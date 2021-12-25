@@ -36,7 +36,8 @@ Author: Charles
 '''音乐下载器'''
 class musicdl():
     def __init__(self, configpath=None, config=None, **kwargs):
-        self.config = loadConfig('config.json') if config is None else config
+        assert configpath or config, 'configpath of config should be given...'
+        self.config = loadConfig(configpath) if config is None else config
         self.logger_handle = Logger(self.config['logfilepath'])
         self.initializeAllSources()
     '''非开发人员外部调用-手动输入版'''
