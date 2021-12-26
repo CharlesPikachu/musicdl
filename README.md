@@ -80,6 +80,13 @@ client.run(target_srcs)
 ![img](./docs/screenshot.jpg)
 
 
+# Projects in Charles_pikachu
+- [Games](https://github.com/CharlesPikachu/Games): Create interesting games by pure python.
+- [DecryptLogin](https://github.com/CharlesPikachu/DecryptLogin): APIs for loginning some websites by using requests.
+- [Videodl](https://github.com/CharlesPikachu/videodl): A lightweight video downloader written by pure python.
+- [Pytools](https://github.com/CharlesPikachu/pytools): Some useful tools written by pure python.
+
+
 # More
 #### WeChat Official Accounts
 *Charles_pikachu*  
