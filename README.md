@@ -85,6 +85,7 @@ client.run(target_srcs)
 - [DecryptLogin](https://github.com/CharlesPikachu/DecryptLogin): APIs for loginning some websites by using requests.
 - [Videodl](https://github.com/CharlesPikachu/videodl): A lightweight video downloader written by pure python.
 - [Pytools](https://github.com/CharlesPikachu/pytools): Some useful tools written by pure python.
+- [PikachuWeChat](https://github.com/CharlesPikachu/pikachuwechat): Play WeChat with itchat-uos.
 
 
 # More
