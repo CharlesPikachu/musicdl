@@ -1,4 +1,4 @@
-pycryptodome
-requests
-click
-prettytable
+pycryptodome >= 3.8.1
+requests >= 2.22.0
+click >= 7.0
+prettytable >= 0.7.2

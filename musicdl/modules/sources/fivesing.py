@@ -6,6 +6,7 @@ Author:
 微信公众号:
     Charles的皮卡丘
 '''
+import re
 import requests
 from .base import Base
 from ..utils.misc import *
@@ -21,17 +22,14 @@ class FiveSing(Base):
     def search(self, keyword):
         self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
         cfg = self.config.copy()
-        params = {
-            'k': keyword,
-            't': '0',
-            'filterType': '1',
-            'ps': cfg['search_size_per_source'],
-            'pn': '1',
-        }
-        response = self.session.get(self.search_url, headers=self.headers, params=params)
-        all_items = response.json()['data']['songArray']        
+        response = self.session.get(self.search_url+keyword, headers=self.headers)
+        response.encoding = 'uft-8'
+        all_items = re.findall(r"dataList = '(.*?)';", response.text)[0]
+        all_items = eval(all_items.replace('\\', ''))
         songinfos = []
         for item in all_items:
+            item['songName'] = item['songName'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+            item['singer'] = item['singer'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
             params = {
                 'songid': str(item['songId']),
                 'songtype': 'yc'
@@ -77,6 +75,6 @@ class FiveSing(Base):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
         }
-        self.search_url = 'http://goapi.5sing.kugou.com/search/search'
+        self.search_url = 'http://search.5sing.kugou.com/?keyword='
         self.songinfo_url = 'http://mobileapi.5sing.kugou.com/song/getSongUrl'
         self.lyric_url = 'http://mobileapi.5sing.kugou.com/song/newget'
