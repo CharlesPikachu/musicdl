@@ -25,14 +25,28 @@ class FiveSing(Base):
         response = self.session.get(self.search_url+keyword, headers=self.headers)
         response.encoding = 'uft-8'
         all_items = re.findall(r"dataList = '(.*?)';", response.text)[0]
+        all_items = all_items.replace(r'<em class=\\\"keyword\\\">', '')
+        all_items = all_items.replace(r'<\\/em>', '')
         all_items = eval(all_items.replace('\\', ''))
         songinfos = []
         for item in all_items:
-            item['songName'] = item['songName'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
-            item['singer'] = item['singer'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+            try:
+                item['songName'] = item['songName'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+            except:
+                try:
+                    item['songName'] = item['songName'].replace(item['singer'], '').replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+                except:
+                    item['songName'] = '解码失败: ' + item['songName']
+            try:
+                item['singer'] = item['singer'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+            except:
+                try: 
+                    item['singer'] = item['singer'].encode('utf-8').decode('unicode_escape')
+                except: 
+                    item['singer'] = '解码失败: ' + item['singer']
             params = {
                 'songid': str(item['songId']),
-                'songtype': 'yc'
+                'songtype': 'yc' if 'yc' in item['downloadurl'] else 'fc'
             }
             response = self.session.get(self.songinfo_url, headers=self.headers, params=params)
             response_json = response.json()
@@ -44,7 +58,7 @@ class FiveSing(Base):
             filesize = str(round(int(response_json['data'][f'{quality}size'])/1024/1024, 2)) + 'MB'
             ext = response_json['data'][f'{quality}ext']
             params = {
-                'songtype': 'yc',
+                'songtype': 'yc' if 'yc' in item['downloadurl'] else 'fc',
                 'songid': str(item['songId']),
                 'songfields': '',
                 'userfields': '',
@@ -69,6 +83,7 @@ class FiveSing(Base):
             }
             if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
+            if len(songinfos) > cfg['search_size_per_source']: break
         return songinfos
     '''初始化'''
     def __initialize(self):
