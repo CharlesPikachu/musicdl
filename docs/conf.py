@@ -20,7 +20,7 @@
 project = 'musicdl'
 copyright = '2020, Charles'
 author = 'Charles'
-release = '2.1.0'
+release = '2.2.0'
 
 # -- General configuration ---------------------------------------------------
 
