@@ -13,4 +13,3 @@
 |  [JOOX音乐](https://www.joox.com/limits)  |   ✓                |  ✓                   |
 |  [5SING音乐](http://5sing.kugou.com/)     |   ✓                |  ✓                   |
 |  [网易云音乐](https://music.163.com/)     |   ✓                |  ✓                   |
-|  [百度无损音乐](http://music.baidu.com/)  |   ✓                |  ✓                   |

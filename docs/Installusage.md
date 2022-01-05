@@ -40,7 +40,7 @@ from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
-    'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+    'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
 	'netease', 'migu', 'xiami', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
@@ -55,7 +55,6 @@ savedir: 下载的音乐保存路径
 ```
 target_srcs是一个列表对象, 用于指定音乐搜索的平台:
 ```
-qq: qq音乐
 lizhi: 荔枝FM
 migu: 咪咕音乐
 kuwo: 酷我音乐
@@ -63,10 +62,10 @@ joox: JOOX音乐
 kugou: 酷狗音乐
 xiami: 虾米音乐
 yiting: 一听音乐
+qqmusic: QQ音乐
 qianqian: 千千音乐
 fivesing: 5SING音乐
 netease: 网易云音乐
-baiduFlac: 百度无损音乐
 ```
 search_results为歌曲搜索的结果, 是一个字典对象, 格式如下:
 ```python
@@ -82,7 +81,7 @@ from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
-    'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+    'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
     'netease', 'migu', 'xiami', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
@@ -104,7 +103,7 @@ from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
-    'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+    'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
     'netease', 'migu', 'xiami', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
@@ -112,7 +111,6 @@ client.run(target_srcs)
 ```
 target_srcs是一个列表对象, 用于自定义平台:
 ```
-qq: qq音乐
 lizhi: 荔枝FM
 migu: 咪咕音乐
 kuwo: 酷我音乐
@@ -120,8 +118,8 @@ joox: JOOX音乐
 kugou: 酷狗音乐
 xiami: 虾米音乐
 yiting: 一听音乐
+qqmusic: QQ音乐
 qianqian: 千千音乐
 fivesing: 5SING音乐
 netease: 网易云音乐
-baiduFlac: 百度无损音乐
 ```

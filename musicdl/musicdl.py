@@ -47,7 +47,7 @@ class musicdl():
             # 音乐搜索
             user_input = self.dealInput('请输入歌曲搜索的关键词: ')
             target_srcs = [
-                'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+                'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
                 'netease', 'migu', 'xiami', 'joox', 'yiting',
             ] if target_srcs is None else target_srcs
             search_results = self.search(user_input, target_srcs)
@@ -119,18 +119,17 @@ class musicdl():
     '''初始化所有支持的搜索/下载源'''
     def initializeAllSources(self):
         supported_sources = {
-            'qq': qq,
-            'kuwo': kuwo,
-            'joox': joox,
-            'migu': migu,
-            'kugou': kugou,
-            'lizhi': lizhi,
-            'xiami': xiami,
-            'yiting': yiting,
-            'netease': netease,
-            'qianqian': qianqian,
-            'fivesing': fivesing,
-            'baiduFlac': baiduFlac,
+            'kuwo': Kuwo,
+            'joox': Joox,
+            'migu': Migu,
+            'kugou': Kugou,
+            'lizhi': Lizhi,
+            'xiami': Xiami,
+            'yiting': YiTing,
+            'netease': Netease,
+            'qqmusic': QQMusic,
+            'qianqian': Qianqian,
+            'fivesing': FiveSing,
         }
         for key, value in supported_sources.items():
             setattr(self, key, value(copy.deepcopy(self.config), self.logger_handle))

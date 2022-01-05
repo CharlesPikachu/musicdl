@@ -12,9 +12,9 @@ from ..utils.misc import *
 
 
 '''荔枝FM下载类'''
-class lizhi(Base):
+class Lizhi(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(lizhi, self).__init__(config, logger_handle, **kwargs)
+        super(Lizhi, self).__init__(config, logger_handle, **kwargs)
         self.source = 'lizhi'
         self.__initialize()
     '''歌曲搜索'''

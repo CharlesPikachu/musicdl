@@ -16,9 +16,9 @@ from ..utils.misc import *
 
 
 '''虾米音乐下载类'''
-class xiami(Base):
+class Xiami(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(xiami, self).__init__(config, logger_handle, **kwargs)
+        super(Xiami, self).__init__(config, logger_handle, **kwargs)
         self.source = 'xiami'
         self.__initialize()
     '''歌曲搜索'''

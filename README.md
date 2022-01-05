@@ -33,7 +33,7 @@ Finally, if there are any infringements, please contact me to delete this reposi
 # Support List
 |  Websites                             |   Support Search?  |  Support Download?   |  in Chinese          |
 |  :----:                               |   :----:           |  :----:              |  :----:              |
-|  [QQ](https://y.qq.com/)              |   ✓                |  ✓                   |  QQ音乐              |
+|  [QQMusic](https://y.qq.com/)         |   ✓                |  ✓                   |  QQ音乐              |
 |  [Lizhi](http://m.lizhi.fm)           |   ✓                |  ✓                   |  荔枝FM              |
 |  [Yiting](https://h5.1ting.com/)      |   ✓                |  ✓                   |  一听音乐            |
 |  [Kuwo](http://yinyue.kuwo.cn/)       |   ✓                |  ✓                   |  酷我音乐            |
@@ -44,7 +44,6 @@ Finally, if there are any infringements, please contact me to delete this reposi
 |  [JOOX](https://www.joox.com/limits)  |   ✓                |  ✓                   |  JOOX音乐            |
 |  [Fivesing](http://5sing.kugou.com/)  |   ✓                |  ✓                   |  5SING音乐           |
 |  [Netease](https://music.163.com/)    |   ✓                |  ✓                   |  网易云音乐          |
-|  [baiduFlac](http://music.baidu.com/) |   ✓                |  ✓                   |  百度无损音乐        |
 
 
 # Install
@@ -68,7 +67,7 @@ from musicdl import musicdl
 
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
-    'baiduFlac', 'kugou', 'kuwo', 'qq', 'qianqian', 
+    'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
     'netease', 'migu', 'xiami', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)

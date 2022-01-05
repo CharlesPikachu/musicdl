@@ -15,11 +15,7 @@ from ..utils.misc import *
 from Crypto.Cipher import AES
 
 
-'''
-Function:
-    用于算post的两个参数, 具体原理详见知乎：
-    https://www.zhihu.com/question/36081767
-'''
+'''用于算post的两个参数, 具体原理详见知乎：https://www.zhihu.com/question/36081767'''
 class Cracker():
     def __init__(self):
         self.modulus = '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7'
@@ -55,9 +51,9 @@ class Cracker():
 
 
 '''网易云音乐下载类'''
-class netease(Base):
+class Netease(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(netease, self).__init__(config, logger_handle, **kwargs)
+        super(Netease, self).__init__(config, logger_handle, **kwargs)
         self.source = 'netease'
         self.cracker = Cracker()
         self.__initialize()

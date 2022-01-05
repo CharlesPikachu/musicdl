@@ -13,9 +13,9 @@ from ..utils.misc import *
 
 
 '''酷狗音乐下载类'''
-class kugou(Base):
+class Kugou(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(kugou, self).__init__(config, logger_handle, **kwargs)
+        super(Kugou, self).__init__(config, logger_handle, **kwargs)
         self.source = 'kugou'
         self.__initialize()
     '''歌曲搜索'''

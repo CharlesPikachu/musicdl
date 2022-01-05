@@ -12,9 +12,9 @@ from ..utils.misc import *
 
 
 '''咪咕音乐下载类'''
-class migu(Base):
+class Migu(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(migu, self).__init__(config, logger_handle, **kwargs)
+        super(Migu, self).__init__(config, logger_handle, **kwargs)
         self.source = 'migu'
         self.__initialize()
     '''歌曲搜索'''

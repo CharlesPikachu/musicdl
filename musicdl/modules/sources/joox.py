@@ -15,9 +15,9 @@ from ..utils.misc import *
 
 
 '''JOOX音乐下载类'''
-class joox(Base):
+class Joox(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(joox, self).__init__(config, logger_handle, **kwargs)
+        super(Joox, self).__init__(config, logger_handle, **kwargs)
         self.source = 'joox'
         self.__initialize()
     '''歌曲搜索'''

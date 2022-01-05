@@ -13,9 +13,9 @@ from ..utils.misc import *
 
 
 '''酷我音乐下载类'''
-class kuwo(Base):
+class Kuwo(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(kuwo, self).__init__(config, logger_handle, **kwargs)
+        super(Kuwo, self).__init__(config, logger_handle, **kwargs)
         self.source = 'kuwo'
         self.__initialize()
     '''歌曲搜索'''

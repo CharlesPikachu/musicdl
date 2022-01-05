@@ -1,13 +1,12 @@
-'''import all'''
-from .qq import qq
-from .kuwo import kuwo
-from .migu import migu
-from .joox import joox
-from .lizhi import lizhi
-from .xiami import xiami
-from .kugou import kugou
-from .yiting import yiting
-from .netease import netease
-from .qianqian import qianqian
-from .fivesing import fivesing
-from .baiduFlac import baiduFlac
+'''initialize'''
+from .kuwo import Kuwo
+from .migu import Migu
+from .joox import Joox
+from .lizhi import Lizhi
+from .xiami import Xiami
+from .kugou import Kugou
+from .yiting import YiTing
+from .netease import Netease
+from .qqmusic import QQMusic
+from .qianqian import Qianqian
+from .fivesing import FiveSing

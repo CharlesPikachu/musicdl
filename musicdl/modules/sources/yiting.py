@@ -13,9 +13,9 @@ from ..utils.misc import *
 
 
 '''一听音乐下载类'''
-class yiting(Base):
+class YiTing(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(yiting, self).__init__(config, logger_handle, **kwargs)
+        super(YiTing, self).__init__(config, logger_handle, **kwargs)
         self.source = 'yiting'
         self.__initialize()
     '''歌曲搜索'''

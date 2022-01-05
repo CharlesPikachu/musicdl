@@ -14,10 +14,10 @@ from ..utils.misc import *
 
 
 '''QQ音乐下载类'''
-class qq(Base):
+class QQMusic(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(qq, self).__init__(config, logger_handle, **kwargs)
-        self.source = 'qq'
+        super(QQMusic, self).__init__(config, logger_handle, **kwargs)
+        self.source = 'qqmusic'
         self.__initialize()
     '''歌曲搜索'''
     def search(self, keyword):

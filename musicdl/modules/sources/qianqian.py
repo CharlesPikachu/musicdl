@@ -14,9 +14,9 @@ from ..utils.misc import *
 
 
 '''千千音乐下载类'''
-class qianqian(Base):
+class Qianqian(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(qianqian, self).__init__(config, logger_handle, **kwargs)
+        super(Qianqian, self).__init__(config, logger_handle, **kwargs)
         self.source = 'qianqian'
         self.__initialize()
     '''歌曲搜索'''

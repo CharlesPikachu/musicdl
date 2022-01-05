@@ -12,9 +12,9 @@ from ..utils.misc import *
 
 
 '''5SING音乐下载类'''
-class fivesing(Base):
+class FiveSing(Base):
     def __init__(self, config, logger_handle, **kwargs):
-        super(fivesing, self).__init__(config, logger_handle, **kwargs)
+        super(FiveSing, self).__init__(config, logger_handle, **kwargs)
         self.source = 'fivesing'
         self.__initialize()
     '''歌曲搜索'''
