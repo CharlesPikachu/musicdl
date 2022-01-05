@@ -27,23 +27,17 @@ class FiveSing(Base):
         all_items = re.findall(r"dataList = '(.*?)';", response.text)[0]
         all_items = all_items.replace(r'<em class=\\\"keyword\\\">', '')
         all_items = all_items.replace(r'<\\/em>', '')
-        all_items = eval(all_items.replace('\\', ''))
+        all_items = eval(all_items.replace(r'\"', '"'))
         songinfos = []
         for item in all_items:
             try:
-                item['songName'] = item['songName'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+                item['songName'] = item['songName'].encode('utf-8').decode('unicode_escape')
             except:
-                try:
-                    item['songName'] = item['songName'].replace(item['singer'], '').replace('u', r'\u').encode('utf-8').decode('unicode_escape')
-                except:
-                    item['songName'] = '解码失败: ' + item['songName']
+                item['songName'] = '解码失败: ' + item['songName']
             try:
-                item['singer'] = item['singer'].replace('u', r'\u').encode('utf-8').decode('unicode_escape')
+                item['singer'] = item['singer'].encode('utf-8').decode('unicode_escape')
             except:
-                try: 
-                    item['singer'] = item['singer'].encode('utf-8').decode('unicode_escape')
-                except: 
-                    item['singer'] = '解码失败: ' + item['singer']
+                item['singer'] = '解码失败: ' + item['singer']
             params = {
                 'songid': str(item['songId']),
                 'songtype': 'yc' if 'yc' in item['downloadurl'] else 'fc'
