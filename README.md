@@ -31,7 +31,7 @@ Finally, if there are any infringements, please contact me to delete this reposi
 
 
 # Support List
-|  Websites                             |   Support Search?  |  Support Download?   |  in Chinese          |
+|  Source                               |   Support Search?  |  Support Download?   |  in Chinese          |
 |  :----:                               |   :----:           |  :----:              |  :----:              |
 |  [QQMusic](https://y.qq.com/)         |   ✓                |  ✓                   |  QQ音乐              |
 |  [Lizhi](http://m.lizhi.fm)           |   ✓                |  ✓                   |  荔枝FM              |
@@ -44,6 +44,12 @@ Finally, if there are any infringements, please contact me to delete this reposi
 |  [JOOX](https://www.joox.com/limits)  |   ✓                |  ✓                   |  JOOX音乐            |
 |  [Fivesing](http://5sing.kugou.com/)  |   ✓                |  ✓                   |  5SING音乐           |
 |  [Netease](https://music.163.com/)    |   ✓                |  ✓                   |  网易云音乐          |
+
+
+# Practice with Musicdl
+|  Project                              |   Introduction     |  Code                            |  in Chinese          |
+|  :----:                               |   :----:           |  :----:                          |  :----:              |
+|  musicdlgui                           |   [click]()        |  [click](./examples/musicdlgui)  |  音乐下载器GUI界面   |
 
 
 # Install

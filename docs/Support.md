@@ -13,3 +13,10 @@
 |  [JOOX音乐](https://www.joox.com/limits)  |   ✓                |  ✓                   |
 |  [5SING音乐](http://5sing.kugou.com/)     |   ✓                |  ✓                   |
 |  [网易云音乐](https://music.163.com/)     |   ✓                |  ✓                   |
+
+
+# 一些小练习
+
+|  项目名称                     |   文章简介         |
+|  :----:                       |   :----:           |
+|  音乐下载器GUI界面            |   [click]()        |
