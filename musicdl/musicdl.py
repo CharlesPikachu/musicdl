@@ -36,7 +36,7 @@ Author: Charles
 '''音乐下载器'''
 class musicdl():
     def __init__(self, configpath=None, config=None, **kwargs):
-        assert configpath or config, 'configpath of config should be given...'
+        assert configpath or config, 'configpath or config should be given...'
         self.config = loadConfig(configpath) if config is None else config
         self.logger_handle = Logger(self.config['logfilepath'])
         self.initializeAllSources()
@@ -133,6 +133,7 @@ class musicdl():
         }
         for key, value in supported_sources.items():
             setattr(self, key, value(copy.deepcopy(self.config), self.logger_handle))
+        return supported_sources
     '''处理用户输入'''
     def dealInput(self, tip=''):
         user_input = input(tip)
