@@ -29,7 +29,7 @@ class Xiami(Base):
         search_url = self.base_url.format(action=self.actions['searchsongs'])
         params = {
             'key': keyword,
-            'pagingVO': {'page': '1', 'pageSize': str(cfg['search_size_per_source'])}
+            'pagingVO': {'page': str(cfg.get('page', 1)), 'pageSize': str(cfg['search_size_per_source'])}
         }
         response = self.session.get(search_url, headers=self.headers, params=self.__xiamiSign(params, token))
         all_items = response.json()['data']['data']['songs']

@@ -24,7 +24,7 @@ class YiTing(Base):
         cfg = self.config.copy()
         params = {
             'q': keyword,
-            'page': '1',
+            'page': str(cfg.get('page', 1)),
             'size': cfg['search_size_per_source'],
         }
         response = self.session.get(self.search_url, headers=self.headers, params=params)

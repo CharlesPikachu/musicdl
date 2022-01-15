@@ -64,7 +64,7 @@ class Netease(Base):
         params = {
             's': keyword,
             'type': '1',
-            'offset': '0',
+            'offset': str(cfg.get('page', 0)),
             'sub': 'false',
             'limit': cfg['search_size_per_source']
         }

@@ -26,7 +26,7 @@ class QQMusic(Base):
         params = {
             'w': keyword,
             'format': 'json',
-            'p': '1',
+            'p': str(cfg.get('page', 1)),
             'n': cfg['search_size_per_source']
         }
         response = self.session.get(self.search_url, headers=self.headers, params=params)

@@ -25,7 +25,7 @@ class Migu(Base):
             'ua': 'Android_migu',
             'version': '5.0.1',
             'text': keyword,
-            'pageNo': '1',
+            'pageNo': str(cfg.get('page', 1)),
             'pageSize': cfg['search_size_per_source'],
             'searchSwitch': '{"song":1,"album":0,"singer":0,"tagSong":0,"mvSong":0,"songlist":0,"bestShow":1}',
         }

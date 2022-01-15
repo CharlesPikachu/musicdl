@@ -27,7 +27,7 @@ class Kuwo(Base):
         cfg = self.config.copy()
         params = {
             'key': keyword,
-            'pn': '1',
+            'pn': str(cfg.get('page', 1)),
             'rn': cfg['search_size_per_source'],
         }
         response = self.session.get(self.search_url, headers=self.headers, params=params, cookies=cookies)

@@ -24,7 +24,7 @@ class Kugou(Base):
         cfg = self.config.copy()
         params = {
             'keyword': keyword,
-            'page': '1',
+            'page': str(cfg.get('page', 1)),
             'pagesize': cfg['search_size_per_source'],
             'userid': '-1',
             'clientver': '',
