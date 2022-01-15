@@ -11,7 +11,7 @@ git clone https://github.com/CharlesPikachu/musicdl.git
 ## 配置文件
 在musicdl文件夹中有config.json文件, 该文件为配置文件, 文件中各参数含义如下:
 - logfilepath: 日志文件保存路径;
-- proxies: 设置代理, 支持的代理格式参见https://requests.readthedocs.io/en/master/user/advanced/#proxies;
+- proxies: 设置代理, 支持的代理格式参见[Requests](https://requests.readthedocs.io/en/master/user/advanced/#proxies);
 - search_size_per_source: 在各个平台搜索时的歌曲搜索数量;
 - savedir: 下载的音乐保存路径;
 - page: 部分搜索源支持指定搜索结果的页码。
