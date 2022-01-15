@@ -17,6 +17,6 @@
 
 # 一些小练习
 
-|  项目名称                     |   文章简介         |
-|  :----:                       |   :----:           |
-|  音乐下载器GUI界面            |   [click]()        |
+|  项目名称                     |   文章简介                                                    |
+|  :----:                       |   :----:                                                      |
+|  音乐下载器GUI界面            |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg)  |

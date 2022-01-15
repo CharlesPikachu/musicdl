@@ -47,9 +47,9 @@ Finally, if there are any infringements, please contact me to delete this reposi
 
 
 # Practice with Musicdl
-|  Project                              |   Introduction     |  Code                            |  in Chinese          |
-|  :----:                               |   :----:           |  :----:                          |  :----:              |
-|  musicdlgui                           |   [click]()        |  [click](./examples/musicdlgui)  |  音乐下载器GUI界面   |
+|  Project                              |   Introduction                                               |  Code                            |  in Chinese          |
+|  :----:                               |   :----:                                                     |  :----:                          |  :----:              |
+|  musicdlgui                           |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg) |  [click](./examples/musicdlgui)  |  音乐下载器GUI界面   |
 
 
 # Install
