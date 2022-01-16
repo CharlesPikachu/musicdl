@@ -22,4 +22,4 @@
 |  项目名称                     |   文章简介                                                    |
 |  :----:                       |   :----:                                                      |
 |  音乐下载器GUI界面            |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg)  |
-|  歌手歌词分析                 |   [click]()                                                   |
+|  歌手歌词分析                 |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig)  |
