@@ -9,7 +9,7 @@ assignees: ''
 **Environment (使用环境)**
 
 - Installation method (安装方式): 
-- The version of pikachupytools (版本号): 
+- The version of musicdl (版本号): 
 - Operating system (操作系统): 
 - Python version (Python版本): 
 
