@@ -8,6 +8,7 @@
 [![PyPI](https://img.shields.io/pypi/v/musicdl)](https://pypi.org/project/musicdl)
 [![license](https://img.shields.io/github/license/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE)
 [![PyPI - Downloads](https://pepy.tech/badge/musicdl)](https://pypi.org/project/musicdl/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/musicdl?style=flat-square)](https://pypi.org/project/musicdl/)
 [![issue resolution](https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/issues)
 [![open issues](https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/issues)
 
@@ -97,6 +98,7 @@ client.run(target_srcs)
 - [ImageCompressor](https://github.com/CharlesPikachu/imagecompressor): Image compressors written by pure python.
 - [FreeProxy](https://github.com/CharlesPikachu/freeproxy): Collecting free proxies from internet.
 - [Paperdl](https://github.com/CharlesPikachu/paperdl): Search and download paper from specific websites.
+- [Sciogovterminal](https://github.com/CharlesPikachu/sciogovterminal): Browse "The State Council Information Office of the People's Republic of China" in the terminal.
 
 
 # More
