@@ -99,7 +99,7 @@ Options:
 
 
 # Screenshot
-![img](./docs/screenshot.jpg)
+![img](./docs/screenshot.gif)
 
 
 # Projects in Charles_pikachu
