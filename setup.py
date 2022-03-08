@@ -35,6 +35,7 @@ setup(
     author_email=musicdl.__email__,
     license=musicdl.__license__,
     include_package_data=True,
+    entry_points={'console_scripts': ['musicdl = musicdl.musicdl:musicdlcmd']},
     install_requires=list(open('requirements.txt', 'r').readlines()),
     zip_safe=True,
     packages=find_packages()

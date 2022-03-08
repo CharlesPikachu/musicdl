@@ -9,7 +9,9 @@ Author:
 import os
 import sys
 import copy
+import json
 import time
+import click
 import threading
 if __name__ == '__main__':
     from modules import *
@@ -76,7 +78,6 @@ class musicdl():
             print(BASICINFO % (__version__, self.config.get('savedir')))
             # 音乐搜索
             sr_api.synthesisspeak('请问您想听的歌曲名是什么呢?')
-            time.sleep(4)
             target_srcs = ['migu'] if target_srcs is None else target_srcs
             sr_api.record()
             user_input = sr_api.recognition()
@@ -145,6 +146,50 @@ class musicdl():
             self.run()
         else:
             return user_input
+
+
+'''cmd直接运行'''
+@click.command()
+@click.version_option()
+@click.option('-k', '--keyword', default=None, help='搜索的歌曲关键字, 若不指定, 则进入musicdl终端版')
+@click.option('-l', '--logfilepath', default='musicdl.log', help='日志文件保存的路径')
+@click.option('-p', '--proxies', default='{}', help='设置的代理')
+@click.option('-s', '--savedir', default='music', help='下载的音乐保存路径')
+@click.option('-c', '--count', default='5', help='在各个平台搜索时的歌曲搜索数量')
+@click.option('-t', '--targets', default=None, help='指定音乐搜索的平台, 例如"migu,joox"')
+def musicdlcmd(keyword, logfilepath, proxies, savedir, count, targets):
+    config = {
+        'logfilepath': logfilepath,
+        'proxies': json.loads(proxies),
+        'savedir': savedir,
+        'search_size_per_source': int(count),
+    }
+    target_srcs = [
+        'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
+        'netease', 'migu', 'xiami', 'joox', 'yiting',
+    ] if targets is None else [src.strip() for src in targets.split(',')]
+    dl_client = musicdl(config=config)
+    if keyword is None:
+        dl_client.run()
+    else:
+        search_results = dl_client.search(keyword, target_srcs)
+        # 打印搜索结果
+        title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']
+        items, records, idx = [], {}, 0
+        for key, values in search_results.items():
+            for value in values:
+                items.append([str(idx), value['singers'], value['songname'], value['filesize'], value['duration'], value['album'], value['source']])
+                records.update({str(idx): value})
+                idx += 1
+        printTable(title, items)
+        # 音乐下载
+        user_input = dl_client.dealInput('请输入想要下载的音乐编号: ')
+        need_download_numbers = user_input.replace(' ', '').split(',')
+        songinfos = []
+        for item in need_download_numbers:
+            songinfo = records.get(item, '')
+            if songinfo: songinfos.append(songinfo)
+        dl_client.download(songinfos)
 
 
 '''run'''

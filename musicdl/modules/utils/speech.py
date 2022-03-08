@@ -50,10 +50,10 @@ class SpeechRecognition():
             pygame.mixer.music.load(audiopath)
             pygame.mixer.music.play()
             while pygame.mixer.music.get_busy():
-                time.sleep(15)
+                time.sleep(1)
         else:
             pygame.mixer.init()
             pygame.mixer.music.load(audiopath)
             pygame.mixer.music.play()
             while pygame.mixer.music.get_busy():
-                time.sleep(15)
+                time.sleep(1)

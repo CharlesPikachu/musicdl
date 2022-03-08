@@ -70,6 +70,7 @@ run "pip install git+https://github.com/CharlesPikachu/musicdl.git@master"
 
 
 # Quick Start
+#### Run by leveraging the API
 ```python
 from musicdl import musicdl
 
@@ -80,6 +81,20 @@ target_srcs = [
 ]
 client = musicdl.musicdl(config=config)
 client.run(target_srcs)
+```
+#### Run by leveraging compiled file
+```
+Usage: musicdl [OPTIONS]
+
+Options:
+  --version               Show the version and exit.
+  -k, --keyword TEXT      搜索的歌曲关键字, 若不指定, 则进入musicdl终端版
+  -l, --logfilepath TEXT  日志文件保存的路径
+  -p, --proxies TEXT      设置的代理
+  -s, --savedir TEXT      下载的音乐保存路径
+  -c, --count TEXT        在各个平台搜索时的歌曲搜索数量
+  -t, --targets TEXT      指定音乐搜索的平台, 例如"migu,joox"
+  --help                  Show this message and exit.
 ```
 
 
