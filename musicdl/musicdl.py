@@ -10,7 +10,6 @@ import os
 import sys
 import copy
 import json
-import time
 import click
 import threading
 if __name__ == '__main__':
