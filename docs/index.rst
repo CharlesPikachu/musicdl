@@ -13,5 +13,6 @@ Musicdl中文文档
 	Support.md
 	Noninstallusage.md
 	Installusage.md
+	Examples.md
 	Changelog.md
 	Aboutme.md

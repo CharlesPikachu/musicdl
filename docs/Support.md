@@ -1,7 +1,5 @@
 # 支持列表
 
-## 支持的平台
-
 |  平台                                     |   支持音乐搜索?    |  支持音乐下载?       |
 |  :----:                                   |   :----:           |  :----:              |
 |  [QQ音乐](https://y.qq.com/)              |   ✓                |  ✓                   |
@@ -15,11 +13,3 @@
 |  [JOOX音乐](https://www.joox.com/limits)  |   ✓                |  ✓                   |
 |  [5SING音乐](http://5sing.kugou.com/)     |   ✓                |  ✓                   |
 |  [网易云音乐](https://music.163.com/)     |   ✓                |  ✓                   |
-
-
-## 相关项目
-
-|  项目名称                     |   文章简介                                                    |
-|  :----:                       |   :----:                                                      |
-|  音乐下载器GUI界面            |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg)  |
-|  歌手歌词分析                 |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig)  |
