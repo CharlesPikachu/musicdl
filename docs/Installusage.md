@@ -67,6 +67,13 @@ Options:
 musicdl -k 那些年
 ```
 
+这里是一个简单效果演示:
+
+<div align="center">
+  <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.gif" width="600"/>
+</div>
+<br />
+
 
 #### 歌曲搜索
 
@@ -78,7 +85,7 @@ from musicdl import musicdl
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
     'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-	'netease', 'migu', 'xiami', 'joox', 'yiting',
+    'netease', 'migu', 'xiami', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
 search_results = client.search('说好不哭', target_srcs)
