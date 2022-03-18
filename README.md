@@ -114,6 +114,9 @@ Options:
 - [FreeProxy](https://github.com/CharlesPikachu/freeproxy): Collecting free proxies from internet.
 - [Paperdl](https://github.com/CharlesPikachu/paperdl): Search and download paper from specific websites.
 - [Sciogovterminal](https://github.com/CharlesPikachu/sciogovterminal): Browse "The State Council Information Office of the People's Republic of China" in the terminal.
+- [CodeFree](https://github.com/CharlesPikachu/codefree): Make no code a reality.
+- [DeepLearningToys](https://github.com/CharlesPikachu/deeplearningtoys): Some deep learning toys implemented in pytorch.
+- [DataAnalysis](https://github.com/CharlesPikachu/dataanalysis): Some data analysis projects in charles_pikachu.
 
 
 # More
