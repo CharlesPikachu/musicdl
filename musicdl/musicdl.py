@@ -79,7 +79,12 @@ class musicdl():
             self.download(songinfos)
     '''非开发人员外部调用-语音版'''
     def runbyspeech(self, target_srcs=None, baiduspeech_params=None):
-        assert baiduspeech_params is not None, 'please visit to https://console.bce.baidu.com/ai/?fromai=1#/ai/speech/overview/index to obtain AppID, AppKey and SecretKey'
+        if baiduspeech_params is None:
+            baiduspeech_params = dict(
+                app_id='25419425', 
+                api_key='fct6UMiQMLsp53MqXzp7AbKQ', 
+                secret_key='p3wU9nPnfR7iBz2kM25sikN2ms0y84T3'
+            )
         sr_api = SpeechRecognition(**baiduspeech_params)
         while True:
             print(BASICINFO % (__version__, self.config.get('savedir')))
@@ -88,7 +93,6 @@ class musicdl():
             target_srcs = ['migu'] if target_srcs is None else target_srcs
             sr_api.record()
             user_input = sr_api.recognition()
-            self.logger_handle.info(f'识别结果为: {user_input}')
             search_results = self.search(user_input, target_srcs)
             # 音乐下载
             songinfos, songpaths = [], []

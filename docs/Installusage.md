@@ -157,7 +157,10 @@ target_srcs = [
     'netease', 'migu', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
+# 手动输入版
 client.run(target_srcs)
+# 语音版
+client.runbyspeech(target_srcs)
 ```
 
 target_srcs是一个列表对象, 用于自定义平台:

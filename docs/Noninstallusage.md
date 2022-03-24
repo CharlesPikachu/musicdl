@@ -26,7 +26,8 @@ git clone https://github.com/CharlesPikachu/musicdl.git
 在终端执行如下命令(确保自己的python已经安装了requirements.txt里的所有第三方包):
 
 ```sh
-python musicdl.py
+# 默认为手动输入版本, 语音版本需要自行修改musicdl.py最后一行, 改成dl_client.runbyspeech()
+python musicdl.py 
 ```
 
 然后根据相应的提示进行操作即可，效果如下：
