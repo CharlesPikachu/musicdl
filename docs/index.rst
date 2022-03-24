@@ -15,4 +15,5 @@ Musicdl中文文档
 	Installusage.md
 	Examples.md
 	Changelog.md
+	Recommend.md
 	Aboutme.md

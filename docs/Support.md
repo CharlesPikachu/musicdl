@@ -7,7 +7,6 @@
 |  [一听音乐](https://h5.1ting.com/)        |   ✓                |  ✓                   |
 |  [酷我音乐](http://yinyue.kuwo.cn/)       |   ✓                |  ✓                   |
 |  [酷狗音乐](http://www.kugou.com/)        |   ✓                |  ✓                   |
-|  [虾米音乐](https://www.xiami.com/)       |   ✓                |  ✓                   |
 |  [千千音乐](http://music.taihe.com/)      |   ✓                |  ✓                   |
 |  [咪咕音乐](http://www.migu.cn/)          |   ✓                |  ✓                   |
 |  [JOOX音乐](https://www.joox.com/limits)  |   ✓                |  ✓                   |

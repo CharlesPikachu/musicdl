@@ -6,11 +6,13 @@ Author:
 微信公众号:
     Charles的皮卡丘
 '''
+import json
+import time
 import base64
 import random
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''QQ音乐下载类'''
@@ -20,8 +22,8 @@ class QQMusic(Base):
         self.source = 'qqmusic'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         params = {
             'w': keyword,
@@ -96,7 +98,7 @@ class QQMusic(Base):
                 'album': filterBadCharacter(item.get('albumname', '-')),
                 'songname': filterBadCharacter(item.get('songname', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('songname', '-'))]),
+                'savename': filterBadCharacter(item.get('songname', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,

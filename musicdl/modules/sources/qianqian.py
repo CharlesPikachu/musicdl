@@ -10,7 +10,7 @@ import time
 import hashlib
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''千千音乐下载类'''
@@ -20,8 +20,8 @@ class Qianqian(Base):
         self.source = 'qianqian'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         params = {
             'sign': self.__calcSign(keyword, '16073360'),
@@ -62,7 +62,7 @@ class Qianqian(Base):
                 'album': filterBadCharacter(item.get('albumTitle', '-')),
                 'songname': filterBadCharacter(item.get('title', '-')).split('–')[0].strip(),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('title', '-')).split('–')[0].strip()]),
+                'savename': filterBadCharacter(item.get('title', f'{keyword}_{int(time.time())}')).split('–')[0].strip(),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,

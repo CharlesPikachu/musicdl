@@ -39,7 +39,6 @@ Finally, if there are any infringements, please contact me to delete this reposi
 |  [Yiting](https://h5.1ting.com/)      |   ✓                |  ✓                   |  一听音乐            |
 |  [Kuwo](http://yinyue.kuwo.cn/)       |   ✓                |  ✓                   |  酷我音乐            |
 |  [Kugou](http://www.kugou.com/)       |   ✓                |  ✓                   |  酷狗音乐            |
-|  [Xiami](https://www.xiami.com/)      |   ✓                |  ✓                   |  虾米音乐            |
 |  [Qianqian](http://music.taihe.com/)  |   ✓                |  ✓                   |  千千音乐            |
 |  [Migu](http://www.migu.cn/)          |   ✓                |  ✓                   |  咪咕音乐            |
 |  [JOOX](https://www.joox.com/limits)  |   ✓                |  ✓                   |  JOOX音乐            |
@@ -77,7 +76,7 @@ from musicdl import musicdl
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
     'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-    'netease', 'migu', 'xiami', 'joox', 'yiting',
+    'netease', 'migu', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
 client.run(target_srcs)
@@ -117,6 +116,7 @@ Options:
 - [CodeFree](https://github.com/CharlesPikachu/codefree): Make no code a reality.
 - [DeepLearningToys](https://github.com/CharlesPikachu/deeplearningtoys): Some deep learning toys implemented in pytorch.
 - [DataAnalysis](https://github.com/CharlesPikachu/dataanalysis): Some data analysis projects in charles_pikachu.
+- [Imagedl](https://github.com/CharlesPikachu/imagedl): Search and download images from specific websites.
 
 
 # More

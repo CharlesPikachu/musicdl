@@ -3,7 +3,6 @@ from .kuwo import Kuwo
 from .migu import Migu
 from .joox import Joox
 from .lizhi import Lizhi
-from .xiami import Xiami
 from .kugou import Kugou
 from .yiting import YiTing
 from .netease import Netease

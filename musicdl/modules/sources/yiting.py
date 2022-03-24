@@ -9,7 +9,7 @@ Author:
 import time
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''一听音乐下载类'''
@@ -19,8 +19,8 @@ class YiTing(Base):
         self.source = 'yiting'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         params = {
             'q': keyword,
@@ -53,7 +53,7 @@ class YiTing(Base):
                 'album': filterBadCharacter(item.get('album_name', '-')),
                 'songname': filterBadCharacter(item.get('song_name', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('song_name', '-'))]),
+                'savename': filterBadCharacter(item.get('song_name', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,

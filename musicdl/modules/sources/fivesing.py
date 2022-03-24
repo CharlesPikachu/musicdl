@@ -7,9 +7,10 @@ Author:
     Charles的皮卡丘
 '''
 import re
+import time
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''5SING音乐下载类'''
@@ -19,8 +20,8 @@ class FiveSing(Base):
         self.source = 'fivesing'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         response = self.session.get(self.search_url+keyword, headers=self.headers)
         response.encoding = 'uft-8'
@@ -68,7 +69,7 @@ class FiveSing(Base):
                 'album': filterBadCharacter(response_json['data'].get('albumName', '-')),
                 'songname': filterBadCharacter(item.get('songName', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('songName', '-'))]),
+                'savename': filterBadCharacter(item.get('songName', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,
@@ -77,7 +78,7 @@ class FiveSing(Base):
             }
             if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
-            if len(songinfos) > cfg['search_size_per_source']: break
+            if len(songinfos) == cfg['search_size_per_source']: break
         return songinfos
     '''初始化'''
     def __initialize(self):

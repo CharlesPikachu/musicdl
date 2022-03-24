@@ -2,5 +2,5 @@
     "logfilepath": "musicdl.log",
     "proxies": {},
     "search_size_per_source": 5,
-    "savedir": "downloaded"
+    "savedir": "music"
 }

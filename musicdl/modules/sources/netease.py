@@ -7,15 +7,17 @@ Author:
     Charles的皮卡丘
 '''
 import os
+import time
+import json
 import base64
 import codecs
 import requests
 from .base import Base
-from ..utils.misc import *
 from Crypto.Cipher import AES
+from ..utils import seconds2hms, filterBadCharacter
 
 
-'''用于算post的两个参数, 具体原理详见知乎：https://www.zhihu.com/question/36081767'''
+'''用于算post的两个参数, 具体原理详见知乎: https://www.zhihu.com/question/36081767'''
 class Cracker():
     def __init__(self):
         self.modulus = '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7'
@@ -58,8 +60,8 @@ class Netease(Base):
         self.cracker = Cracker()
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         params = {
             's': keyword,
@@ -103,7 +105,7 @@ class Netease(Base):
                 'album': filterBadCharacter(item.get('al', {}).get('name', '-')),
                 'songname': filterBadCharacter(item.get('name', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('name', '-'))]),
+                'savename': filterBadCharacter(item.get('name', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,

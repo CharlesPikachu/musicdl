@@ -6,9 +6,10 @@ Author:
 微信公众号:
     Charles的皮卡丘
 '''
+import time
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''荔枝FM下载类'''
@@ -18,8 +19,8 @@ class Lizhi(Base):
         self.source = 'lizhi'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         response = self.session.get(self.search_url.format(keyword), headers=self.headers)
         all_items = response.json()['audio']['data']        
@@ -40,7 +41,7 @@ class Lizhi(Base):
                 'album': filterBadCharacter(item['radio'].get('name', '-')),
                 'songname': filterBadCharacter(item['audio'].get('name', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item['audio'].get('name', '-'))]),
+                'savename': filterBadCharacter(item['audio'].get('name', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': '',
                 'filesize': filesize,

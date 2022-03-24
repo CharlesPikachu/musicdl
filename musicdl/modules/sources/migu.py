@@ -6,9 +6,10 @@ Author:
 微信公众号:
     Charles的皮卡丘
 '''
+import time
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''咪咕音乐下载类'''
@@ -18,8 +19,8 @@ class Migu(Base):
         self.source = 'migu'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         cfg = self.config.copy()
         params = {
             'ua': 'Android_migu',
@@ -61,7 +62,7 @@ class Migu(Base):
                 'album': filterBadCharacter(item.get('albums', [{'name': '-'}])[0].get('name', '-')),
                 'songname': filterBadCharacter(item.get('name', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('name', '-'))]),
+                'savename': filterBadCharacter(item.get('name', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,

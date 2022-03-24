@@ -82,7 +82,7 @@ from musicdl import musicdl
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
     'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-    'netease', 'migu', 'xiami', 'joox', 'yiting',
+    'netease', 'migu', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
 search_results = client.search('说好不哭', target_srcs)
@@ -103,7 +103,6 @@ target_srcs是一个列表对象, 用于指定音乐搜索的平台:
 - kuwo: 酷我音乐
 - joox: JOOX音乐
 - kugou: 酷狗音乐
-- xiami: 虾米音乐
 - yiting: 一听音乐
 - qqmusic: QQ音乐
 - qianqian: 千千音乐
@@ -128,7 +127,7 @@ from musicdl import musicdl
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
     'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-    'netease', 'migu', 'xiami', 'joox', 'yiting',
+    'netease', 'migu', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
 search_results = client.search('说好不哭', target_srcs)
@@ -155,7 +154,7 @@ from musicdl import musicdl
 config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
 target_srcs = [
     'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-    'netease', 'migu', 'xiami', 'joox', 'yiting',
+    'netease', 'migu', 'joox', 'yiting',
 ]
 client = musicdl.musicdl(config=config)
 client.run(target_srcs)
@@ -168,7 +167,6 @@ target_srcs是一个列表对象, 用于自定义平台:
 - kuwo: 酷我音乐
 - joox: JOOX音乐
 - kugou: 酷狗音乐
-- xiami: 虾米音乐
 - yiting: 一听音乐
 - qqmusic: QQ音乐
 - qianqian: 千千音乐

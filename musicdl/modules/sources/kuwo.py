@@ -9,7 +9,7 @@ Author:
 import time
 import requests
 from .base import Base
-from ..utils.misc import *
+from ..utils import seconds2hms, filterBadCharacter
 
 
 '''酷我音乐下载类'''
@@ -19,8 +19,8 @@ class Kuwo(Base):
         self.source = 'kuwo'
         self.__initialize()
     '''歌曲搜索'''
-    def search(self, keyword):
-        self.logger_handle.info('正在%s中搜索 ——> %s...' % (self.source, keyword))
+    def search(self, keyword, disable_print=True):
+        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
         response = self.session.get('http://kuwo.cn/search/list?key=hello', headers=self.headers)
         cookies, token = response.cookies, response.cookies.get('kw_token')
         self.headers['csrf'] = token
@@ -62,7 +62,7 @@ class Kuwo(Base):
                 'album': filterBadCharacter(item.get('album', '-')),
                 'songname': filterBadCharacter(item.get('name', '-')),
                 'savedir': cfg['savedir'],
-                'savename': '_'.join([self.source, filterBadCharacter(item.get('name', '-'))]),
+                'savename': filterBadCharacter(item.get('name', f'{keyword}_{int(time.time())}')),
                 'download_url': download_url,
                 'lyric': lyric,
                 'filesize': filesize,
