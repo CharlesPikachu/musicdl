@@ -180,7 +180,7 @@ def musicdlcmd(keyword, logfilepath, proxies, savedir, count, targets):
         dl_client.run()
     else:
         print(dl_client)
-        self.logger_handle.info(f'正在搜索 {colorize(keyword, "highlight")} 来自 {colorize("|".join([c.upper() for c in target_srcs]), "highlight")}')
+        dl_client.logger_handle.info(f'正在搜索 {colorize(keyword, "highlight")} 来自 {colorize("|".join([c.upper() for c in target_srcs]), "highlight")}')
         search_results = dl_client.search(keyword, target_srcs)
         # 打印搜索结果
         title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']
