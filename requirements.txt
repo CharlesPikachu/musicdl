@@ -2,3 +2,4 @@ pycryptodome
 requests
 alive-progress
 prettytable
+click
