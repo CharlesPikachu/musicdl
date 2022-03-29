@@ -15,7 +15,7 @@ from PyQt5.QtCore import *
 from musicdl import musicdl
 from PyQt5.QtWidgets import *
 from PyQt5 import QtWidgets, QtGui, QtCore
-from musicdl.modules.utils import Downloader, checkDir
+from musicdl.modules.utils import Downloader, touchdir
 
 
 '''音乐下载器GUI界面'''
@@ -85,7 +85,7 @@ class MusicdlGUI(QWidget):
         self.selected_music_idx = str(self.results_table.selectedItems()[0].row())
         songinfo = self.music_records.get(self.selected_music_idx)
         headers = Downloader(songinfo).headers
-        checkDir(songinfo['savedir'])
+        touchdir(songinfo['savedir'])
         with requests.get(songinfo['download_url'], headers=headers, stream=True, verify=False) as response:
             if response.status_code == 200:
                 total_size, chunk_size, download_size = int(response.headers['content-length']), 1024, 0
