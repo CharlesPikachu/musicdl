@@ -177,7 +177,7 @@ def musicdlcmd(keyword, logfilepath, proxies, savedir, count, targets):
     ] if targets is None else [src.strip() for src in targets.split(',')]
     dl_client = musicdl(config=config)
     if keyword is None:
-        dl_client.run()
+        dl_client.run(target_srcs=target_srcs)
     else:
         print(dl_client)
         search_results = dl_client.search(keyword, target_srcs)
