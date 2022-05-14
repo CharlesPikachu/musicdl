@@ -210,5 +210,7 @@ def musicdlcmd(keyword, logfilepath, proxies, savedir, count, targets):
 
 '''run'''
 if __name__ == '__main__':
-    dl_client = musicdl('config.json')
+    import os
+    rootdir = os.path.split(os.path.abspath(__file__))[0]
+    dl_client = musicdl(os.path.join(rootdir, 'config.json'))
     dl_client.run()
