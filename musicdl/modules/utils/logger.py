@@ -34,36 +34,43 @@ class Logger():
             level=logging.INFO,
             format='%(asctime)s %(levelname)-8s %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S',
-            handlers=[logging.FileHandler(logfilepath), logging.StreamHandler()],
+            handlers=[logging.FileHandler(logfilepath, encoding='utf-8'), logging.StreamHandler()],
         )
+    '''log'''
     @staticmethod
     def log(level, message):
         logging.log(level, message)
+    '''debug'''
     def debug(self, message, disable_print=False):
         if disable_print:
-            fp = open(self.logfilepath, 'a')
+            fp = open(self.logfilepath, 'a', encoding='utf-8')
             fp.write(message + '\n')
         else:
             Logger.log(logging.DEBUG, message)
+    '''info'''
     def info(self, message, disable_print=False):
         if disable_print:
-            fp = open(self.logfilepath, 'a')
+            fp = open(self.logfilepath, 'a', encoding='utf-8')
             fp.write(message + '\n')
         else:
             Logger.log(logging.INFO, message)
+    '''warning'''
     def warning(self, message, disable_print=False):
-        message = colorize(message, 'red')
         if disable_print:
-            fp = open(self.logfilepath, 'a')
+            fp = open(self.logfilepath, 'a', encoding='utf-8')
             fp.write(message + '\n')
         else:
+            if '\033[31m' not in message:
+                message = colorize(message, 'red')
             Logger.log(logging.WARNING, message)
+    '''error'''
     def error(self, message, disable_print=False):
-        message = colorize(message, 'red')
         if disable_print:
-            fp = open(self.logfilepath, 'a')
+            fp = open(self.logfilepath, 'a', encoding='utf-8')
             fp.write(message + '\n')
         else:
+            if '\033[31m' not in message:
+                message = colorize(message, 'red')
             Logger.log(logging.ERROR, message)
 
 
