@@ -12,3 +12,4 @@
 |  [JOOX音乐](https://www.joox.com/limits)  |   ✓                |  ✓                   |
 |  [5SING音乐](http://5sing.kugou.com/)     |   ✓                |  ✓                   |
 |  [网易云音乐](https://music.163.com/)     |   ✓                |  ✓                   |
+|  [喜马拉雅](https://www.ximalaya.com/)    |   ✓                |  ✓                   |

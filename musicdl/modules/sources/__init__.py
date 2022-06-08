@@ -9,3 +9,4 @@ from .netease import Netease
 from .qqmusic import QQMusic
 from .qianqian import Qianqian
 from .fivesing import FiveSing
+from .ximalaya import Ximalaya

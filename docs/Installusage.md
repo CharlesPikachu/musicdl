@@ -108,6 +108,7 @@ target_srcs是一个列表对象, 用于指定音乐搜索的平台:
 - qianqian: 千千音乐
 - fivesing: 5SING音乐
 - netease: 网易云音乐
+- ximalaya: 喜马拉雅
 
 search_results为歌曲搜索的结果, 是一个字典对象, 格式如下:
 
@@ -175,3 +176,4 @@ target_srcs是一个列表对象, 用于自定义平台:
 - qianqian: 千千音乐
 - fivesing: 5SING音乐
 - netease: 网易云音乐
+- ximalaya: 喜马拉雅

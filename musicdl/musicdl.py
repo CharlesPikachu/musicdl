@@ -134,7 +134,7 @@ class musicdl():
         supported_sources = {
             'kuwo': Kuwo, 'joox': Joox, 'migu': Migu, 'kugou': Kugou,
             'lizhi': Lizhi, 'yiting': YiTing, 'netease': Netease, 'qqmusic': QQMusic,
-            'qianqian': Qianqian, 'fivesing': FiveSing,
+            'qianqian': Qianqian, 'fivesing': FiveSing, 'ximalaya': Ximalaya,
         }
         for key, value in supported_sources.items():
             setattr(self, key, value(copy.deepcopy(self.config), self.logger_handle))

@@ -4,5 +4,5 @@ from .utils import (
     SpeechRecognition, Downloader, colorize
 )
 from .sources import (
-    Kuwo, Migu, Joox, Lizhi, Kugou, YiTing, Netease, QQMusic, Qianqian, FiveSing
+    Kuwo, Migu, Joox, Lizhi, Kugou, YiTing, Netease, QQMusic, Qianqian, FiveSing, Ximalaya
 )
