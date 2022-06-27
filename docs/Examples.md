@@ -6,6 +6,7 @@
 |  :----:                       |   :----:                                                      |   :----:                                                                                       |
 |  音乐下载器GUI界面            |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg)  |   [click](https://github.com/CharlesPikachu/musicdl/tree/master/examples/musicdlgui)           |
 |  歌手歌词分析                 |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig)  |   [click](https://github.com/CharlesPikachu/musicdl/tree/master/examples/singerlyricsanalysis) |
+|  歌词获取歌曲片段             |   [click]()                                                   |   [click](https://github.com/CharlesPikachu/musicdl/tree/master/examples/searchlyrics)         |
 
 
 #### 项目使用
@@ -24,4 +25,12 @@ python musicdlgui.py
 
 ```python
 python singerlyricsanalysis.py
+```
+
+**3.歌词获取歌曲片段**
+
+在终端运行如下命令即可:
+
+```python
+python searchlyrics.py
 ```
