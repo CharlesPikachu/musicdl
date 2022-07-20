@@ -52,7 +52,7 @@ Finally, if there are any infringements, please contact me to delete this reposi
 |  :----:                               |   :----:                                                     |  :----:                                       |  :----:              |
 |  musicdlgui                           |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg) |  [click](./examples/musicdlgui)               |  音乐下载器GUI界面   |
 |  singerlyricsanalysis                 |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig) |  [click](./examples/singerlyricsanalysis)     |  歌手歌词分析        |
-|  searchlyrics                         |   [click]()                                                  |  [click](./examples/searchlyrics)             |  歌词获取歌曲片段    |
+|  searchlyrics                         |   [click](https://mp.weixin.qq.com/s/Vmc1IhuhMJ6C5vBwBe43Pg) |  [click](./examples/searchlyrics)             |  歌词获取歌曲片段    |
 
 
 # Install
