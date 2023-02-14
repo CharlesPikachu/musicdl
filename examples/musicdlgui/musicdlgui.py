@@ -94,7 +94,7 @@ class MusicdlGUI(QWidget):
                         if chunk:
                             fp.write(chunk)
                             download_size += len(chunk)
-                            self.bar_download.setValue(download_size / total_size * 100)
+                            self.bar_download.setValue(int(download_size / total_size * 100))
         QMessageBox().information(self, '下载完成', '歌曲%s已经下载完成, 保存在当前路径的%s文件夹下' % (songinfo['savename'], songinfo['savedir']))
         self.bar_download.setValue(0)
     '''搜索'''
