@@ -75,18 +75,26 @@ class Netease(Base):
         songinfos = []
         for item in all_items:
             if item['privilege']['fl'] == 0: continue
-            for q in ['h', 'm', 'l']:
-                params = {
-                    'ids': [item['id']],
-                    'br': item[q]['br'],
-                    'csrf_token': ''
-                }
-                response = self.session.post(self.player_url, headers=self.headers, data=self.cracker.get(params))
-                response_json = response.json()
-                if response_json.get('code') == 200: break
-            if response_json.get('code') != 200: continue
-            download_url = response_json['data'][0]['url']
-            if not download_url: continue
+            try:
+                for q in ['h', 'm', 'l']:
+                    params = {
+                        'ids': [item['id']],
+                        'br': item[q]['br'],
+                        'csrf_token': ''
+                    }
+                    response = self.session.post(self.player_url, headers=self.headers, data=self.cracker.get(params))
+                    response_json = response.json()
+                    if response_json.get('code') == 200: break
+                if response_json.get('code') != 200: continue
+                download_url = response_json['data'][0]['url']
+                if not download_url: continue
+                filesize = str(round(int(response_json['data'][0]['size']) / 1024 / 1024, 2)) + 'MB'
+                ext = response_json['data'][0]['type']
+            except:
+                response = self.session.get(self.downloadinfo_url.format(item['id']), headers=self.info_headers)
+                response_json = json.loads(response.text)
+                download_url = response_json[0]['url']
+                filesize, ext = '-', 'mp3'
             params = {
                 'csrf_token': '',
                 'id': item['id'],
@@ -95,8 +103,6 @@ class Netease(Base):
             }
             response = self.session.post(self.lyric_url, headers=self.headers, data=self.cracker.get(params))
             lyric = response.json().get('lrc', {}).get('lyric', '')
-            filesize = str(round(int(item[q]['size'])/1024/1024, 2)) + 'MB'
-            ext = download_url.split('.')[-1]
             duration = int(item.get('dt', 0) / 1000)
             songinfo = {
                 'source': self.source,
@@ -126,8 +132,12 @@ class Netease(Base):
             'Host': 'music.163.com',
             'Origin': 'https://music.163.com',
             'Referer': 'https://music.163.com/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.32 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
+        }
+        self.info_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
         }
         self.search_url = 'http://music.163.com/weapi/cloudsearch/get/web?csrf_token='
         self.player_url = 'http://music.163.com/weapi/song/enhance/player/url?csrf_token='
+        self.downloadinfo_url = 'http://api.injahow.cn/meting/?type=song&id={}'
         self.lyric_url = 'https://music.163.com/weapi/song/lyric'
