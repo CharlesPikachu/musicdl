@@ -115,6 +115,7 @@ class QQMusic(Base):
             }
             if not songinfo['album']: songinfo['album'] = '-'
             songinfos.append(songinfo)
+            if len(songinfos) == cfg['search_size_per_source']: break
         return songinfos
     '''初始化'''
     def __initialize(self):
