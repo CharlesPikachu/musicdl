@@ -40,12 +40,15 @@ class Migu(Base):
             for rate in sorted(item.get('rateFormats', []), key=lambda x: int(x['size']), reverse=True):
                 if (int(rate['size']) == 0) or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')): continue
                 ext = 'flac' if rate.get('formatType') == 'SQ' else 'mp3'
-                download_url = self.player_url.format(
-                    copyrightId=item['copyrightId'], 
-                    contentId=item['contentId'], 
-                    toneFlag=rate['formatType'],
-                    resourceType=rate['resourceType']
-                )
+                if ext != 'flac':
+                    download_url = self.player_url.format(
+                        copyrightId=item['copyrightId'], 
+                        contentId=item['contentId'], 
+                        toneFlag=rate['formatType'],
+                        resourceType=rate['resourceType']
+                    )
+                else:
+                    download_url = f'https://xiaoai.sec-an.cn/play?s=migu&id={item["copyrightId"]}'
                 filesize = str(round(int(rate['size'])/1024/1024, 2)) + 'MB'
                 break
             if not download_url: continue
