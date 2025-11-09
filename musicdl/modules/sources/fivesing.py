@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of FiveSingClient: https://5sing.kugou.com/index.html
+    Implementation of FiveSingMusicClient: https://5sing.kugou.com/index.html
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -13,11 +13,11 @@ from urllib.parse import urlencode
 from rich.progress import Progress
 
 
-'''FiveSingClient'''
-class FiveSingClient(BaseMusicClient):
-    source = 'FiveSingClient'
+'''FiveSingMusicClient'''
+class FiveSingMusicClient(BaseMusicClient):
+    source = 'FiveSingMusicClient'
     def __init__(self, **kwargs):
-        super(FiveSingClient, self).__init__(**kwargs)
+        super(FiveSingMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }

@@ -1,13 +1,13 @@
 '''initialize'''
 from .base import BaseMusicClient
-from .fivesing import FiveSingClient
 from ..utils import BaseModuleBuilder
+from .fivesing import FiveSingMusicClient
 
 
 '''MusicClientBuilder'''
 class MusicClientBuilder(BaseModuleBuilder):
     REGISTERED_MODULES = {
-        'FiveSingClient': FiveSingClient, 
+        'FiveSingMusicClient': FiveSingMusicClient, 
     }
 
 
