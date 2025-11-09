@@ -1,5 +1,4 @@
 '''initialize'''
-from .downloader import Downloader
-from .speech import SpeechRecognition
-from .logger import Logger, printTable, colorize
-from .misc import touchdir, seconds2hms, loadConfig, filterBadCharacter
+from .modulebuilder import BaseModuleBuilder
+from .logger import LoggerHandle, colorize, printtable
+from .misc import legalizestring, touchdir, seconds2hms

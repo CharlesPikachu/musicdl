@@ -1,90 +1,94 @@
 '''
 Function:
-    5SING音乐下载: http://5sing.kugou.com/
+    Implementation of FiveSingClient: https://5sing.kugou.com/index.html
 Author:
-    Charles
-微信公众号:
+    Zhenchao Jin
+WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
-import re
-import time
-import requests
-from .base import Base
-from ..utils import seconds2hms, filterBadCharacter
+import copy
+from .base import BaseMusicClient
+from ..utils import legalizestring
+from urllib.parse import urlencode
+from rich.progress import Progress
 
 
-'''5SING音乐下载类'''
-class FiveSing(Base):
-    def __init__(self, config, logger_handle, **kwargs):
-        super(FiveSing, self).__init__(config, logger_handle, **kwargs)
-        self.source = 'fivesing'
-        self.__initialize()
-    '''歌曲搜索'''
-    def search(self, keyword, disable_print=True):
-        if not disable_print: self.logger_handle.info('正在%s中搜索 >>>> %s' % (self.source, keyword))
-        cfg = self.config.copy()
-        response = self.session.get(self.search_url+keyword, headers=self.headers)
-        response.encoding = 'uft-8'
-        all_items = re.findall(r"dataList = '(.*?)';", response.text)[0]
-        all_items = all_items.replace(r'<em class=\\\"keyword\\\">', '')
-        all_items = all_items.replace(r'<\\/em>', '')
-        all_items = eval(all_items.replace(r'\"', '"'))
-        songinfos = []
-        for item in all_items:
-            try:
-                item['songName'] = item['songName'].encode('utf-8').decode('unicode_escape')
-            except:
-                item['songName'] = '解码失败: ' + item['songName']
-            try:
-                item['singer'] = item['singer'].encode('utf-8').decode('unicode_escape')
-            except:
-                item['singer'] = '解码失败: ' + item['singer']
-            params = {
-                'songid': str(item['songId']),
-                'songtype': 'yc' if 'yc' in item['downloadurl'] else 'fc'
-            }
-            response = self.session.get(self.songinfo_url, headers=self.headers, params=params)
-            response_json = response.json()
-            if response_json.get('code') != 1000: continue
-            for quality in ['sq', 'hq', 'lq']:
-                download_url = response_json.get('data', {}).get(f'{quality}url', '')
-                if download_url: break
-            if not download_url: continue
-            filesize = str(round(int(response_json['data'][f'{quality}size'])/1024/1024, 2)) + 'MB'
-            ext = response_json['data'][f'{quality}ext']
-            params = {
-                'songtype': 'yc' if 'yc' in item['downloadurl'] else 'fc',
-                'songid': str(item['songId']),
-                'songfields': '',
-                'userfields': '',
-            }
-            response = self.session.get(self.lyric_url, headers=self.headers, params=params)
-            response_json = response.json()
-            lyric = response_json.get('data', {}).get('dynamicWords', '')
-            duration = '-:-:-'
-            songinfo = {
-                'source': self.source,
-                'songid': str(item['songId']),
-                'singers': filterBadCharacter(item.get('singer', '-')),
-                'album': filterBadCharacter(response_json['data'].get('albumName', '-')),
-                'songname': filterBadCharacter(item.get('songName', '-')),
-                'savedir': cfg['savedir'],
-                'savename': filterBadCharacter(item.get('songName', f'{keyword}_{int(time.time())}')),
-                'download_url': download_url,
-                'lyric': lyric,
-                'filesize': filesize,
-                'ext': ext,
-                'duration': duration
-            }
-            if not songinfo['album']: songinfo['album'] = '-'
-            songinfos.append(songinfo)
-            if len(songinfos) == cfg['search_size_per_source']: break
-        return songinfos
-    '''初始化'''
-    def __initialize(self):
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
+'''FiveSingClient'''
+class FiveSingClient(BaseMusicClient):
+    source = 'FiveSingClient'
+    def __init__(self, **kwargs):
+        super(FiveSingClient, self).__init__(**kwargs)
+        self.default_search_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }
-        self.search_url = 'http://search.5sing.kugou.com/?keyword='
-        self.songinfo_url = 'http://mobileapi.5sing.kugou.com/song/getSongUrl'
-        self.lyric_url = 'http://mobileapi.5sing.kugou.com/song/newget'
+        self.default_download_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+        }
+        self.default_headers = self.default_search_headers
+        self._initsession()
+    '''_constructsearchurls'''
+    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+        # search rules
+        default_rule = {'keyword': keyword, 'sort': 1, 'page': 1, 'filter': 0, 'type': 0}
+        default_rule.update(rule)
+        # construct search urls based on search rules
+        base_url = 'http://search.5sing.kugou.com/home/json?'
+        search_urls, page_size, count = [], 10, 0
+        while self.search_size_per_source > count:
+            page_rule = copy.deepcopy(default_rule)
+            page_rule['page'] = int(count // page_size) + 1
+            search_urls.append(base_url + urlencode(page_rule))
+            count += page_size
+        # return
+        return search_urls
+    '''_search'''
+    def _search(self, search_url: str, request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # successful
+        try:
+            # --search results
+            resp = self.get(search_url, **request_overrides)
+            resp.raise_for_status()
+            search_results = resp.json()['list']
+            for search_result in search_results:
+                # --download results
+                if 'songId' not in search_result or 'typeEname' not in search_result:
+                    continue
+                params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname']}
+                resp = self.get('http://mobileapi.5sing.kugou.com/song/getSongUrl', params=params)
+                if (resp is None) or (resp.status_code not in [200]) or (resp.json()['code'] not in [1000]):
+                    continue
+                download_result: dict = resp.json()
+                for quality in ['sq', 'hq', 'lq']:
+                    data: dict = download_result.get('data', {})
+                    download_url = data.get(f'{quality}url', '').strip() or data.get(f'{quality}url_backup', '').strip()
+                    ext = data.get(f'{quality}ext', 'mp3').strip() or 'mp3'
+                    file_size = str(data.get(f'{quality}size', '0')).strip() or '0'
+                    file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
+                    if download_url: break
+                if not download_url: continue
+                # --lyric results
+                params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname'], 'songfields': '', 'userfields': ''}
+                resp = self.session.get('http://mobileapi.5sing.kugou.com/song/newget', params=params)
+                if (resp is not None) and (resp.status_code in [200]):
+                    lyric_result: dict = resp.json()
+                else:
+                    lyric_result = {}
+                lyric = lyric_result.get('data', {}).get('dynamicWords', 'NULL').strip() or 'NULL'
+                # --construct song_info
+                song_info = dict(
+                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
+                    download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration='-:-:-',
+                    song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
+                    singers=legalizestring(search_result.get('singer', 'NULL'), replace_null_string='NULL'), 
+                    album=legalizestring(lyric_result.get('data', {}).get('albumName', 'NULL'), replace_null_string='NULL')
+                )
+                # --append to song_infos
+                song_infos.append(song_info)
+            # --update progress
+            progress.advance(progress_id, 1)
+            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} [success]")
+        # failure
+        except Exception as err:
+            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} [error: {err}]")
+        # return
+        return song_infos

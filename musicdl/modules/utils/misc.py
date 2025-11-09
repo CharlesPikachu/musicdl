@@ -1,53 +1,62 @@
 '''
 Function:
-    一些工具函数
+    Implementation of common utils
 Author:
-    Charles
-微信公众号:
+    Zhenchao Jin
+WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
-import os
 import re
-import json
+import os
+import html
+import emoji
+import bleach
+import unicodedata
+from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filepath, sanitize_filename
 
 
-'''新建文件夹'''
-def touchdir(dirname):
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-        return False
-    return True
+'''touchdir'''
+def touchdir(directory, exist_ok=True, mode=511, auto_sanitize=True):
+    if auto_sanitize: directory = sanitize_filepath(directory)
+    return os.makedirs(directory, exist_ok=exist_ok, mode=mode)
 
 
-'''导入配置文件'''
-def loadConfig(filepath='config.json'):
-    f = open(filepath, 'r', encoding='utf-8')
-    return json.load(f)
-
-
-'''清除可能出问题的字符'''
-def filterBadCharacter(string, fit_gbk=True):
-    need_removed_strs = ['<em>', '</em>', '<', '>', '\\', '/', '?', ':', '"', '：', '|', '？', '*']
-    for item in need_removed_strs:
-        string = string.replace(item, '')
+'''legalizestring'''
+def legalizestring(string: str, fit_gbk: bool = True, max_len: int = 255, fit_utf8: bool = True, replace_null_string: str = 'NULL'):
+    string = str(string)
+    string = string.replace(r'\"', '"')
+    string = re.sub(r"<\\/", "</", string)
+    string = re.sub(r"\\/>", "/>", string)
+    string = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), string)
+    # html.unescape
+    for _ in range(2):
+        new_string = html.unescape(string)
+        if new_string == string: break
+        string = new_string
+    # bleach.clean
     try:
-        rule = re.compile(u'[\U00010000-\U0010ffff]')
+        string = BeautifulSoup(string, "lxml").get_text(separator="")
     except:
-        rule = re.compile(u'[\uD800-\uDBFF][\uDC00-\uDFFF]')
-    string = rule.sub('', string)
-    if fit_gbk:
-        string_clean = ''
-        for c in string:
-            try: 
-                c = c.encode('gbk').decode('gbk')
-                string_clean += c
-            except:
-                continue
-        string = string_clean
-    return string.strip().encode('utf-8', 'ignore').decode('utf-8')
+        string = bleach.clean(string, tags=[], attributes={}, strip=True)
+    # unicodedata.normalize
+    string = unicodedata.normalize("NFC", string)
+    # emoji.replace_emoji
+    string = emoji.replace_emoji(string, replace="")
+    # isprintable
+    string = "".join([ch for ch in string if ch.isprintable() and not unicodedata.category(ch).startswith("C")])
+    # sanitize_filename
+    string = sanitize_filename(string, max_len=max_len)
+    # fix encoding
+    if fit_gbk: string = string.encode("gbk", errors="ignore").decode("gbk", errors="ignore")
+    if fit_utf8: string = string.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
+    # return
+    string = re.sub(r"\s+", " ", string).strip()
+    if not string: string = replace_null_string
+    return string
 
 
-'''秒转时分秒'''
+'''seconds2hms'''
 def seconds2hms(seconds):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
