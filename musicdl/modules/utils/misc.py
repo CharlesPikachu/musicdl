@@ -11,6 +11,8 @@ import os
 import html
 import emoji
 import bleach
+import filetype
+import requests
 import unicodedata
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
@@ -61,3 +63,31 @@ def seconds2hms(seconds):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return '%02d:%02d:%02d' % (h, m, s)
+
+
+'''probesongurl'''
+def probesongurl(url: str, headers: dict = {}, timeout: int = 30):
+    resp = requests.get(url, timeout=timeout, headers=headers)
+    resp.raise_for_status()
+    headers = resp.headers
+    if headers.get('transfer-encoding') != 'chunked':
+        file_size = int(resp.headers.get('content-length'))
+        file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
+    else:
+        file_size = '0.00 MB'
+    ctype = headers.get('content-type')
+    if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
+        ctype = 'audio/mpeg'
+    ctype_to_ext_mapping = {
+        "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", 
+        "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus",
+    }
+    ext = ctype_to_ext_mapping.get(ctype, 'NULL')
+    if ext == 'NULL':
+        kind = filetype.guess(resp.content)
+        ext = kind.extension if kind else 'NULL'
+        if ext == "mpga": ext = 'mp3'
+    probe_result = {
+        "file_size": file_size, "ctype": ctype, "ext": ext, 'download_url': url
+    }
+    return probe_result

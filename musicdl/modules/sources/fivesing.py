@@ -54,7 +54,7 @@ class FiveSingMusicClient(BaseMusicClient):
                 if 'songId' not in search_result or 'typeEname' not in search_result:
                     continue
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname']}
-                resp = self.get('http://mobileapi.5sing.kugou.com/song/getSongUrl', params=params)
+                resp = self.get('http://mobileapi.5sing.kugou.com/song/getSongUrl', params=params, **request_overrides)
                 if (resp is None) or (resp.status_code not in [200]) or (resp.json()['code'] not in [1000]):
                     continue
                 download_result: dict = resp.json()
@@ -68,7 +68,7 @@ class FiveSingMusicClient(BaseMusicClient):
                 if not download_url: continue
                 # --lyric results
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname'], 'songfields': '', 'userfields': ''}
-                resp = self.session.get('http://mobileapi.5sing.kugou.com/song/newget', params=params)
+                resp = self.get('http://mobileapi.5sing.kugou.com/song/newget', params=params, **request_overrides)
                 if (resp is not None) and (resp.status_code in [200]):
                     lyric_result: dict = resp.json()
                 else:
