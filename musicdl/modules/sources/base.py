@@ -60,7 +60,7 @@ class BaseMusicClient():
         touchdir(work_dir)
         return work_dir
     '''_search'''
-    def _search(self, search_url: str, request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         raise NotImplementedError('not be implemented')
     '''search'''
     def search(self, keyword: str, num_threadings=5, request_overrides: dict = {}, rule: dict = {}):
@@ -77,7 +77,7 @@ class BaseMusicClient():
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for search_url in search_urls:
                     submitted_tasks.append(pool.submit(
-                        self._search, search_url, request_overrides, song_infos, progress, progress_id
+                        self._search, keyword, search_url, request_overrides, song_infos, progress, progress_id
                     ))
                 for _ in as_completed(submitted_tasks):
                     num_searched_urls = int(progress.tasks[progress_id].completed)

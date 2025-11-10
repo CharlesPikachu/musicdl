@@ -46,7 +46,7 @@ class KuwoMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_search'''
-    def _search(self, search_url: str, request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # successful
         try:
             # --search results

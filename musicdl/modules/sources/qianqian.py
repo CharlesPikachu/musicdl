@@ -1,43 +1,59 @@
 '''
 Function:
-    Implementation of KugouMusicClient: http://www.kugou.com/
+    Implementation of QianqianMusicClient: http://music.taihe.com/
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import time
 import copy
-import base64
+import hashlib
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, seconds2hms
+from ..utils import seconds2hms, legalizestring
 
 
-'''KugouMusicClient'''
-class KugouMusicClient(BaseMusicClient):
-    source = 'FiveSingMusicClient'
+'''QianqianMusicClient'''
+class QianqianMusicClient(BaseMusicClient):
+    source = 'QianqianMusicClient'
     def __init__(self, **kwargs):
-        super(KugouMusicClient, self).__init__(**kwargs)
+        super(QianqianMusicClient, self).__init__(**kwargs)
+        self.appid = '16073360'
         self.default_search_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+            'Referer': 'https://music.91q.com/',
+            'From': 'Web',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
         }
         self.default_download_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''_addsignandtstoparams'''
+    def _addsignandtstoparams(self, params: dict):
+        secret = '0b50b02fd0d73a9c4c8c3a781c30845f'
+        params['timestamp'] = str(int(time.time()))
+        keys = sorted(params.keys())
+        string = "&".join(f"{k}={params[k]}" for k in keys)
+        params['sign'] = hashlib.md5((string + secret).encode('utf-8')).hexdigest()
+        return params
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = {}):
         # search rules
-        default_rule = {'keyword': keyword, 'page': 1, 'pagesize': 10}
+        default_rule = {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': self.appid}
         default_rule.update(rule)
         # construct search urls based on search rules
-        base_url = 'http://songsearch.kugou.com/song_search_v2?'
+        base_url = 'https://music.91q.com/v1/search?'
         search_urls, page_size, count = [], 10, 0
         while self.search_size_per_source > count:
             page_rule = copy.deepcopy(default_rule)
-            page_rule['page'] = int(count // page_size) + 1
+            page_rule['pageNo'] = str(int(count // page_size) + 1)
+            page_rule = self._addsignandtstoparams(params=page_rule)
             search_urls.append(base_url + urlencode(page_rule))
             count += page_size
         # return
@@ -49,43 +65,38 @@ class KugouMusicClient(BaseMusicClient):
             # --search results
             resp = self.get(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['data']['lists']
+            search_results = resp.json()['data']['typeTrack']
             for search_result in search_results:
                 # --download results
-                if 'FileHash' not in search_result:
+                if 'TSID' not in search_result:
                     continue
-                resp = self.get(f"http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash={search_result['FileHash']}", **request_overrides)
+                params = {'TSID': search_result['TSID'], 'appid': self.appid}
+                params = self._addsignandtstoparams(params=params)
+                resp = self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)
                 if (resp is None) or (resp.status_code not in [200]):
                     continue
                 download_result: dict = resp.json()
-                download_url = download_result.get('url') or download_result.get('backup_url')
+                download_url = download_result.get('data', {}).get('path', '') or download_result.get('data', {}).get('trail_audio_info', {}).get('path', '')
                 if not download_url: continue
-                if isinstance(download_url, list): download_url = download_url[0]
-                file_size = str(download_result.get('fileSize', '0')).strip() or '0'
+                file_size = str(download_result.get('size', '0')).strip() or '0'
                 file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
-                duration = int(str(download_result.get('timeLength', '0')).strip() or '0')
+                duration = int(str(download_result.get('duration', '0')).strip() or '0')
                 duration = seconds2hms(duration)
                 # --lyric results
-                params = {'keyword': search_result.get('FileName', ''), 'duration': search_result.get('Duration', '99999'), 'hash': search_result['FileHash']}
-                resp = self.get('http://lyrics.kugou.com/search', params=params, **request_overrides)
+                resp = self.get(search_result['lyric'], **request_overrides)
                 if (resp is not None) and (resp.status_code in [200]):
-                    lyric_result, lyric = resp.json(), 'NULL'
-                    try:
-                        id = lyric_result['candidates'][0]['id']
-                        accesskey = lyric_result['candidates'][0]['accesskey']
-                        lyric = self.get(f'http://lyrics.kugou.com/download?ver=1&client=pc&id={id}&accesskey={accesskey}&fmt=lrc&charset=utf8').json()['content']
-                        lyric = base64.b64decode(lyric).decode('utf-8')
-                    except:
-                        lyric = 'NULL'
+                    resp.encoding = 'utf-8'
+                    lyric = resp.text or 'NULL'
+                    lyric_result = dict(lyric=lyric)
                 else:
                     lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url=download_url, ext=download_result.get('extName', 'NULL'), file_size=file_size, lyric=lyric, duration=duration,
-                    song_name=legalizestring(search_result.get('SongName', 'NULL'), replace_null_string='NULL'), 
-                    singers=legalizestring(search_result.get('SingerName', 'NULL'), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('AlbumName', 'NULL'), replace_null_string='NULL')
+                    download_url=download_url, ext=download_result.get('format', 'NULL'), file_size=file_size, lyric=lyric, duration=duration,
+                    song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
+                    singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('artist', [])]), replace_null_string='NULL'), 
+                    album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL')
                 )
                 # --append to song_infos
                 song_infos.append(song_info)
