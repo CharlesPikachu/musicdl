@@ -73,7 +73,10 @@ class FiveSingMusicClient(BaseMusicClient):
                     lyric_result: dict = resp.json()
                 else:
                     lyric_result = {}
-                lyric = lyric_result.get('data', {}).get('dynamicWords', 'NULL').strip() or 'NULL'
+                try:
+                    lyric = str(lyric_result.get('data', {}).get('dynamicWords', 'NULL')).strip() or 'NULL'
+                except:
+                    lyric = 'NULL'
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
