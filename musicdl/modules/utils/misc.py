@@ -10,6 +10,7 @@ import re
 import os
 import html
 import emoji
+import pickle
 import bleach
 import filetype
 import requests
@@ -91,3 +92,15 @@ def probesongurl(url: str, headers: dict = {}, timeout: int = 30):
         "file_size": file_size, "ctype": ctype, "ext": ext, 'download_url': url
     }
     return probe_result
+
+
+'''cachecookies'''
+def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cookies: dict = {}):
+    if os.path.isfile(cache_cookie_path):
+        with open(cache_cookie_path, 'rb') as fp:
+            cookies = pickle.load(fp)
+    else:
+        cookies = dict()
+    with open(cache_cookie_path, 'wb') as fp:
+        cookies[client_name] = client_cookies
+        pickle.dump(cookies, fp)
