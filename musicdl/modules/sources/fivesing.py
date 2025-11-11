@@ -8,9 +8,9 @@ WeChat Official Account (微信公众号):
 '''
 import copy
 from .base import BaseMusicClient
-from ..utils import legalizestring
 from urllib.parse import urlencode
 from rich.progress import Progress
+from ..utils import legalizestring, AudioLinkTester
 
 
 '''FiveSingMusicClient'''
@@ -66,6 +66,8 @@ class FiveSingMusicClient(BaseMusicClient):
                     file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
                     if download_url: break
                 if not download_url: continue
+                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                if not download_url_status['ok']: continue
                 # --lyric results
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname'], 'songfields': '', 'userfields': ''}
                 resp = self.get('http://mobileapi.5sing.kugou.com/song/newget', params=params, **request_overrides)
@@ -80,7 +82,7 @@ class FiveSingMusicClient(BaseMusicClient):
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration='-:-:-',
+                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration='-:-:-',
                     song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('singer', 'NULL'), replace_null_string='NULL'), 
                     album=legalizestring(lyric_result.get('data', {}).get('albumName', 'NULL'), replace_null_string='NULL')

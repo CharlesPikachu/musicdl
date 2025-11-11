@@ -9,10 +9,10 @@ WeChat Official Account (微信公众号):
 import re
 import os
 import html
+import copy
 import emoji
 import pickle
 import bleach
-import filetype
 import requests
 import unicodedata
 from bs4 import BeautifulSoup
@@ -67,10 +67,14 @@ def seconds2hms(seconds):
 
 
 '''probesongurl'''
-def probesongurl(url: str, headers: dict = {}, timeout: int = 30):
-    resp = requests.get(url, timeout=timeout, headers=headers)
+def probesongurl(url: str, headers: dict = {}, timeout: int = 30, cookies: dict = {}, request_overrides: dict = {}):
+    if 'headers' not in request_overrides: request_overrides['headers'] = headers
+    if 'timeout' not in request_overrides: request_overrides['timeout'] = timeout
+    if 'cookies' not in request_overrides: request_overrides['cookies'] = cookies
+    resp = requests.head(url, **request_overrides)
     resp.raise_for_status()
     headers = resp.headers
+    resp.close()
     if headers.get('transfer-encoding') != 'chunked':
         file_size = int(resp.headers.get('content-length'))
         file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
@@ -81,13 +85,9 @@ def probesongurl(url: str, headers: dict = {}, timeout: int = 30):
         ctype = 'audio/mpeg'
     ctype_to_ext_mapping = {
         "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", 
-        "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus",
+        "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg",
     }
     ext = ctype_to_ext_mapping.get(ctype, 'NULL')
-    if ext == 'NULL':
-        kind = filetype.guess(resp.content)
-        ext = kind.extension if kind else 'NULL'
-        if ext == "mpga": ext = 'mp3'
     probe_result = {
         "file_size": file_size, "ctype": ctype, "ext": ext, 'download_url': url
     }
@@ -104,3 +104,95 @@ def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cook
     with open(cache_cookie_path, 'wb') as fp:
         cookies[client_name] = client_cookies
         pickle.dump(cookies, fp)
+
+
+'''AudioLinkTester'''
+class AudioLinkTester(object):
+    MAGIC = [
+        (b"ID3", "mp3"), (b"\xFF\xFB", "mp3"), (b"fLaC", "flac"), (b"RIFF", "wav"), (b"OggS", "ogg"), (b"MThd", "midi"), (b"\x00\x00\x00\x18ftyp", "mp4/m4a"),
+    ]
+    AUDIO_CT_PREFIX = "audio/"
+    AUDIO_CT_EXTRA = {
+        "application/octet-stream", "application/x-flac", "application/flac",
+    }
+    def __init__(self, timeout=(5, 15), headers={}, cookies={}):
+        self.session = requests.Session()
+        self.timeout = timeout
+        self.headers = {
+            'Accept': '*/*',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+        }
+        self.headers.update(headers)
+        self.cookies = cookies
+    '''isaudioct'''
+    @staticmethod
+    def isaudioct(ct: str):
+        if not ct:
+            return False
+        ct = ct.lower().split(";", 1)[0].strip()
+        return ct.startswith(AudioLinkTester.AUDIO_CT_PREFIX) or ct in AudioLinkTester.AUDIO_CT_EXTRA
+    '''sniffmagic'''
+    @staticmethod
+    def sniffmagic(b: str):
+        for sig, fmt in AudioLinkTester.MAGIC:
+            if b.startswith(sig):
+                return fmt
+        if len(b) >= 2 and b[0] == 0xFF and (b[1] & 0xF0) == 0xF0:
+            return "aac/adts"
+        return None
+    '''probe'''
+    def probe(self, url: str, request_overrides: dict = {}):
+        if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
+        if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
+        if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
+        outputs = dict(ok=False, status=0, method="", final_url=None, ctype=None, clen=None, range=None, fmt=None, reason="")
+        # HEAD test
+        try:
+            resp = self.session.head(url, allow_redirects=True, **request_overrides)
+            clen = resp.headers.get("Content-Length")
+            clen = int(clen) if clen and clen.isdigit() else None
+            outputs.update(dict(
+                status=resp.status_code, method="HEAD", final_url=str(resp.url), ctype=resp.headers.get("Content-Type"),
+                clen=clen, range=(resp.headers.get("Accept-Ranges") or "").lower() == "bytes",
+            ))
+            if 200 <= resp.status_code < 300 and (self.isaudioct(outputs["ctype"]) and (outputs["clen"] or outputs["range"])):
+                outputs.update(dict(
+                    ok=True, reason="HEAD success"
+                ))
+                return outputs
+        except Exception as err:
+            outputs["reason"] = f"HEAD error: {err}"
+        # RANGEGET test
+        try:
+            headers = copy.deepcopy(self.headers)
+            headers["Range"] = "bytes=0-15"
+            resp = self.session.get(url, stream=True, allow_redirects=True, **request_overrides)
+            outputs.update(dict(
+                status=resp.status_code, method="RANGEGET", final_url=str(resp.url),
+            ))
+            if resp.status_code not in (200, 206):
+                outputs["reason"] = f"RANGEGET error: response status {resp.status_code}"
+                return outputs
+            chunk = b""
+            for b in resp.iter_content(chunk_size=16):
+                chunk = b
+                break
+            resp.close()
+            outputs["ctype"] = outputs["ctype"] or resp.headers.get("Content-Type")
+            outputs["range"] = outputs["range"] or (resp.status_code == 206) or (resp.headers.get("Content-Range") is not None)
+            clen = resp.headers.get("Content-Length") or (resp.headers.get("Content-Range") or "").split("/")[-1]
+            if clen and clen.isdigit():
+                outputs["clen"] = int(clen)
+            outputs["fmt"] = self.sniffmagic(chunk)
+            if self.isaudioct(outputs["ctype"]) or outputs["fmt"]:
+                outputs.update(dict(
+                    ok=True, reason="RANGEGET success"
+                ))
+            else:
+                outputs.update(dict(
+                    ok=False, reason="RANGEGET error: Not audio-like (CT/magic)"
+                ))
+        except Exception as err:
+            outputs["reason"] = f"RANGEGET error: {err}"
+        # return
+        return outputs

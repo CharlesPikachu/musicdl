@@ -11,12 +11,12 @@ import base64
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, seconds2hms
+from ..utils import legalizestring, seconds2hms, AudioLinkTester
 
 
 '''KugouMusicClient'''
 class KugouMusicClient(BaseMusicClient):
-    source = 'FiveSingMusicClient'
+    source = 'KugouMusicClient'
     def __init__(self, **kwargs):
         super(KugouMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
@@ -61,6 +61,8 @@ class KugouMusicClient(BaseMusicClient):
                 download_url = download_result.get('url') or download_result.get('backup_url')
                 if not download_url: continue
                 if isinstance(download_url, list): download_url = download_url[0]
+                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                if not download_url_status['ok']: continue
                 file_size = str(download_result.get('fileSize', '0')).strip() or '0'
                 file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
                 duration = int(str(download_result.get('timeLength', '0')).strip() or '0')
@@ -82,8 +84,8 @@ class KugouMusicClient(BaseMusicClient):
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url=download_url, ext=download_result.get('extName', 'NULL'), file_size=file_size, lyric=lyric, duration=duration,
-                    song_name=legalizestring(search_result.get('SongName', 'NULL'), replace_null_string='NULL'), 
+                    download_url_status=download_url_status, download_url=download_url, ext=download_result.get('extName', 'NULL'), file_size=file_size, 
+                    lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('SongName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('SingerName', 'NULL'), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('AlbumName', 'NULL'), replace_null_string='NULL')
                 )

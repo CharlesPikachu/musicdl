@@ -12,7 +12,7 @@ import hashlib
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import seconds2hms, legalizestring
+from ..utils import seconds2hms, legalizestring, AudioLinkTester
 
 
 '''QianqianMusicClient'''
@@ -78,6 +78,8 @@ class QianqianMusicClient(BaseMusicClient):
                 download_result: dict = resp.json()
                 download_url = download_result.get('data', {}).get('path', '') or download_result.get('data', {}).get('trail_audio_info', {}).get('path', '')
                 if not download_url: continue
+                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                if not download_url_status['ok']: continue
                 file_size = str(download_result.get('size', '0')).strip() or '0'
                 file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
                 duration = int(str(download_result.get('duration', '0')).strip() or '0')
@@ -93,8 +95,8 @@ class QianqianMusicClient(BaseMusicClient):
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url=download_url, ext=download_result.get('format', 'NULL'), file_size=file_size, lyric=lyric, duration=duration,
-                    song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
+                    download_url_status=download_url_status, download_url=download_url, ext=download_result.get('format', 'NULL'), file_size=file_size, 
+                    lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('artist', [])]), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL')
                 )
