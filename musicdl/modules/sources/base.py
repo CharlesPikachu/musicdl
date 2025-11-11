@@ -23,7 +23,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 class BaseMusicClient():
     source = 'BaseMusicClient'
     def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 5, maintain_session: bool = False, 
-                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None):
+                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None, default_search_cookies: dict = {},
+                 default_download_cookies: dict = {}):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -36,6 +37,9 @@ class BaseMusicClient():
         self.disable_print = disable_print
         self.work_dir = work_dir
         self.proxy_sources = proxy_sources
+        self.default_search_cookies = default_search_cookies
+        self.default_download_cookies = default_download_cookies
+        self.default_cookies = default_search_cookies
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
         self.default_download_headers = {'User-Agent': UserAgent().random}
@@ -70,6 +74,7 @@ class BaseMusicClient():
         search_urls = self._constructsearchurls(keyword=keyword, rule=rule)
         # multi threadings for searching music files
         self.default_headers = self.default_search_headers
+        self.default_cookies = self.default_search_cookies
         self._initsession()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn()) as progress:
             progress_id = progress.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)})", total=len(search_urls))
@@ -127,6 +132,7 @@ class BaseMusicClient():
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
         self.default_headers = self.default_download_headers
+        self.default_cookies = self.default_download_cookies
         self._initsession()
         columns = [
             SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(),
@@ -155,6 +161,7 @@ class BaseMusicClient():
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
     '''get'''
     def get(self, url, **kwargs):
+        if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:
@@ -178,6 +185,7 @@ class BaseMusicClient():
         return resp
     '''post'''
     def post(self, url, **kwargs):
+        if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:
