@@ -27,7 +27,7 @@
     <img src="https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg" alt="open issues" />
   </a>
 
-  <p><a href="https://musicdl.readthedocs.io/">Documents</a></p>
+  <p><a href="https://musicdl.readthedocs.io/">Documents: musicdl.readthedocs.io</a></p>
 </div>
 
 
