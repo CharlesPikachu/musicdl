@@ -160,4 +160,4 @@ If you use this project in your research, please cite the repository.
 # WeChat Official Account (微信公众号):
 
 Charles的皮卡丘 (*Charles_pikachu*)  
-![img](https://raw.githubusercontent.com/CharlesPikachu/musicdl/main/docs/pikachu.jpg)
+![img](https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/docs/pikachu.jpg)
