@@ -12,7 +12,7 @@ import hashlib
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, AudioLinkTester
 
 
 '''QianqianMusicClient'''
@@ -75,7 +75,7 @@ class QianqianMusicClient(BaseMusicClient):
                 resp = self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)
                 if not isvalidresp(resp): continue
                 download_result: dict = resp2json(resp)
-                download_url = download_result.get('data', {}).get('path', '') or download_result.get('data', {}).get('trail_audio_info', {}).get('path', '')
+                download_url = safeextractfromdict(download_result, ['data', 'path'], '') or safeextractfromdict(download_result, ['data', 'trail_audio_info', 'path'], '')
                 if not download_url: continue
                 download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 if not download_url_status['ok']: continue

@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, probesongurl, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, probesongurl, safeextractfromdict, AudioLinkTester
 
 
 '''MiguMusicClient'''
@@ -75,7 +75,8 @@ class MiguMusicClient(BaseMusicClient):
                     download_result['file_size'] = file_size
                 duration = seconds2hms(search_result.get('duration', '0'))
                 # --lyric results
-                lyric_url = search_result.get('ext').get('lrcUrl', '') or search_result.get('ext').get('mrcUrl', '') or search_result.get('ext').get('trcUrl', '')
+                lyric_url = safeextractfromdict(search_result, ['ext', 'lrcUrl'], '') or safeextractfromdict(search_result, ['ext', 'mrcUrl'], '') or \
+                            safeextractfromdict(search_result, ['ext', 'trcUrl'], '')
                 if lyric_url:
                     resp = self.get(lyric_url, **request_overrides)
                     if isvalidresp(resp):

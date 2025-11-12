@@ -12,7 +12,7 @@ import random
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.neteaseutils import EapiCryptoUtils
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, AudioLinkTester
 
 
 '''NeteaseMusicClient'''
@@ -100,7 +100,7 @@ class NeteaseMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration, 
                     song_name=legalizestring(search_result.get('name', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('ar', [])]), replace_null_string='NULL'), 
-                    album=legalizestring((search_result.get('al', {'name': 'NULL'}) or {'name': 'NULL'}).get('name', 'NULL'), replace_null_string='NULL'),
+                    album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['id'],
                 )
                 # --append to song_infos
