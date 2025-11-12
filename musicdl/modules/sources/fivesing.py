@@ -64,9 +64,10 @@ class FiveSingMusicClient(BaseMusicClient):
                     ext = data.get(f'{quality}ext', 'mp3').strip() or 'mp3'
                     file_size = str(data.get(f'{quality}size', '0')).strip() or '0'
                     file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
-                    if download_url: break
+                    if download_url:
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                        if download_url_status['ok']: break
                 if not download_url: continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 if not download_url_status['ok']: continue
                 # --lyric results
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname'], 'songfields': '', 'userfields': ''}

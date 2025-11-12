@@ -74,9 +74,9 @@ class NeteaseMusicClient(BaseMusicClient):
                     if (download_result.get('code') not in [200]) or ('data' not in download_result) or (not download_result['data']): continue
                     download_url = download_result['data'][0].get('url', '')
                     if not download_url: continue
-                    break
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    if download_url_status['ok']: break
                 if not download_url: continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 if not download_url_status['ok']: continue
                 duration = int(str(search_result.get('dt', '0')).strip() or '0') / 1000
                 duration = seconds2hms(duration)

@@ -60,7 +60,8 @@ def legalizestring(string: str, fit_gbk: bool = True, max_len: int = 255, fit_ut
 
 
 '''seconds2hms'''
-def seconds2hms(seconds):
+def seconds2hms(seconds: float):
+    if seconds < 1: return '-:-:-'
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return '%02d:%02d:%02d' % (h, m, s)

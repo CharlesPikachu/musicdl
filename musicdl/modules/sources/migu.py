@@ -61,8 +61,8 @@ class MiguMusicClient(BaseMusicClient):
                     ext = {'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ24': 'flac'}.get(rate['formatType'], 'NULL')
                     file_size = str(rate.get('isize', '0')).strip() or '0'
                     download_url = f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId=15548614588710179085069&netType=00"
-                    break
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    if download_url_status['ok']: break
                 if not download_url_status['ok']: continue
                 file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
                 try:

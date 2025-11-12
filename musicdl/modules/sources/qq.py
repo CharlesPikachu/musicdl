@@ -118,7 +118,9 @@ class QQMusicClient(BaseMusicClient):
                         file_size_infos['size_192ogg'], file_size_infos['size_96ogg'],
                     ]
                     for quality, default_file_size in zip(list(DEFAULT_VIP_QUALITIES.values()), default_file_sizes):
-                        if download_result and download_url: break
+                        if download_result and download_url:
+                            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                            if download_url_status['ok']: break
                         current_rule = copy.deepcopy(default_vip_rule)
                         current_rule['music.vkey.GetEVkey.CgiGetEVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]
                         resp = self.post('https://u.y.qq.com/cgi-bin/musicu.fcg', json=current_rule, **request_overrides)
@@ -153,7 +155,9 @@ class QQMusicClient(BaseMusicClient):
                         file_size_infos['size_48aac'],
                     ]
                     for quality, default_file_size in zip(list(DEFAULT_QUALITIES.values()), default_file_sizes):
-                        if download_result and download_url: break
+                        if download_result and download_url:
+                            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                            if download_url_status['ok']: break
                         current_rule = copy.deepcopy(default_rule)
                         current_rule['music.vkey.GetVkey.UrlGetVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]
                         resp = self.post('https://u.y.qq.com/cgi-bin/musicu.fcg', json=current_rule, **request_overrides)
@@ -196,9 +200,10 @@ class QQMusicClient(BaseMusicClient):
                         file_size = file_size_infos['size_128mp3']
                     except:
                         download_result, download_url, ext, file_size = {}, "", "mp3", "0"
+                    if download_url:
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 # ----parse more infos
                 if not download_url: continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 if not download_url_status['ok']: continue
                 duration = int(str(search_result.get('interval', '0')).strip() or '0')
                 duration = seconds2hms(duration)
