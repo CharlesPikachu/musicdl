@@ -54,7 +54,7 @@ class NeteaseMusicClient(BaseMusicClient):
             # --search results
             resp = self.post(search_url, **search_meta, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['result']['songs']
+            search_results = resp2json(resp)['result']['songs']
             for search_result in search_results:
                 # --download results
                 if 'id' not in search_result:
@@ -69,26 +69,29 @@ class NeteaseMusicClient(BaseMusicClient):
                     if quality == 'sky': params['immerseType'] = 'c51'
                     params = EapiCryptoUtils.encryptparams(url='https://interface3.music.163.com/eapi/song/enhance/player/url/v1', payload=params)
                     resp = self.post('https://interface3.music.163.com/eapi/song/enhance/player/url/v1', data={"params": params}, **request_overrides)
-                    if (resp is None) or (resp.status_code not in [200]):  continue
-                    download_result: dict = resp.json()
-                    if (download_result.get('code') not in [200]) or ('data' not in download_result) or (not download_result['data']): continue
+                    if not isvalidresp(resp):  continue
+                    download_result: dict = resp2json(resp)
+                    if (download_result.get('code') not in [200]) or ('data' not in download_result) or (not download_result['data']) or \
+                       (not isinstance(download_result['data'], list)) or (not isinstance(download_result['data'][0], dict)):
+                        continue
                     download_url = download_result['data'][0].get('url', '')
                     if not download_url: continue
                     download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url: continue
                 if not download_url_status['ok']: continue
-                duration = int(str(search_result.get('dt', '0')).strip() or '0') / 1000
-                duration = seconds2hms(duration)
-                ext = download_result['data'][0].get('type', 'NULL')
-                file_size = str(download_result['data'][0].get('size', '0')).strip() or '0'
-                file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
+                duration = seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else '0')
+                ext = download_result['data'][0].get('type', 'mp3')
+                file_size = byte2mb(download_result['data'][0].get('size', '0'))
                 # --lyric results
                 data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
                 resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
-                if (resp is not None) and (resp.status_code in [200]):
-                    lyric_result: dict = resp.json()
-                    lyric = lyric_result.get('lrc', {}).get('lyric', 'NULL') or lyric_result.get('tlyric', {}).get('lyric', 'NULL')
+                if isvalidresp(resp):
+                    try:
+                        lyric_result: dict = resp2json(resp)
+                        lyric = lyric_result.get('lrc', {}).get('lyric', 'NULL') or lyric_result.get('tlyric', {}).get('lyric', 'NULL')
+                    except:
+                        lyric_result, lyric = dict(), 'NULL'
                 else:
                     lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info

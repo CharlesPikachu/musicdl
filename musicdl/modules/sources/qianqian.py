@@ -65,7 +65,7 @@ class QianqianMusicClient(BaseMusicClient):
             # --search results
             resp = self.get(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['data']['typeTrack']
+            search_results = resp2json(resp)['data']['typeTrack']
             for search_result in search_results:
                 # --download results
                 if 'TSID' not in search_result:
@@ -73,29 +73,29 @@ class QianqianMusicClient(BaseMusicClient):
                 params = {'TSID': search_result['TSID'], 'appid': self.appid}
                 params = self._addsignandtstoparams(params=params)
                 resp = self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)
-                if (resp is None) or (resp.status_code not in [200]):
-                    continue
-                download_result: dict = resp.json()
+                if not isvalidresp(resp): continue
+                download_result: dict = resp2json(resp)
                 download_url = download_result.get('data', {}).get('path', '') or download_result.get('data', {}).get('trail_audio_info', {}).get('path', '')
                 if not download_url: continue
                 download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 if not download_url_status['ok']: continue
-                file_size = str(download_result.get('size', '0')).strip() or '0'
-                file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
-                duration = int(str(download_result.get('duration', '0')).strip() or '0')
-                duration = seconds2hms(duration)
+                file_size = byte2mb(download_result.get('size', '0'))
+                duration = seconds2hms(download_result.get('duration', '0'))
                 # --lyric results
                 resp = self.get(search_result['lyric'], **request_overrides)
-                if (resp is not None) and (resp.status_code in [200]):
-                    resp.encoding = 'utf-8'
-                    lyric = resp.text or 'NULL'
-                    lyric_result = dict(lyric=lyric)
+                if isvalidresp(resp):
+                    try:
+                        resp.encoding = 'utf-8'
+                        lyric = resp.text or 'NULL'
+                        lyric_result = dict(lyric=lyric)
+                    except:
+                        lyric_result, lyric = dict(), 'NULL'
                 else:
                     lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=download_result.get('format', 'NULL'), file_size=file_size, 
+                    download_url_status=download_url_status, download_url=download_url, ext=download_result.get('format', 'mp3'), file_size=file_size, 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('artist', [])]), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL'),

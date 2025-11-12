@@ -86,6 +86,7 @@ def byte2mb(size: int):
 
 '''resp2json'''
 def resp2json(resp: requests.Response):
+    if not isinstance(resp, requests.Response): return {}
     try:
         result = resp.json()
     except:
@@ -100,6 +101,16 @@ def isvalidresp(resp: requests.Response, valid_status_codes: list = [200]):
     if resp is None or resp.status_code not in valid_status_codes:
         return False
     return True
+
+
+'''safeextractfromdict'''
+def safeextractfromdict(data, progressive_keys, default_value):
+    try:
+        result = data
+        for key in progressive_keys: result = result[key]
+    except:
+        result = default_value
+    return result
 
 
 '''probesongurl'''
