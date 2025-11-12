@@ -96,9 +96,9 @@ class LizhiMusicClient(BaseMusicClient):
                 song_infos.append(song_info)
             # --update progress
             progress.advance(progress_id, 1)
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} [success]")
+            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} [error: {err}]")
+            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
         return song_infos

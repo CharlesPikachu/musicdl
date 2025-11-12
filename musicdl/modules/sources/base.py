@@ -103,6 +103,7 @@ class BaseMusicClient():
         # logging
         if len(song_infos) > 0:
             work_dir = song_infos[0]['work_dir']
+            touchdir(work_dir)
             self._savetopkl(song_infos, os.path.join(work_dir, 'search_results.pkl'))
         else:
             work_dir = self.work_dir
@@ -113,12 +114,13 @@ class BaseMusicClient():
     def _download(self, song_info: dict, request_overrides: dict = {}, downloaded_song_infos: list = [], progress: Progress = None, 
                   song_progress_id: int = 0, songs_progress_id: int = 0):
         try:
+            touchdir(song_info['work_dir'])
             with self.get(song_info['download_url'], stream=True, **request_overrides) as resp:
                 resp.raise_for_status()
                 total_size, chunk_size, downloaded_size = int(resp.headers['content-length']), song_info.get('chunk_size', 1024), 0
                 progress.update(song_progress_id, total=total_size)
                 save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}.{song_info['ext']}"), 1
-                while not os.path.isfile(save_path):
+                while os.path.exists(save_path):
                     save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}.{song_info['ext']}")
                     same_name_file_idx += 1
                 with open(save_path, "wb") as fp:
@@ -128,14 +130,14 @@ class BaseMusicClient():
                         progress.advance(song_progress_id, len(chunk))
                         downloaded_size = downloaded_size + len(chunk)
                         downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
-                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} [downloading: {downloading_text}]")
+                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading: {downloading_text})")
                 progress.advance(songs_progress_id, 1)
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} [success]")
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
                 downloaded_song_info = copy.deepcopy(song_info)
                 downloaded_song_info['save_path'] = save_path
                 downloaded_song_infos.append(downloaded_song_info)
         except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} [error: {err}]")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
     '''download'''
     def download(self, song_infos: list, num_threadings=5, request_overrides: dict = {}):
         # logging
@@ -152,7 +154,7 @@ class BaseMusicClient():
             songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos))
             song_progress_ids, downloaded_song_infos, submitted_tasks = [], [], []
             for _, song_info in enumerate(song_infos):
-                desc = f"{self.source}.download >>> {song_info['song_name']} [preparing]"
+                desc = f"{self.source}.download >>> {song_info['song_name']} (Preparing)"
                 song_progress_ids.append(progress.add_task(desc, total=None))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos):
@@ -165,6 +167,7 @@ class BaseMusicClient():
         # logging
         if len(downloaded_song_infos) > 0:
             work_dir = downloaded_song_infos[0]['work_dir']
+            touchdir(work_dir)
             self._savetopkl(downloaded_song_infos, os.path.join(work_dir, 'download_results.pkl'))
         else:
             work_dir = self.work_dir

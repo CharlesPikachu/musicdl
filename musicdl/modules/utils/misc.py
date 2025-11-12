@@ -77,8 +77,8 @@ def seconds2hms(seconds: int):
 def byte2mb(size: int):
     try:
         size = int(float(size))
+        if size == 0: return 'NULL'
         size = f'{round(size / 1024 / 1024, 2)} MB'
-        if size == '0.00 MB': size = 'NULL'
     except:
         size = 'NULL'
     return size
@@ -143,7 +143,7 @@ def probesongurl(url: str, headers: dict = {}, timeout: int = 30, cookies: dict 
 
 '''cachecookies'''
 def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cookies: dict = {}):
-    if os.path.isfile(cache_cookie_path):
+    if os.path.exists(cache_cookie_path):
         with open(cache_cookie_path, 'rb') as fp:
             cookies = pickle.load(fp)
     else:

@@ -174,5 +174,6 @@ class MusicClient():
 
 '''tests'''
 if __name__ == '__main__':
-    music_client = MusicClient()
+    music_sources = ['MiguMusicClient', 'NeteaseMusicClient', 'KuwoMusicClient', 'KugouMusicClient', 'QQMusicClient', 'QianqianMusicClient']
+    music_client = MusicClient(music_sources=music_sources)
     music_client.startcmdui()
