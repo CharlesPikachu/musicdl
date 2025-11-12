@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, AudioLinkTester
+from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, AudioLinkTester
 
 
 '''FiveSingMusicClient'''
@@ -48,32 +48,31 @@ class FiveSingMusicClient(BaseMusicClient):
             # --search results
             resp = self.get(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['list']
+            search_results = resp2json(resp)['list']
             for search_result in search_results:
                 # --download results
                 if 'songId' not in search_result or 'typeEname' not in search_result:
                     continue
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname']}
                 resp = self.get('http://mobileapi.5sing.kugou.com/song/getSongUrl', params=params, **request_overrides)
-                if (resp is None) or (resp.status_code not in [200]) or (resp.json()['code'] not in [1000]):
+                if (not isvalidresp(resp)) or (resp2json(resp)['code'] not in [1000]):
                     continue
-                download_result: dict = resp.json()
+                download_result: dict = resp2json(resp)
                 for quality in ['sq', 'hq', 'lq']:
                     data: dict = download_result.get('data', {})
                     download_url = data.get(f'{quality}url', '').strip() or data.get(f'{quality}url_backup', '').strip()
+                    if not download_url: continue
                     ext = data.get(f'{quality}ext', 'mp3').strip() or 'mp3'
-                    file_size = str(data.get(f'{quality}size', '0')).strip() or '0'
-                    file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
-                    if download_url:
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
-                        if download_url_status['ok']: break
+                    file_size = byte2mb(data.get(f'{quality}size', '0'))
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    if download_url_status['ok']: break
                 if not download_url: continue
                 if not download_url_status['ok']: continue
                 # --lyric results
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname'], 'songfields': '', 'userfields': ''}
                 resp = self.get('http://mobileapi.5sing.kugou.com/song/newget', params=params, **request_overrides)
-                if (resp is not None) and (resp.status_code in [200]):
-                    lyric_result: dict = resp.json()
+                if isvalidresp(resp):
+                    lyric_result: dict = resp2json(resp)
                 else:
                     lyric_result = {}
                 try:

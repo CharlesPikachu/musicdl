@@ -14,6 +14,7 @@ import emoji
 import pickle
 import bleach
 import requests
+import json_repair
 import unicodedata
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
@@ -60,11 +61,44 @@ def legalizestring(string: str, fit_gbk: bool = True, max_len: int = 255, fit_ut
 
 
 '''seconds2hms'''
-def seconds2hms(seconds: float):
-    if seconds < 1: return '-:-:-'
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    return '%02d:%02d:%02d' % (h, m, s)
+def seconds2hms(seconds: int):
+    try:
+        seconds = int(float(seconds))
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        hms = '%02d:%02d:%02d' % (h, m, s)
+        if hms == '00:00:00': hms = '-:-:-'
+    except:
+        hms = '-:-:-'
+    return hms
+
+
+'''byte2mb'''
+def byte2mb(size: int):
+    try:
+        size = int(float(size))
+        size = f'{round(size / 1024 / 1024, 2)} MB'
+        if size == '0.00 MB': size = 'NULL'
+    except:
+        size = 'NULL'
+    return size
+
+
+'''resp2json'''
+def resp2json(resp: requests.Response):
+    try:
+        result = resp.json()
+    except:
+        result = json_repair.loads(resp.text)
+    return result
+
+
+'''isvalidresp'''
+def isvalidresp(resp: requests.Response, valid_status_codes: list = [200]):
+    if not isinstance(resp, requests.Response): return False
+    if resp is None or resp.status_code not in valid_status_codes:
+        return False
+    return True
 
 
 '''probesongurl'''
@@ -77,10 +111,10 @@ def probesongurl(url: str, headers: dict = {}, timeout: int = 30, cookies: dict 
     headers = resp.headers
     resp.close()
     if headers.get('transfer-encoding') != 'chunked':
-        file_size = int(resp.headers.get('content-length'))
-        file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
+        file_size = resp.headers.get('content-length')
+        file_size = byte2mb(file_size)
     else:
-        file_size = '0.00 MB'
+        file_size = 'NULL'
     ctype = headers.get('content-type')
     if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
         ctype = 'audio/mpeg'
