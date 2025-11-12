@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, seconds2hms, probesongurl, AudioLinkTester, WhisperLRC
+from ..utils import legalizestring, resp2json, seconds2hms, probesongurl, AudioLinkTester, WhisperLRC
 
 
 '''LizhiMusicClient'''
@@ -41,10 +41,9 @@ class LizhiMusicClient(BaseMusicClient):
             if len(search_urls) > 0:
                 try:
                     resp = self.get(search_urls[-1], **request_overrides)
-                    receipt_data = resp.json()['receiptData']
+                    receipt_data = resp2json(resp)['receiptData']
                 except:
                     receipt_data = ""
-                if not receipt_data: continue
                 page_rule['receiptData'] = receipt_data
             search_urls.append(base_url + urlencode(page_rule))
             count += page_size
@@ -57,7 +56,7 @@ class LizhiMusicClient(BaseMusicClient):
             # --search results
             resp = self.get(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['data']
+            search_results = resp2json(resp)['data']
             for search_result in search_results:
                 # --download results
                 if ('userInfo' not in search_result) or ('voiceInfo' not in search_result) or ('voicePlayProperty' not in search_result) or ('voiceId' not in search_result['voiceInfo']):
@@ -69,14 +68,13 @@ class LizhiMusicClient(BaseMusicClient):
                     download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url_status['ok']: continue
-                duration = int(str(search_result['voiceInfo'].get('duration', '0')).strip() or '0')
-                duration = seconds2hms(duration)
+                duration = seconds2hms(search_result['voiceInfo'].get('duration', '0'))
                 try:
                     download_result = probesongurl(download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides)
                 except:
-                    download_result = {'download_url': download_url, 'file_size': '0.00 MB', 'ext': download_url.split('.')[-1]}
-                if 'ext' not in download_result or download_result['ext'] == 'NULL':
-                    download_result['ext'] = download_url.split('.')[-1]
+                    download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
+                if download_result['ext'] == 'NULL':
+                    download_result['ext'] = download_url.split('.')[-1].split('?')[0] or 'mp3'
                 # --lyric results
                 try:
                     lyric_result = WhisperLRC(model_size_or_path='small').fromurl(

@@ -13,8 +13,8 @@ import base64
 import random
 from .base import BaseMusicClient
 from rich.progress import Progress
-from ..utils import seconds2hms, legalizestring, AudioLinkTester
 from ..utils.qqutils import QQMusicClientUtils, Device, DEFAULT_VIP_QUALITIES, DEFAULT_QUALITIES
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, AudioLinkTester
 
 
 '''QQMusicClient'''

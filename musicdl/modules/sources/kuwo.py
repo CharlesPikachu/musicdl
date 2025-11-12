@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, seconds2hms, probesongurl, AudioLinkTester
+from ..utils import legalizestring, resp2json, isvalidresp, seconds2hms, probesongurl, AudioLinkTester
 
 
 '''KuwoMusicClient'''
@@ -52,15 +52,14 @@ class KuwoMusicClient(BaseMusicClient):
             # --search results
             resp = self.get(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['abslist']
+            search_results = resp2json(resp)['abslist']
             for search_result in search_results:
                 # --download results
                 if 'MUSICRID' not in search_result:
                     continue
                 params = {'format': 'aac|mp3', 'rid': search_result['MUSICRID'], 'type': 'convert_url', 'response': 'url'}
                 resp = self.get('http://antiserver.kuwo.cn/anti.s', params=params, **request_overrides)
-                if (resp is None) or (resp.status_code not in [200]):
-                    continue
+                if not isvalidresp(resp): continue
                 download_url = resp.text.strip()
                 if (not download_url) or (not (download_url.startswith('http://') or download_url.startswith('https://'))):
                     continue
@@ -69,16 +68,15 @@ class KuwoMusicClient(BaseMusicClient):
                 try:
                     download_result = probesongurl(download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides)
                 except:
-                    download_result = {'download_url': download_url, 'file_size': '0.00 MB', 'ext': 'NULL'}
-                if 'ext' not in download_result or download_result['ext'] == 'NULL':
-                    download_result['ext'] = download_url.split('.')[-1]
-                duration = int(str(search_result.get('DURATION', '0')).strip() or '0')
-                duration = seconds2hms(duration)
+                    download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
+                if download_result['ext'] == 'NULL':
+                    download_result['ext'] = download_url.split('.')[-1].split('?')[0] or 'mp3'
+                duration = seconds2hms(search_result.get('DURATION', '0'))
                 # --lyric results
                 params = {'musicId': search_result['MUSICRID'].strip('MUSIC_'), 'httpsStatus': '1'}
                 resp = self.get('http://m.kuwo.cn/newh5/singles/songinfoandlrc', params=params, **request_overrides)
-                if (resp is not None) and (resp.status_code in [200]):
-                    lyric_result: dict = resp.json() or {'data': {}}
+                if isvalidresp(resp):
+                    lyric_result: dict = resp2json(resp)
                     try:
                         lyric = lyric_result.get('data', {}).get('lrclist', []) or 'NULL'
                     except:

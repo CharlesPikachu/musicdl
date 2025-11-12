@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode
-from ..utils import seconds2hms, legalizestring, probesongurl, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, probesongurl, AudioLinkTester
 
 
 '''MiguMusicClient'''

@@ -12,7 +12,7 @@ import random
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.neteaseutils import EapiCryptoUtils
-from ..utils import seconds2hms, legalizestring, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, AudioLinkTester
 
 
 '''NeteaseMusicClient'''

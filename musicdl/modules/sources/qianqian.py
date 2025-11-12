@@ -12,7 +12,7 @@ import hashlib
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import seconds2hms, legalizestring, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, AudioLinkTester
 
 
 '''QianqianMusicClient'''

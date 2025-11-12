@@ -90,6 +90,7 @@ def resp2json(resp: requests.Response):
         result = resp.json()
     except:
         result = json_repair.loads(resp.text)
+    if not result: result = dict()
     return result
 
 

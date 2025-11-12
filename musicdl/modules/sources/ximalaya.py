@@ -16,7 +16,7 @@ from Crypto.Cipher import AES
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import seconds2hms, legalizestring, probesongurl, AudioLinkTester, WhisperLRC
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, probesongurl, AudioLinkTester, WhisperLRC
 
 
 '''XimalayaMusicClient'''

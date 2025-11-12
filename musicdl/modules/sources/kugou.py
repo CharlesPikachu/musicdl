@@ -11,7 +11,7 @@ import base64
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, seconds2hms, AudioLinkTester
+from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, AudioLinkTester
 
 
 '''KugouMusicClient'''
@@ -49,29 +49,26 @@ class KugouMusicClient(BaseMusicClient):
             # --search results
             resp = self.get(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = resp.json()['data']['lists']
+            search_results = resp2json(resp)['data']['lists']
             for search_result in search_results:
                 # --download results
                 if 'FileHash' not in search_result:
                     continue
                 resp = self.get(f"http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash={search_result['FileHash']}", **request_overrides)
-                if (resp is None) or (resp.status_code not in [200]):
-                    continue
-                download_result: dict = resp.json()
+                if not isvalidresp(resp): continue
+                download_result: dict = resp2json(resp)
                 download_url = download_result.get('url') or download_result.get('backup_url')
                 if not download_url: continue
                 if isinstance(download_url, list): download_url = download_url[0]
                 download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 if not download_url_status['ok']: continue
-                file_size = str(download_result.get('fileSize', '0')).strip() or '0'
-                file_size = f'{round(int(file_size) / 1024 / 1024, 2)} MB'
-                duration = int(str(download_result.get('timeLength', '0')).strip() or '0')
-                duration = seconds2hms(duration)
+                file_size = byte2mb(download_result.get('fileSize', '0'))
+                duration = seconds2hms(download_result.get('timeLength', '0'))
                 # --lyric results
                 params = {'keyword': search_result.get('FileName', ''), 'duration': search_result.get('Duration', '99999'), 'hash': search_result['FileHash']}
                 resp = self.get('http://lyrics.kugou.com/search', params=params, **request_overrides)
-                if (resp is not None) and (resp.status_code in [200]):
-                    lyric_result, lyric = resp.json(), 'NULL'
+                if isvalidresp(resp):
+                    lyric_result, lyric = resp2json(resp), 'NULL'
                     try:
                         id = lyric_result['candidates'][0]['id']
                         accesskey = lyric_result['candidates'][0]['accesskey']
@@ -84,7 +81,7 @@ class KugouMusicClient(BaseMusicClient):
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=download_result.get('extName', 'NULL'), file_size=file_size, 
+                    download_url_status=download_url_status, download_url=download_url, ext=download_result.get('extName', 'mp3'), file_size=file_size, 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('SongName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('SingerName', 'NULL'), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('AlbumName', 'NULL'), replace_null_string='NULL'),
