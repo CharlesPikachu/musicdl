@@ -37,8 +37,8 @@ class BaseMusicClient():
         self.disable_print = disable_print
         self.work_dir = work_dir
         self.proxy_sources = proxy_sources
-        self.default_search_cookies = default_search_cookies
-        self.default_download_cookies = default_download_cookies
+        self.default_search_cookies = default_search_cookies if default_search_cookies else {}
+        self.default_download_cookies = default_download_cookies if default_download_cookies else {}
         self.default_cookies = default_search_cookies
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
@@ -63,6 +63,15 @@ class BaseMusicClient():
         work_dir = os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword.replace(" ", "")}')
         touchdir(work_dir)
         return work_dir
+    '''_removeduplicates'''
+    def _removeduplicates(self, song_infos: list = None):
+        unique_song_infos, identifiers = [], set()
+        for song_info in song_infos:
+            if song_info['identifier'] in identifiers:
+                continue
+            identifiers.add(song_info['identifier'])
+            unique_song_infos.append(song_info)
+        return unique_song_infos
     '''_search'''
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         raise NotImplementedError('not be implemented')
@@ -87,6 +96,7 @@ class BaseMusicClient():
                 for _ in as_completed(submitted_tasks):
                     num_searched_urls = int(progress.tasks[progress_id].completed)
                     progress.update(progress_id, description=f"{self.source}.search >>> completed ({num_searched_urls}/{len(search_urls)})")
+        song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=keyword)
         for song_info in song_infos:
             song_info['work_dir'] = work_dir
