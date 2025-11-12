@@ -27,7 +27,7 @@ class FiveSingMusicClient(BaseMusicClient):
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {'keyword': keyword, 'sort': 1, 'page': 1, 'filter': 0, 'type': 0}
         default_rule.update(rule)
@@ -85,7 +85,8 @@ class FiveSingMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration='-:-:-',
                     song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('singer', 'NULL'), replace_null_string='NULL'), 
-                    album=legalizestring(lyric_result.get('data', {}).get('albumName', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring(lyric_result.get('data', {}).get('albumName', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['songId'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

@@ -43,7 +43,7 @@ class QianqianMusicClient(BaseMusicClient):
         params['sign'] = hashlib.md5((string + secret).encode('utf-8')).hexdigest()
         return params
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': self.appid}
         default_rule.update(rule)
@@ -98,7 +98,8 @@ class QianqianMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=download_result.get('format', 'NULL'), file_size=file_size, 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('artist', [])]), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['TSID'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

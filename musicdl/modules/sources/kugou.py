@@ -28,7 +28,7 @@ class KugouMusicClient(BaseMusicClient):
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {'keyword': keyword, 'page': 1, 'pagesize': 10}
         default_rule.update(rule)
@@ -87,7 +87,8 @@ class KugouMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=download_result.get('extName', 'NULL'), file_size=file_size, 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('SongName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('SingerName', 'NULL'), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('AlbumName', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring(search_result.get('AlbumName', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['FileHash'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

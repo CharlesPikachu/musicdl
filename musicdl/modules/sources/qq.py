@@ -51,7 +51,7 @@ class QQMusicClient(BaseMusicClient):
     def _randomguid(self):
         return "".join(random.choices("abcdef1234567890", k=32))
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {
             'comm': {
@@ -227,7 +227,8 @@ class QQMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration,
                     song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singer', [])]), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('album', {}).get('title', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring(search_result.get('album', {}).get('title', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['mid'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

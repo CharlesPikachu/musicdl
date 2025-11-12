@@ -31,7 +31,7 @@ class NeteaseMusicClient(BaseMusicClient):
         if not self.default_download_cookies: self.default_download_cookies = default_cookies
         self._initsession()
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {'s': keyword, 'type': 1, 'limit': 10, 'offset': 0}
         default_rule.update(rule)
@@ -97,7 +97,8 @@ class NeteaseMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration, 
                     song_name=legalizestring(search_result.get('name', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('ar', [])]), replace_null_string='NULL'), 
-                    album=legalizestring((search_result.get('al', {'name': 'NULL'}) or {'name': 'NULL'}).get('name', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring((search_result.get('al', {'name': 'NULL'}) or {'name': 'NULL'}).get('name', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['id'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

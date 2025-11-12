@@ -27,7 +27,7 @@ class MiguMusicClient(BaseMusicClient):
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {
             "text": keyword, 'pageNo': 1, 'pageSize': 10
@@ -92,7 +92,8 @@ class MiguMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=download_result['ext'], file_size=download_result['file_size'], 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singerList', [])]), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['copyrightId'] + '-' + search_result['contentId'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

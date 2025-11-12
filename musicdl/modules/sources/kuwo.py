@@ -27,7 +27,7 @@ class KuwoMusicClient(BaseMusicClient):
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
         default_rule = {
             "vipver": "1", "client": "kt", "ft": "music", "cluster": "0", "strategy": "2012", "encoding": "utf8",
@@ -91,7 +91,8 @@ class KuwoMusicClient(BaseMusicClient):
                     download_url_status=download_url_status, download_url=download_url, ext=download_result['ext'], file_size=download_result['file_size'], 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('SONGNAME', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('ARTIST', 'NULL'), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('ALBUM', 'NULL'), replace_null_string='NULL')
+                    album=legalizestring(search_result.get('ALBUM', 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['MUSICRID'],
                 )
                 # --append to song_infos
                 song_infos.append(song_info)

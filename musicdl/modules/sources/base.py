@@ -55,7 +55,7 @@ class BaseMusicClient():
         self.session = requests.Session()
         self.session.headers = self.default_headers
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         raise NotImplementedError('not to be implemented')
     '''_constructuniqueworkdir'''
     def _constructuniqueworkdir(self, keyword: str):
@@ -71,7 +71,7 @@ class BaseMusicClient():
         # logging
         self.logger_handle.info(f'Start to search music files using {self.source}.', disable_print=self.disable_print)
         # construct search urls
-        search_urls = self._constructsearchurls(keyword=keyword, rule=rule)
+        search_urls = self._constructsearchurls(keyword=keyword, rule=rule, request_overrides=request_overrides)
         # multi threadings for searching music files
         self.default_headers = self.default_search_headers
         self.default_cookies = self.default_search_cookies
