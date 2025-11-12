@@ -1,53 +1,70 @@
 <div align="center">
-  <img src="./docs/logo.png" width="600"/>
+  <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/docs/logo.png" width="600" alt="musicdl logo" />
+  <br />
+
+  <a href="https://musicdl.readthedocs.io/">
+    <img src="https://img.shields.io/badge/docs-latest-blue" alt="docs" />
+  </a>
+  <a href="https://pypi.org/project/musicdl/">
+    <img src="https://img.shields.io/pypi/pyversions/musicdl" alt="PyPI - Python Version" />
+  </a>
+  <a href="https://pypi.org/project/musicdl">
+    <img src="https://img.shields.io/pypi/v/musicdl" alt="PyPI" />
+  </a>
+  <a href="https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/CharlesPikachu/musicdl.svg" alt="license" />
+  </a>
+  <a href="https://pypi.org/project/musicdl/">
+    <img src="https://pepy.tech/badge/musicdl" alt="PyPI - Downloads" />
+  </a>
+  <a href="https://pypi.org/project/musicdl/">
+    <img src="https://img.shields.io/pypi/dm/musicdl?style=flat-square" alt="downloads" />
+  </a>
+  <a href="https://github.com/CharlesPikachu/musicdl/issues">
+    <img src="https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg" alt="issue resolution" />
+  </a>
+  <a href="https://github.com/CharlesPikachu/musicdl/issues">
+    <img src="https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg" alt="open issues" />
+  </a>
+
+  <p><a href="https://musicdl.readthedocs.io/">Documents</a></p>
 </div>
-<br />
-
-[![docs](https://img.shields.io/badge/docs-latest-blue)](https://musicdl.readthedocs.io/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/musicdl)](https://pypi.org/project/musicdl/)
-[![PyPI](https://img.shields.io/pypi/v/musicdl)](https://pypi.org/project/musicdl)
-[![license](https://img.shields.io/github/license/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE)
-[![PyPI - Downloads](https://pepy.tech/badge/musicdl)](https://pypi.org/project/musicdl/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/musicdl?style=flat-square)](https://pypi.org/project/musicdl/)
-[![issue resolution](https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/issues)
-[![open issues](https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg)](https://github.com/CharlesPikachu/musicdl/issues)
-
-Documents: https://musicdl.readthedocs.io/
 
 
-# Musicdl
-```
-A lightweight music downloader written in pure python.
-You can star this repository to keep track of the project if it's helpful for you, thank you for your support.
-```
+# What's New
+
+- 2025-11-12: Release musicdl v2.4.0 — Complete code refactor; reintroduced support for music search and downloads on major platforms.
 
 
-# Statement
-```
-This repository is created just for learning python(Commercial prohibition).
-All the apis used in this repository are from public network. So, if you want to download the paid songs, 
-please open a paid member on corresponding music platform by yourself (respect the music copyright please).
-Finally, if there are any infringements, please contact me to delete this repository.
-```
+# Introduction
+
+A lightweight music downloader written in pure Python. Like it? ⭐ Star the repository to stay up to date. Thanks!
 
 
-# Support List
-|  Source_EN                                |   Support Search?  |  Support Download?   |  Source_CN           |
-|  :----:                                   |   :----:           |  :----:              |  :----:              |
-|  [QQMusic](https://y.qq.com/)             |   ✓                |  ✓                   |  QQ音乐              |
-|  [Lizhi](http://m.lizhi.fm)               |   ✓                |  ✓                   |  荔枝FM              |
-|  [Yiting](https://h5.1ting.com/)          |   ✓                |  ✓                   |  一听音乐            |
-|  [Kuwo](http://yinyue.kuwo.cn/)           |   ✓                |  ✓                   |  酷我音乐            |
-|  [Kugou](http://www.kugou.com/)           |   ✓                |  ✓                   |  酷狗音乐            |
-|  [Qianqian](http://music.taihe.com/)      |   ✓                |  ✓                   |  千千音乐            |
-|  [Migu](http://www.migu.cn/)              |   ✓                |  ✓                   |  咪咕音乐            |
-|  [JOOX](https://www.joox.com/limits)      |   ✓                |  ✓                   |  JOOX音乐            |
-|  [Fivesing](http://5sing.kugou.com/)      |   ✓                |  ✓                   |  5SING音乐           |
-|  [Netease](https://music.163.com/)        |   ✓                |  ✓                   |  网易云音乐          |
-|  [Ximalaya](https://www.ximalaya.com/)    |   ✓                |  ✓                   |  喜马拉雅            |
+# Disclaimer
+
+This project is for educational use only and is not intended for commercial purposes. It interacts with publicly available web endpoints and does not host or distribute copyrighted content.
+To access paid tracks, please purchase or subscribe to the relevant music service—do not use this project to bypass paywalls or DRM.
+If you are a rights holder and believe this repository infringes your rights, please contact me and I will promptly address it.
 
 
-# Practice with Musicdl
+# Supported Music Client
+
+|  MusicClient (EN)              |  MusicClient (CN)  |   Search           |  Download            |    Code Snippet                                                                                                    |
+|  :----:                        |  :----:            |   :----:           |  :----:              |    :----:                                                                                                          |
+|  FiveSingMusicClient           |  5SING音乐         |   ✓                |  ✓                   |    [fivesing.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fivesing.py)        |
+|  KugouMusicClient              |  酷狗音乐          |   ✓                |  ✓                   |    [kugou.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kugou.py)              |
+|  KuwoMusicClient               |  酷我音乐          |   ✓                |  ✓                   |    [kuwo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kuwo.py)                |
+|  LizhiMusicClient              |  荔枝FM            |   ✓                |  ✓                   |    [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/lizhi.py)              |
+|  MiguMusicClient               |  咪咕音乐          |   ✓                |  ✓                   |    [migu.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/migu.py)                |
+|  NeteaseMusicClient            |  网易云音乐        |   ✓                |  ✓                   |    [netease.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/netease.py)          |
+|  QianqianMusicClient           |  千千音乐          |   ✓                |  ✓                   |    [qianqian.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qianqian.py)        |
+|  QQMusicClient                 |  QQ音乐            |   ✓                |  ✓                   |    [qq.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qq.py)                    |
+|  XimalayaMusicClient           |  喜马拉雅          |   ✓                |  ✓                   |    [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)        |
+
+
+# Playground
+
 |  Project_EN                           |   Introduction                                               |  Code                                         |  Project_CN          |
 |  :----:                               |   :----:                                                     |  :----:                                       |  :----:              |
 |  musicdlgui                           |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg) |  [click](./examples/musicdlgui)               |  音乐下载器GUI界面   |
@@ -103,7 +120,8 @@ Options:
 ![img](./docs/screenshot.gif)
 
 
-# Projects in Charles_pikachu
+# Recommended Projects
+
 - [Games](https://github.com/CharlesPikachu/Games): Create interesting games in pure python.
 - [DecryptLogin](https://github.com/CharlesPikachu/DecryptLogin): APIs for loginning some websites by using requests.
 - [Musicdl](https://github.com/CharlesPikachu/musicdl): A lightweight music downloader written in pure python.
@@ -124,7 +142,9 @@ Options:
 
 
 # Citation
-If you use this project in your research, please cite this project.
+
+If you use this project in your research, please cite the repository.
+
 ```
 @misc{musicdl2020,
     author = {Zhenchao Jin},
@@ -137,7 +157,7 @@ If you use this project in your research, please cite this project.
 ```
 
 
-# More
-#### WeChat Official Accounts
-*Charles_pikachu*  
-![img](./docs/pikachu.jpg)
+# WeChat Official Account (微信公众号):
+
+Charles的皮卡丘 (*Charles_pikachu*)  
+![img](https://raw.githubusercontent.com/CharlesPikachu/musicdl/main/docs/pikachu.jpg)
