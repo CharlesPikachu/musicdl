@@ -53,3 +53,13 @@ class WhisperLRC:
             if tmp_file_path and os.path.exists(tmp_file_path):
                 try: os.remove(tmp_file_path)
                 except: pass
+    '''fromfilepath'''
+    def fromfilepath(self, file_path: str, transcribe_overrides: dict = {}):
+        default_transcribe_settings = {
+            'language': None, 'vad_filter': True, 'vad_parameters': dict(min_silence_duration_ms=300), 'chunk_length': 30, 'beam_size': 5
+        }
+        default_transcribe_settings.update(transcribe_overrides)
+        segs, info = self.whisper_model.transcribe(file_path, **default_transcribe_settings)
+        lrc = "\n".join(f"{self.timestamp(s.start)}{s.text.strip()}" for s in segs)
+        result = {"language": info.language, "prob": info.language_probability, "duration": getattr(info, "duration", None), 'lyric': lrc}
+        return result

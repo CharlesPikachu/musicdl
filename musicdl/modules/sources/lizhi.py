@@ -64,7 +64,10 @@ class LizhiMusicClient(BaseMusicClient):
                     continue
                 download_url = search_result['voicePlayProperty'].get('trackUrl', '')
                 if not download_url: continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                for quality in ['_ud.mp3', '_hd.mp3', '_sd.m4a']:
+                    download_url = download_url[:-7] + quality
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    if download_url_status['ok']: break
                 if not download_url_status['ok']: continue
                 duration = int(str(search_result['voiceInfo'].get('duration', '0')).strip() or '0')
                 duration = seconds2hms(duration)
