@@ -6,6 +6,7 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
@@ -75,12 +76,15 @@ class LizhiMusicClient(BaseMusicClient):
                     download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
                 if download_result['ext'] == 'NULL':
                     download_result['ext'] = download_url.split('.')[-1].split('?')[0] or 'mp3'
-                # --lyric results
+                # --lyric results, WhisperLRC runs very slowly, disable it by default
                 try:
-                    lyric_result = WhisperLRC(model_size_or_path='small').fromurl(
-                        download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides
-                    )
-                    lyric = lyric_result['lyric']
+                    if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true':
+                        lyric_result = WhisperLRC(model_size_or_path='small').fromurl(
+                            download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides
+                        )
+                        lyric = lyric_result['lyric']
+                    else:
+                        lyric_result, lyric = dict(), 'NULL'
                 except:
                     lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info

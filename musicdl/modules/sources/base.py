@@ -127,9 +127,9 @@ class BaseMusicClient():
                     for chunk in resp.iter_content(chunk_size=chunk_size):
                         if not chunk: continue
                         fp.write(chunk)
-                        progress.advance(song_progress_id, len(chunk))
                         downloaded_size = downloaded_size + len(chunk)
                         downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
+                        progress.advance(song_progress_id, len(chunk))
                         progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading: {downloading_text})")
                 progress.advance(songs_progress_id, 1)
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")

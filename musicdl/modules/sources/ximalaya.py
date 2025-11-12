@@ -6,6 +6,7 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import re
 import time
 import copy
@@ -128,18 +129,30 @@ class XimalayaMusicClient(BaseMusicClient):
                 # ----parse more infos
                 if not download_url: continue
                 if not download_url_status['ok']: continue
+                if byte2mb(file_size) == 'NULL' and 'download_result_suppl' not in download_result:
+                    try:
+                        download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                        ext, file_size = download_result_suppl['ext'], download_result_suppl['file_size']
+                        download_result['download_result_suppl'] = download_result_suppl
+                    except:
+                        continue
+                else:
+                    file_size = byte2mb(file_size)
                 # --lyric results
                 try:
-                    lyric_result = WhisperLRC(model_size_or_path='small').fromurl(
-                        download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides
-                    )
-                    lyric = lyric_result['lyric']
+                    if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true':
+                        lyric_result = WhisperLRC(model_size_or_path='small').fromurl(
+                            download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides
+                        )
+                        lyric = lyric_result['lyric']
+                    else:
+                        lyric_result, lyric = dict(), 'NULL'
                 except:
                     lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=byte2mb(file_size), 
+                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, 
                     lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('Nickname', 'NULL'), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('album_title', 'NULL'), replace_null_string='NULL'),

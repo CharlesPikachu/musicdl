@@ -75,14 +75,15 @@ class MusicClient():
                     song_infos[str(song_info_pointer)] = search_result
                     print_items.append([
                         colorize(str(song_info_pointer), 'number'), colorize(search_result['singers'], 'singer'), search_result['song_name'], 
-                        search_result['file_size'] if search_result['ext'] not in ['flac'] else colorize(search_result['file_size'], 'flac'), 
+                        search_result['file_size'] if search_result['ext'] not in ['flac', 'ogg'] else colorize(search_result['file_size'], 'flac'), 
                         search_result['duration'], search_result['album'], colorize(search_result['source'], 'highlight'),
                     ])
             printtable(titles=print_titles, items=print_items)
             # process user inputs, music file download
             user_input_select_song_info_pointer = self.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
+            user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]
             selected_song_infos = []
-            for idx in user_input_select_song_info_pointer: selected_song_infos.append(song_infos[str(idx)])
+            for idx in user_input_select_song_info_pointer: selected_song_infos.append(song_infos[idx])
             self.download(selected_song_infos)
     '''search'''
     def search(self, keyword):
@@ -96,9 +97,15 @@ class MusicClient():
         return search_results
     '''download'''
     def download(self, song_infos):
+        classified_song_infos = {}
         for song_info in song_infos:
-            self.music_clients[song_info['source']].download(
-                song_infos=[song_info], num_threadings=self.clients_threadings[song_info['source']], request_overrides=self.requests_overrides[song_info['source']]
+            if song_info['source'] in classified_song_infos:
+                classified_song_infos[song_info['source']].append(song_info)
+            else:
+                classified_song_infos[song_info['source']] = [song_info]
+        for source, source_song_infos in classified_song_infos.items():
+            self.music_clients[source].download(
+                song_infos=source_song_infos, num_threadings=self.clients_threadings[song_info['source']], request_overrides=self.requests_overrides[song_info['source']]
             )
     '''processinputs'''
     def processinputs(self, input_tip=''):
@@ -174,6 +181,5 @@ class MusicClient():
 
 '''tests'''
 if __name__ == '__main__':
-    music_sources = ['MiguMusicClient', 'NeteaseMusicClient', 'KuwoMusicClient', 'KugouMusicClient', 'QQMusicClient', 'QianqianMusicClient']
-    music_client = MusicClient(music_sources=music_sources)
+    music_client = MusicClient()
     music_client.startcmdui()
