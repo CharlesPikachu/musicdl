@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, probesongurl, safeextractfromdict, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, AudioLinkTester
 
 
 '''MiguMusicClient'''
@@ -62,11 +62,11 @@ class MiguMusicClient(BaseMusicClient):
                     ext = {'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ24': 'flac'}.get(rate['formatType'], 'NULL')
                     file_size = byte2mb(rate.get('isize', '0'))
                     download_url = f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId=15548614588710179085069&netType=00"
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url_status['ok']: continue
                 try:
-                    download_result = probesongurl(download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides)
+                    download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 except:
                     download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
                 if download_result['ext'] == 'NULL':

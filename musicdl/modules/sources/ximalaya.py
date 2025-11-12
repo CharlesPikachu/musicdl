@@ -16,7 +16,7 @@ from Crypto.Cipher import AES
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, probesongurl, safeextractfromdict, AudioLinkTester, WhisperLRC
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, AudioLinkTester, WhisperLRC
 
 
 '''XimalayaMusicClient'''
@@ -87,7 +87,7 @@ class XimalayaMusicClient(BaseMusicClient):
                         if not download_url: continue
                         ext = download_url.split('.')[-1].split('?')[0]
                         duration = seconds2hms(track_info.get('duration', '0'))
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                         if download_url_status['ok']: break
                     if not download_url or not download_url_status['ok']:
                         download_result, download_url, ext, file_size, duration = {}, "", "m4a", "0", "0"
@@ -102,7 +102,7 @@ class XimalayaMusicClient(BaseMusicClient):
                         if not download_url: continue
                         ext = download_url.split('.')[-1].split('?')[0]
                         duration = seconds2hms(track_info.get('duration', '0'))
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                         if download_url_status['ok']: break
                     if not download_url or not download_url_status['ok']:
                         download_result, download_url, ext, file_size, duration = {}, "", "m4a", "0", "0"
@@ -114,13 +114,13 @@ class XimalayaMusicClient(BaseMusicClient):
                     download_url = download_result.get('url', '')
                     if download_url:
                         try:
-                            download_result_suppl = probesongurl(download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides)
+                            download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                         except:
                             download_result_suppl = {'download_url': download_url, 'file_size': '0', 'ext': 'NULL'}
                         if download_result_suppl['ext'] == 'NULL':
                             download_result_suppl['ext'] = download_url.split('.')[-1].split('?')[0]
                         download_result['download_result_suppl'] = download_result_suppl
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                         ext, file_size = download_result_suppl['ext'], download_result_suppl['file_size']
                         duration = '-:-:-'
                     else:

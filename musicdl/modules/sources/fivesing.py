@@ -64,7 +64,7 @@ class FiveSingMusicClient(BaseMusicClient):
                     if not download_url: continue
                     ext = data.get(f'{quality}ext', 'mp3').strip() or 'mp3'
                     file_size = byte2mb(data.get(f'{quality}size', '0'))
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url: continue
                 if not download_url_status['ok']: continue

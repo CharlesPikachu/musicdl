@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, resp2json, isvalidresp, seconds2hms, probesongurl, AudioLinkTester
+from ..utils import legalizestring, resp2json, isvalidresp, seconds2hms, AudioLinkTester
 
 
 '''KuwoMusicClient'''
@@ -63,10 +63,10 @@ class KuwoMusicClient(BaseMusicClient):
                 download_url = resp.text.strip()
                 if (not download_url) or (not (download_url.startswith('http://') or download_url.startswith('https://'))):
                     continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                 if not download_url_status['ok']: continue
                 try:
-                    download_result = probesongurl(download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides)
+                    download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 except:
                     download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
                 if download_result['ext'] == 'NULL':

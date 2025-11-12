@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, resp2json, seconds2hms, probesongurl, AudioLinkTester, WhisperLRC
+from ..utils import legalizestring, resp2json, seconds2hms, AudioLinkTester, WhisperLRC
 
 
 '''LizhiMusicClient'''
@@ -65,12 +65,12 @@ class LizhiMusicClient(BaseMusicClient):
                 if not download_url: continue
                 for quality in ['_ud.mp3', '_hd.mp3', '_sd.m4a']:
                     download_url = download_url[:-7] + quality
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url_status['ok']: continue
                 duration = seconds2hms(search_result['voiceInfo'].get('duration', '0'))
                 try:
-                    download_result = probesongurl(download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides)
+                    download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 except:
                     download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
                 if download_result['ext'] == 'NULL':

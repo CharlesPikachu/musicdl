@@ -76,7 +76,7 @@ class NeteaseMusicClient(BaseMusicClient):
                         continue
                     download_url = download_result['data'][0].get('url', '')
                     if not download_url: continue
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url: continue
                 if not download_url_status['ok']: continue

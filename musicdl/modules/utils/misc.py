@@ -113,34 +113,6 @@ def safeextractfromdict(data, progressive_keys, default_value):
     return result
 
 
-'''probesongurl'''
-def probesongurl(url: str, headers: dict = {}, timeout: int = 30, cookies: dict = {}, request_overrides: dict = {}):
-    if 'headers' not in request_overrides: request_overrides['headers'] = headers
-    if 'timeout' not in request_overrides: request_overrides['timeout'] = timeout
-    if 'cookies' not in request_overrides: request_overrides['cookies'] = cookies
-    resp = requests.head(url, **request_overrides)
-    resp.raise_for_status()
-    headers = resp.headers
-    resp.close()
-    if headers.get('transfer-encoding') != 'chunked':
-        file_size = resp.headers.get('content-length')
-        file_size = byte2mb(file_size)
-    else:
-        file_size = 'NULL'
-    ctype = headers.get('content-type')
-    if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
-        ctype = 'audio/mpeg'
-    ctype_to_ext_mapping = {
-        "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", 
-        "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg",
-    }
-    ext = ctype_to_ext_mapping.get(ctype, 'NULL')
-    probe_result = {
-        "file_size": file_size, "ctype": ctype, "ext": ext, 'download_url': url
-    }
-    return probe_result
-
-
 '''cachecookies'''
 def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cookies: dict = {}):
     if os.path.exists(cache_cookie_path):
@@ -161,6 +133,10 @@ class AudioLinkTester(object):
     AUDIO_CT_PREFIX = "audio/"
     AUDIO_CT_EXTRA = {
         "application/octet-stream", "application/x-flac", "application/flac",
+    }
+    CTYPE_TO_EXT = {
+        "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", 
+        "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg",
     }
     def __init__(self, timeout=(5, 15), headers={}, cookies={}):
         self.session = requests.Session()
@@ -189,6 +165,40 @@ class AudioLinkTester(object):
         return None
     '''probe'''
     def probe(self, url: str, request_overrides: dict = {}):
+        if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
+        if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
+        if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
+        outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
+        # HEAD probe
+        try:
+            resp = self.session.head(url, allow_redirects=True, **request_overrides)
+            resp.raise_for_status()
+            resp_headers, final_url = resp.headers, resp.url
+            resp.close()
+            file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
+            if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
+                ctype = 'audio/mpeg'
+            ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
+            outputs = dict(file_size=file_size, ctype=ctype, ext=ext, download_url=url, final_url=final_url)
+        except:
+            outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
+        if outputs['file_size'] not in ['NULL']: return outputs
+        # GETSTREAM probe
+        try:
+            resp = self.session.get(url, allow_redirects=True, stream=True, **request_overrides)
+            resp.raise_for_status()
+            resp_headers, final_url = resp.headers, resp.url
+            resp.close()
+            file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
+            if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
+                ctype = 'audio/mpeg'
+            ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
+            outputs = dict(file_size=file_size, ctype=ctype, ext=ext, download_url=url, final_url=final_url)
+        except:
+            outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
+        return outputs
+    '''test'''
+    def test(self, url: str, request_overrides: dict = {}):
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
