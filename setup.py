@@ -1,12 +1,12 @@
 '''
 Function:
-    setup the musicdl
+    Implementation of Setup
 Author:
-    Charles
-微信公众号:
+    Zhenchao Jin
+WeChat Official Account (微信公众号):
     Charles的皮卡丘
 GitHub:
-    https://github.com/CharlesPikachu
+    https://github.com/CharlesPikachu/musicdl
 '''
 import musicdl
 from setuptools import setup, find_packages
@@ -35,7 +35,7 @@ setup(
     author_email=musicdl.__email__,
     license=musicdl.__license__,
     include_package_data=True,
-    entry_points={'console_scripts': ['musicdl = musicdl.musicdl:musicdlcmd']},
+    entry_points={'console_scripts': ['musicdl = musicdl.musicdl:MusicClientCMD']},
     install_requires=[lab.strip('\n') for lab in list(open('requirements.txt', 'r').readlines())],
     zip_safe=True,
     packages=find_packages()
