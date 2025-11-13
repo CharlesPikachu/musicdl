@@ -1,4 +1,4 @@
-# Imagedl Installation
+# Musicdl Installation
 
 #### Environment Requirements
 
