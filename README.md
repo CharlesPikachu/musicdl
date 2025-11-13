@@ -66,11 +66,17 @@ If you are a rights holder and believe this repository infringes your rights, pl
 
 # Playground
 
-|  Project (EN)                         |   Introduction                                               |  Code                                         |  Project (CN)        |
-|  :----:                               |   :----:                                                     |  :----:                                       |  :----:              |
-|  musicdlgui                           |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg) |  [click](./examples/musicdlgui)               |  音乐下载器GUI界面   |
-|  singerlyricsanalysis                 |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig) |  [click](./examples/singerlyricsanalysis)     |  歌手歌词分析        |
-|  searchlyrics                         |   [click](https://mp.weixin.qq.com/s/Vmc1IhuhMJ6C5vBwBe43Pg) |  [click](./examples/searchlyrics)             |  歌词获取歌曲片段    |
+Here are some projects built on top of musicdl,
+
+|  Project (EN)                                  |   Project (CN)          |   WeChat official account article                            |  Project Location                                                                                                         |
+|  :----:                                        |   :----:                |   :----:                                                     |  :----:                                                                                                                   |
+|  Music downloader GUI                          |   音乐下载器GUI界面     |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg) |  [musicdlgui](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/musicdlgui)                         |
+|  Singer lyrics analysis                        |   歌手歌词分析          |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig) |  [singerlyricsanalysis](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/singerlyricsanalysis)     |
+|  Lyric-based song snippet retrieval            |   歌词获取歌曲片段      |   [click](https://mp.weixin.qq.com/s/Vmc1IhuhMJ6C5vBwBe43Pg) |  [searchlyrics](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/searchlyrics)                     |
+
+Below are some projects implemented based on musicdl. For example, the Music Downloader GUI looks/works like this,
+
+
 
 
 # Install
@@ -151,6 +157,10 @@ music_client.startcmdui()
 ```
 
 For more practical examples, please refer to the usage documentation.
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/examples/musicdlgui/screenshot.png" width="600" alt="musicdl logo" />
+</div>
 
 
 # Recommended Projects

@@ -1,36 +1,18 @@
-# 衍生的项目
+# Playground
 
-#### 项目清单
+## Projects
 
-|  项目名称                     |   文章简介                                                    |   源代码                                                                                       |
-|  :----:                       |   :----:                                                      |   :----:                                                                                       |
-|  音乐下载器GUI界面            |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg)  |   [click](https://github.com/CharlesPikachu/musicdl/tree/master/examples/musicdlgui)           |
-|  歌手歌词分析                 |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig)  |   [click](https://github.com/CharlesPikachu/musicdl/tree/master/examples/singerlyricsanalysis) |
-|  歌词获取歌曲片段             |   [click](https://mp.weixin.qq.com/s/Vmc1IhuhMJ6C5vBwBe43Pg)  |   [click](https://github.com/CharlesPikachu/musicdl/tree/master/examples/searchlyrics)         |
+|  Project (EN)                                  |   Project (CN)          |   WeChat official account article                            |  Project Location                                                                                                         |
+|  :----:                                        |   :----:                |   :----:                                                     |  :----:                                                                                                                   |
+|  Music downloader GUI                          |   音乐下载器GUI界面     |   [click](https://mp.weixin.qq.com/s/fN1ORyI6lzQFqxf6Zk1oIg) |  [musicdlgui](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/musicdlgui)                         |
+|  Singer lyrics analysis                        |   歌手歌词分析          |   [click](https://mp.weixin.qq.com/s/I8Dy7CoM2ThnSpjoUaPtig) |  [singerlyricsanalysis](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/singerlyricsanalysis)     |
+|  Lyric-based song snippet retrieval            |   歌词获取歌曲片段      |   [click](https://mp.weixin.qq.com/s/Vmc1IhuhMJ6C5vBwBe43Pg) |  [searchlyrics](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/searchlyrics)                     |
 
+## Usage and results demonstration
 
-#### 项目使用
+#### Music downloader GUI
 
-**1.音乐下载器GUI界面**
+This project is located in the [musicdlgui](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/musicdlgui) directory. 
+To use it, run `python musicdlgui.py`. The result is shown below:
 
-在终端运行如下命令即可:
-
-```python
-python musicdlgui.py
-```
-
-**2.歌手歌词分析**
-
-在终端运行如下命令即可:
-
-```python
-python singerlyricsanalysis.py
-```
-
-**3.歌词获取歌曲片段**
-
-在终端运行如下命令即可:
-
-```python
-python searchlyrics.py
-```
+![img](https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/examples/musicdlgui/screenshot.png)
