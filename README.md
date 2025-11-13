@@ -135,6 +135,23 @@ The demonstration is as follows,
 </div>
 <br />
 
+If you are a VIP user on each music platform, for example, a VIP user of Netease Cloud Music, 
+you can pass in the cookies from your logged-in account so that musicdl can download more tracks with higher quality (*e.g.*, flac music files). 
+Example code is as follows:
+
+```python
+from musicdl import musicdl
+
+your_vip_cookies_with_str_format = ""
+your_vip_cookies_with_dict_format = dict(item.split("=", 1) for item in your_vip_cookies_with_str_format.split("; "))
+init_music_clients_cfg = dict()
+init_music_clients_cfg['NeteaseMusicClient'] = {'default_search_cookies': your_vip_cookies_with_dict_format, 'default_download_cookies': your_vip_cookies_with_dict_format, 'search_size_per_source': 20}
+music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+For more practical examples, please refer to the usage documentation.
+
 
 # Recommended Projects
 
