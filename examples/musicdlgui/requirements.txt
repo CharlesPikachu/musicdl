@@ -1,0 +1,3 @@
+requests
+PyQt5
+musicdl
