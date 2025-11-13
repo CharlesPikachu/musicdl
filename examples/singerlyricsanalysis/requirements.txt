@@ -1,0 +1,7 @@
+jieba
+numpy
+pillow
+musicdl==2.3.6
+snownlp
+wordcloud
+pyecharts
