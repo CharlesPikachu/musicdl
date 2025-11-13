@@ -15,4 +15,6 @@
 This project is located in the [musicdlgui](https://github.com/CharlesPikachu/musicdl/tree/master/examples/examples/musicdlgui) directory. 
 To use it, run `python musicdlgui.py`. The result is shown below:
 
-![img](https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/examples/musicdlgui/screenshot.png)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/docs/logo.png" width="600" alt="musicdl logo" />
+</div>

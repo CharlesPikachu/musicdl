@@ -76,7 +76,9 @@ Here are some projects built on top of musicdl,
 
 Below are some projects implemented based on musicdl. For example, the Music Downloader GUI looks/works like this,
 
-
+<div align="center">
+  <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/docs/logo.png" width="600" alt="musicdl logo" />
+</div>
 
 
 # Install
@@ -157,10 +159,6 @@ music_client.startcmdui()
 ```
 
 For more practical examples, please refer to the usage documentation.
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/examples/musicdlgui/screenshot.png" width="600" alt="musicdl logo" />
-</div>
 
 
 # Recommended Projects
