@@ -8,6 +8,7 @@ WeChat Official Account (微信公众号):
 '''
 import sys
 import click
+import json_repair
 if __name__ == '__main__':
     from __init__ import __version__
     from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable
@@ -126,57 +127,57 @@ class MusicClient():
         return 'Welcome to use musicdl!\nYou can visit https://github.com/CharlesPikachu/musicdl for more details.'
 
 
-# '''cmd直接运行'''
-# @click.command()
-# @click.version_option()
-# @click.option('-k', '--keyword', default=None, help='搜索的歌曲关键字, 若不指定, 则进入musicdl终端版')
-# @click.option('-l', '--logfilepath', default='musicdl.log', help='日志文件保存的路径')
-# @click.option('-p', '--proxies', default='{}', help='设置的代理')
-# @click.option('-s', '--savedir', default='music', help='下载的音乐保存路径')
-# @click.option('-c', '--count', default='5', help='在各个平台搜索时的歌曲搜索数量')
-# @click.option('-t', '--targets', default=None, help='指定音乐搜索的平台, 例如"migu,joox"')
-# def MusicClientCMD(keyword, logfilepath, proxies, savedir, count, targets):
-#     config = {
-#         'logfilepath': logfilepath,
-#         'proxies': json.loads(proxies),
-#         'savedir': savedir,
-#         'search_size_per_source': int(count),
-#     }
-#     target_srcs = [
-#         'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-#         'netease', 'migu', 'joox', 'yiting',
-#     ] if targets is None else [src.strip() for src in targets.split(',')]
-#     dl_client = musicdl(config=config)
-#     if keyword is None:
-#         dl_client.run(target_srcs=target_srcs)
-#     else:
-#         print(dl_client)
-#         search_results = dl_client.search(keyword, target_srcs)
-#         # 打印搜索结果
-#         title = ['序号', '歌手', '歌名', '大小', '时长', '专辑', '来源']
-#         items, records, idx = [], {}, 0
-#         for key, values in search_results.items():
-#             for value in values:
-#                 items.append([
-#                     colorize(str(idx), 'number'), 
-#                     colorize(value['singers'], 'singer'), 
-#                     value['songname'], 
-#                     value['filesize'] if value['ext'] != 'flac' else colorize(value['filesize'], 'flac'), 
-#                     value['duration'], 
-#                     value['album'], 
-#                     colorize(value['source'].upper(), 'highlight'),
-#                 ])
-#                 records.update({str(idx): value})
-#                 idx += 1
-#         printTable(title, items)
-#         # 音乐下载
-#         user_input = dl_client.dealInput('请输入想要下载的音乐编号: ')
-#         need_download_numbers = user_input.replace(' ', '').split(',')
-#         songinfos = []
-#         for item in need_download_numbers:
-#             songinfo = records.get(item, '')
-#             if songinfo: songinfos.append(songinfo)
-#         dl_client.download(songinfos)
+'''MusicClientCMD'''
+@click.command()
+@click.version_option()
+@click.option(
+    '-k', '--keyword', default=None, help='The keywords for the music search. If left empty, an interactive terminal will open automatically.', type=str, show_default=True,
+)
+@click.option(
+    '-m', '--music-sources', '--music_sources', default='MiguMusicClient,NeteaseMusicClient,KuwoMusicClient,KugouMusicClient,QQMusicClient,QianqianMusicClient', help='The music search and download sources.', type=click.Choice(MusicClientBuilder.REGISTERED_MODULES.keys(), case_sensitive=False), show_default=True, 
+)
+@click.option(
+    '-i', '--init-music-clients-cfg', '--init_music_clients_cfg', default=None, help='Config such as `work_dir` for each music client as a JSON string.', type=str, show_default=True,
+)
+@click.option(
+    '-r', '--requests-overrides', '--requests_overrides', default=None, help='Requests.get kwargs such as `headers` and `proxies` for each music client as a JSON string.', type=str, show_default=True,
+)
+@click.option(
+    '-c', '--clients-threadings', '--clients_threadings', default=None, help='Number of threads used for each music client as a JSON string.', type=str, show_default=True,
+)
+@click.option(
+    '-s', '--search-rules', '--search_rules', default=None, help='Search rules for each music client as a JSON string.', type=str, show_default=True,
+)
+def MusicClientCMD(keyword: str, music_sources: str, init_music_clients_cfg: str, requests_overrides: str, clients_threadings: str, search_rules: str):
+    # load json string
+    def _safe_load(string):
+        if string is not None:
+            result = json_repair.loads(string) or {}
+        else:
+            result = {}
+        return result
+    init_music_clients_cfg = _safe_load(init_music_clients_cfg)
+    requests_overrides = _safe_load(requests_overrides)
+    clients_threadings = _safe_load(clients_threadings)
+    search_rules = _safe_load(search_rules)
+    # instance music client
+    music_sources = music_sources.replace(' ', '').split(',')
+    music_client = MusicClient(
+        music_sources=music_sources, init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings, 
+        requests_overrides=requests_overrides, search_rules=search_rules,
+    )
+    # switch according to keyword
+    if keyword is None:
+        music_client.startcmdui()
+    else:
+        print(music_client)
+        # --search
+        search_results = music_client.search(keyword=keyword)
+        song_infos = []
+        for song_infos_per_source in list(search_results.values()):
+            song_infos.extend(song_infos_per_source)
+        # --download
+        music_client.download(song_infos=song_infos)
 
 
 '''tests'''
