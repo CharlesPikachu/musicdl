@@ -134,7 +134,7 @@ class MusicClient():
     '-k', '--keyword', default=None, help='The keywords for the music search. If left empty, an interactive terminal will open automatically.', type=str, show_default=True,
 )
 @click.option(
-    '-m', '--music-sources', '--music_sources', default='MiguMusicClient,NeteaseMusicClient,KuwoMusicClient,KugouMusicClient,QQMusicClient,QianqianMusicClient', help='The music search and download sources.', type=click.Choice(MusicClientBuilder.REGISTERED_MODULES.keys(), case_sensitive=False), show_default=True, 
+    '-m', '--music-sources', '--music_sources', default='MiguMusicClient,NeteaseMusicClient,KuwoMusicClient,KugouMusicClient,QQMusicClient,QianqianMusicClient', help='The music search and download sources.', type=str, show_default=True, 
 )
 @click.option(
     '-i', '--init-music-clients-cfg', '--init_music_clients_cfg', default=None, help='Config such as `work_dir` for each music client as a JSON string.', type=str, show_default=True,

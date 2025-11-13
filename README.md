@@ -74,51 +74,66 @@ If you are a rights holder and believe this repository infringes your rights, pl
 
 
 # Install
-#### Pip install
-```
-run "pip install musicdl"
-```
-#### Source code install
-```sh
-(1) Offline
-Step1: git clone https://github.com/CharlesPikachu/musicdl.git
-Step2: cd musicdl -> run "python setup.py install"
-(2) Online
-run "pip install git+https://github.com/CharlesPikachu/musicdl.git@master"
-```
 
+```sh
+# from pip
+pip install musicdl
+# from github repo method-1
+pip install git+https://github.com/CharlesPikachu/musicdl.git@master
+# from github repo method-2
+git clone https://github.com/CharlesPikachu/musicdl.git
+cd musicdl
+python setup.py install
+```
 
 # Quick Start
-#### Run by leveraging the API
+
+After a successful installation, you can run the snippet below,
+
 ```python
 from musicdl import musicdl
 
-config = {'logfilepath': 'musicdl.log', 'savedir': 'downloaded', 'search_size_per_source': 5, 'proxies': {}}
-target_srcs = [
-    'kugou', 'kuwo', 'qqmusic', 'qianqian', 'fivesing',
-    'netease', 'migu', 'joox', 'yiting',
-]
-client = musicdl.musicdl(config=config)
-client.run(target_srcs)
+music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'KuwoMusicClient', 'KugouMusicClient', 'QQMusicClient', 'QianqianMusicClient'])
+music_client.startcmdui()
 ```
-#### Run by leveraging compiled file
+
+Or just run `musicdl` (maybe `musicdl --help` to show usage information) from the terminal.
+
 ```
 Usage: musicdl [OPTIONS]
 
 Options:
-  --version               Show the version and exit.
-  -k, --keyword TEXT      搜索的歌曲关键字, 若不指定, 则进入musicdl终端版
-  -l, --logfilepath TEXT  日志文件保存的路径
-  -p, --proxies TEXT      设置的代理
-  -s, --savedir TEXT      下载的音乐保存路径
-  -c, --count TEXT        在各个平台搜索时的歌曲搜索数量
-  -t, --targets TEXT      指定音乐搜索的平台, 例如"migu,joox"
-  --help                  Show this message and exit.
+  --version                       Show the version and exit.
+  -k, --keyword TEXT              The keywords for the music search. If left
+                                  empty, an interactive terminal will open
+                                  automatically.
+  -m, --music-sources, --music_sources TEXT
+                                  The music search and download sources.
+                                  [default: MiguMusicClient,NeteaseMusicClient
+                                  ,KuwoMusicClient,KugouMusicClient,QQMusicCli
+                                  ent,QianqianMusicClient]
+  -i, --init-music-clients-cfg, --init_music_clients_cfg TEXT
+                                  Config such as `work_dir` for each music
+                                  client as a JSON string.
+  -r, --requests-overrides, --requests_overrides TEXT
+                                  Requests.get kwargs such as `headers` and
+                                  `proxies` for each music client as a JSON
+                                  string.
+  -c, --clients-threadings, --clients_threadings TEXT
+                                  Number of threads used for each music client
+                                  as a JSON string.
+  -s, --search-rules, --search_rules TEXT
+                                  Search rules for each music client as a JSON
+                                  string.
+  --help                          Show this message and exit.
 ```
 
+The demonstration is as follows,
 
-# Screenshot
-![img](./docs/screenshot.gif)
+<div align="center">
+  <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.gif" width="600"/>
+</div>
+<br />
 
 
 # Recommended Projects
