@@ -3,17 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Musicdl中文文档
+Welcome to Musicdl's documentation!
 ========================================
 
 .. toctree::
 	:maxdepth: 2
 	
-	State.md
-	Support.md
-	Noninstallusage.md
-	Installusage.md
-	Examples.md
+	Disclaimer.md
+	Install.md
+	Quickstart.md
 	Changelog.md
 	Recommend.md
-	Aboutme.md
+	Author.md

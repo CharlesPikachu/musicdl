@@ -1,181 +1,75 @@
-# 开发日志
+# Release Log
 
-**2018-06-27** 
+- 2025-11-12: Released musicdl v2.4.0 — complete code refactor; reintroduced support for music search and downloads on major platforms.
 
-- 版本号: v1.0,
-- 更新内容: 支持网易云, 千千音乐, 酷狗音乐, QQ音乐的音乐下载器。
+- 2023-02-22: Released musicdl v2.3.6 — fixed incorrect Netease Cloud Music information display and Migu lossless music download failures.
 
-**2018-07-01**
+- 2022-09-03: Released musicdl v2.3.5 — fixed QQ Music song search.
 
-- 版本号: v1.1,
-- 更新内容: 添加对酷我音乐的支持。
+- 2022-06-08: Released musicdl v2.3.4 — added support for Ximalaya audio search and download.
 
-**2018-07-02**
+- 2022-05-14: Released musicdl v2.3.3 — fixed minor bugs.
 
-- 版本号: v1.2,
-- 更新内容: 代码优化, 添加对虾米音乐的支持。
+- 2022-03-24: Released musicdl v2.3.0–v2.3.2 — removed Xiami Music; improved user interaction (progress bar, speech recognition, printed messages, etc.); and optimized code.
 
-**2018-08-05**
+- 2022-03-15: Released musicdl v2.2.8 — fixed download issues for KuGou Music.
 
-- 版本号: v1.3,
-- 更新内容: 支持终端运行。
+- 2022-03-08: Released musicdl v2.2.7 — added support for running directly via the `musicdl` command in the terminal.
 
-**2019-02-02**
+- 2022-02-09: Released musicdl v2.2.6 — fixed header retrieval issues for QQ Music downloads.
 
-- 版本号: v2.0.1,
-- 更新内容: 代码优化, 更人性化设计, 支持pip安装。
+- 2022-01-15: Released musicdl v2.2.5 — added support for specifying page indices in some music sources.
 
-**2019-04-15**
+- 2022-01-05: Released musicdl v2.2.4 — refactored the code, removed Baidu lossless music (API deprecated and not recoverable), and fixed 5Sing song search.
 
-- 版本号: v2.0.2,
-- 更新内容: 修复虾米音乐中的bugs。
+- 2021-12-14: Released musicdl v2.2.3 — fixed issues with KuWo Music sources.
 
-**2019-06-09**
+- 2021-08-30: Released musicdl v2.2.2 — added support for online voice-based song requests.
 
-- 版本号: v2.0.2,
-- 更新内容: 修复酷狗音乐中的bugs。
+- 2021-08-29: Released musicdl v2.2.1 — fixed KuWo Music and Qianqian Music.
 
-**2019-07-13**
+- 2020-11-27: Released musicdl v2.2.0 — added support for Lizhi FM, YiTing Music, and 5Sing Music; fixed issues with the progress bar and display; and added multi-threaded search.
 
-- 版本号: v2.0.4,
-- 更新内容: 添加对百度无损音乐的支持。
+- 2020-11-21: Released musicdl v2.1.11 — fixed Qianqian Music.
 
-**2019-08-24**
+- 2020-11-20: Released musicdl v2.1.10 — further code optimization.
 
-- 版本号: v2.0.5,
-- 更新内容: 解决一些代码中的bugs和修复失效的apis。
+- 2020-11-04: Released musicdl v2.1.9 — added support for saving error messages to a `.log` file.
 
-**2019-08-28**
+- 2020-10-17: Released musicdl v2.1.8 — optimized code.
 
-- 版本号: v2.0.6,
-- 更新内容: 添加对咪咕音乐的支持。
+- 2020-10-16: Released musicdl v2.1.7 — fixed Baidu lossless and Qianqian Music interfaces, and removed potential bugs and unnecessary characters.
 
-**2020-01-07**
+- 2020-07-26: Released musicdl v2.1.6 — updated KuGou integration and removed the default proxy to avoid potential bugs.
 
-- 版本号: v2.0.7,
-- 更新内容: 修复咪咕音乐中的bugs。
+- 2020-07-04: Released musicdl v2.1.5 — fixed QQ Music and JOOX Music.
 
-**2020-04-01**
+- 2020-04-15: Released musicdl v2.1.4 — fixed several minor issues.
 
-- 版本号: v2.1.0,
-- 更新内容: 全新升级, 更人性化设计, 代码修复与优化, 增加项目文档等。
+- 2020-04-03: Released musicdl v2.1.2 — added support for JOOX Music.
 
-**2020-04-02**
+- 2020-04-02: Released musicdl v2.1.1 — improved robustness and re-added support for Xiami Music.
 
-- 版本号: v2.1.1,
-- 更新内容: 鲁棒性增强, 重新添加对虾米音乐的支持。
+- 2020-04-01: Released musicdl v2.1.0 — major upgrade with a more user-friendly design, bug fixes, code optimization, and added project documentation.
 
-**2020-04-03**
+- 2020-01-07: Released musicdl v2.0.7 — fixed bugs in Migu Music.
 
-- 版本号: v2.1.2,
-- 更新内容: 添加了对JOOX音乐的支持。
+- 2019-08-28: Released musicdl v2.0.6 — added support for Migu Music.
 
-**2020-04-15**
+- 2019-08-24: Released musicdl v2.0.5 — fixed various bugs and repaired invalid APIs.
 
-- 版本号: v2.1.4,
-- 更新内容: 解决一些小问题。
+- 2019-07-13: Released musicdl v2.0.4 — added support for Baidu lossless music.
 
-**2020-07-04**
+- 2019-06-09: Released musicdl v2.0.2 — fixed bugs in KuGou Music.
 
-- 版本号: v2.1.5,
-- 更新内容: 修复QQ和JOOX音乐。
+- 2019-04-15: Released musicdl v2.0.2 — fixed bugs in Xiami Music.
 
-**2020-07-26**
+- 2019-02-02: Released musicdl v2.0.1 — optimized code, improved user experience, and added support for installation via pip.
 
-- 版本号: v2.1.6,
-- 更新内容: 对酷狗做了一些更新, 并去除默认代理以避免一些潜在的Bugs。
+- 2018-08-05: Released musicdl v1.3 — added support for running in the terminal.
 
-**2020-10-16**
+- 2018-07-02: Released musicdl v1.2 — optimized code and added support for Xiami Music.
 
-- 版本号: v2.1.7,
-- 更新内容: 修复百度无损音乐和千千音乐接口, 去除潜在bug和不必要字符。
+- 2018-07-01: Released musicdl v1.1 — added support for KuWo Music.
 
-**2020-10-17**
-
-- 版本号: v2.1.8,
-- 更新内容: 代码优化。
-
-**2020-11-04**
-
-- 版本号: v2.1.9,
-- 更新内容: 支持将错误原因保存到.log文件。
-
-**2020-11-20**
-
-- 版本号: v2.1.10,
-- 更新内容: 代码优化。
-
-**2020-11-21**
-
-- 版本号: v2.1.11,
-- 更新内容: 修复千千音乐。
-
-**2020-11-27**
-
-- 版本号: v2.2.0,
-- 更新内容: 添加了对荔枝FM, 一听音乐, 5Sing音乐的支持, 修复进度条和显示存在的一些BUG, 以及支持多线程搜索。
-
-**2021-08-29**
-
-- 版本号: v2.2.1,
-- 更新内容: 修复酷我音乐和千千音乐。
-
-**2021-08-30**
-
-- 版本号: v2.2.2,
-- 更新内容: 支持语音在线点歌。
-
-**2021-12-14**
-
-- 版本号: v2.2.3,
-- 更新内容: 修复酷我音乐源失效的问题。
-
-**2022-01-05**
-
-- 版本号: v2.2.4,
-- 更新内容: 代码重构，删除百度无损音乐(接口已经失效且无法修复)，修复5sing的歌曲搜索功能。
-
-**2022-01-15**
-
-- 版本号: v2.2.5,
-- 更新内容: 支持在某些音乐源中指定page。
-
-**2022-02-09**
-
-- 版本号: v2.2.6,
-- 更新内容: 修复qq音乐下载headers获取问题。
-
-**2022-03-08**
-
-- 版本号: v2.2.7,
-- 更新内容: 支持在终端直接输入命令"musicdl"运行。
-
-**2022-03-15**
-
-- 版本号: v2.2.8,
-- 更新内容: 修复酷狗音乐无法下载的问题。
-
-**2022-03-24**
-
-- 版本号: v2.3.0-2.3.2,
-- 更新内容: 移除虾米音乐, 用户交互相关内容优化(进度条, 语音识别, 打印的信息等), 代码优化。
-
-**2022-05-14**
-
-- 版本号: v2.3.3,
-- 更新内容: 修复一些小bugs。
-
-**2022-06-08**
-
-- 版本号: v2.3.4,
-- 更新内容: 支持喜马拉雅的音频搜索与下载。
-
-**2022-09-03**
-
-- 版本号: v2.3.5,
-- 更新内容: 修复QQ音乐的歌曲搜索功能。
-
-**2023-02-22**
-
-- 版本号: v2.3.6,
-- 更新内容: 修复网易云音乐信息显示错误问题以及咪咕无损音乐下载失败问题。
+- 2018-06-27: Released musicdl v1.0 — added download support for Netease Cloud Music, Qianqian Music, KuGou Music, and QQ Music.

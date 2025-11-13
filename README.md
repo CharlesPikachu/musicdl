@@ -33,7 +33,7 @@
 
 # What's New
 
-- 2025-11-12: Release musicdl v2.4.0 — Complete code refactor; reintroduced support for music search and downloads on major platforms.
+- 2025-11-12: Released musicdl v2.4.0 — complete code refactor; reintroduced support for music search and downloads on major platforms.
 
 
 # Introduction

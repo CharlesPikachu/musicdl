@@ -18,9 +18,9 @@
 # -- Project information -----------------------------------------------------
 
 project = 'musicdl'
-copyright = '2020-2022, Charles'
-author = 'Charles'
-release = '2.3.0'
+copyright = '2020-2030, Zhenchao Jin'
+author = 'Zhenchao Jin'
+release = '2.4.0'
 
 # -- General configuration ---------------------------------------------------
 
