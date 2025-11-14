@@ -4,5 +4,5 @@ from .sources import (
 )
 from .utils import (
     BaseModuleBuilder, LoggerHandle, AudioLinkTester, WhisperLRC, colorize, printtable, legalizestring, touchdir, seconds2hms, byte2mb, 
-    cachecookies, resp2json, isvalidresp, safeextractfromdict, replacefile
+    cachecookies, resp2json, isvalidresp, safeextractfromdict, replacefile, printfullline
 )

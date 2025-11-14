@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import os
+import shutil
 import logging
 import collections.abc
 from prettytable import PrettyTable
@@ -102,3 +103,9 @@ def colorize(string, color):
     string = str(string)
     if color not in COLORS: return string
     return COLORS[color] + string + '\033[0m'
+
+
+'''printfullline'''
+def printfullline(ch: str = "*", end: str = '\n'):
+    cols = shutil.get_terminal_size().columns
+    print(ch * cols, end=end)

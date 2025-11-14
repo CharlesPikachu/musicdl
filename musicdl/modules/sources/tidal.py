@@ -258,9 +258,9 @@ class TIDALMusicClient(BaseMusicClient):
                     else:
                         final_ext = download_ext
                         decrypted_path = decrypted_path
-                save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}.{final_ext}"), 1
+                save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}{final_ext}"), 1
                 while os.path.exists(save_path):
-                    save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}.{final_ext}")
+                    save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}{final_ext}")
                     same_name_file_idx += 1
                 replacefile(decrypted_path, save_path)
             # update progress

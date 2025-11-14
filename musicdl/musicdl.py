@@ -11,15 +11,14 @@ import click
 import json_repair
 if __name__ == '__main__':
     from __init__ import __version__
-    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable
+    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable, printfullline
 else:
     from .__init__ import __version__
-    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable
+    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable, printfullline
 
 
 '''BASIC_INFO'''
-BASIC_INFO = '''************************************************************
-Function: Music Downloader v%s
+BASIC_INFO = '''Function: Music Downloader v%s
 Author: Zhenchao Jin
 WeChat Official Account (微信公众号): Charles_pikachu (Charles的皮卡丘)
 Instructions:
@@ -27,8 +26,7 @@ Instructions:
     Enter q: exit the program
     Download multiple songs: when selecting songs to download, enter "1,2,5" to download songs 1, 2, and 5 simultaneously
 Music Files Save Path:
-    Inside the %s folder (root dir is the current directory if using relative path).
-************************************************************'''
+    Inside the %s folder (root dir is the current directory if using relative path).'''
 
 
 '''MusicClient'''
@@ -61,10 +59,15 @@ class MusicClient():
                 self.requests_overrides[music_source] = {}
             if music_source not in self.search_rules:
                 self.search_rules[music_source] = {}
+    '''printbasicinfo'''
+    def printbasicinfo(self):
+        printfullline(ch='-')
+        print(BASIC_INFO % (__version__, ', '.join([f'{k}: {v}' for k, v in self.work_dirs.items()])))
+        printfullline(ch='-')
     '''startcmdui'''
     def startcmdui(self):
         while True:
-            print(BASIC_INFO % (__version__, self.work_dirs))
+            self.printbasicinfo()
             # process user inputs, music file search
             user_input_keyword = self.processinputs('Please enter keywords to search for songs: ')
             search_results = self.search(keyword=user_input_keyword)
@@ -109,9 +112,9 @@ class MusicClient():
                 song_infos=source_song_infos, num_threadings=self.clients_threadings[song_info['source']], request_overrides=self.requests_overrides[song_info['source']]
             )
     '''processinputs'''
-    def processinputs(self, input_tip=''):
+    def processinputs(self, input_tip='', prefix: str = '\n'):
         # accept user inputs
-        user_input = input(input_tip)
+        user_input = input(prefix + input_tip)
         # quit
         if user_input.lower() == 'q':
             self.logger_handle.info('Goodbye — thanks for using musicdl; come back anytime!')

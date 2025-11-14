@@ -17,6 +17,7 @@ import requests
 import webbrowser
 import subprocess
 from .misc import resp2json
+from .logger import colorize
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from urllib.parse import urljoin
@@ -426,24 +427,21 @@ class TIDALTvSession():
             except:
                 pass
         # --print tips in terminal
-        msg = f'Opening {user_login_url} in the browser, log in or sign up to TIDAL manually to continue.'
-        print("\n" + "=" * 100)
-        print("TIDAL LOGIN REQUIRED")
-        print("-" * 100)
-        print(msg)
-        print("=" * 100 + "\n")
+        msg = f'Opening {user_login_url} in the browser, log in or sign up to TIDAL manually to continue (in 300 seconds please).'
+        print(colorize("TIDAL LOGIN REQUIRED:", 'highlight'))
+        print(colorize(msg, 'highlight'))
         # --use tkinter to show tips
         has_display = (
             sys.platform.startswith("win") or sys.platform == "darwin" or bool(os.environ.get("DISPLAY"))
         )
-        '''
         if has_display:
             import tkinter as tk
             from tkinter import messagebox
             root = tk.Tk()
             root.withdraw()
-            messagebox.showinfo("TIDAL Login Required", msg)
-        '''
+            root.attributes('-topmost', True)
+            messagebox.showinfo("TIDAL Login Required", msg, parent=root)
+            root.destroy()
         # --checking user log in or sign up status
         while True:
             resp = self.session.post(f'{base_url}/oauth2/token', data=data, **request_overrides)
