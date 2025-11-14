@@ -37,10 +37,12 @@ class MiguMusicClient(BaseMusicClient):
             except: return 0
         # parse
         resp = self.get(url=f'https://api.cenguigui.cn/api/mg_music/api.php?id={song_id}', **request_overrides)
+        if not isvalidresp(resp): return {}
         download_result = resp2json(resp=resp)
         download_url, download_url_status, file_size, ext = "", dict(), 0, 'flac'
         for rate in sorted(safeextractfromdict(download_result, ['data', 'level', 'quality'], []), key=lambda x: _safefetchfilesize(x), reverse=True):
-            download_url, file_size, ext = rate['url'], _safefetchfilesize(rate), rate['format'].lower()
+            download_url, file_size, ext = rate.get('url', ''), _safefetchfilesize(rate), str(rate.get('format', 'flac')).lower()
+            if not download_url: continue
             download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
             if download_url_status['ok']: break
         # return

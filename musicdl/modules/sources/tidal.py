@@ -43,8 +43,8 @@ class TIDALMusicClient(BaseMusicClient):
         self.default_search_headers = self.tidal_session.auth_headers
         self.default_download_headers = self.tidal_session.auth_headers
         self.default_headers = self.default_search_headers
-    '''_requestget'''
-    def _requestget(self, url, **kwargs):
+    '''_saferequestget'''
+    def _saferequestget(self, url, **kwargs):
         resp = self.get(url, **kwargs)
         if resp.status_code in [401, 403]:
             self.tidal_session.refresh()
@@ -279,7 +279,7 @@ class TIDALMusicClient(BaseMusicClient):
         # successful
         try:
             # --search results
-            resp = self._requestget(search_url, **request_overrides)
+            resp = self._saferequestget(search_url, **request_overrides)
             resp.raise_for_status()
             search_results = aigpy.model.dictToModel(resp2json(resp=resp), SearchResult()).tracks.items
             for search_result in search_results:
@@ -289,7 +289,7 @@ class TIDALMusicClient(BaseMusicClient):
                 qualities = [('hi_res_lossless', 'HI_RES_LOSSLESS'), ('high_lossless', 'LOSSLESS'), ('low_320k', 'HIGH'), ('low_96k', 'LOW')]
                 for quality in qualities:
                     params = {"playbackmode": "STREAM", "audioquality": quality[1], "assetpresentation": "FULL",}
-                    resp = self._requestget(f'https://tidal.com/v1/tracks/{search_result.id}/playbackinfo', params=params, **request_overrides)
+                    resp = self._saferequestget(f'https://tidal.com/v1/tracks/{search_result.id}/playbackinfo', params=params, **request_overrides)
                     if not isvalidresp(resp): continue
                     download_result = aigpy.model.dictToModel(resp2json(resp), StreamRespond())
                     if ("vnd.tidal.bt" not in download_result.manifestMimeType) and ("dash+xml" not in download_result.manifestMimeType): continue
@@ -307,7 +307,7 @@ class TIDALMusicClient(BaseMusicClient):
                 duration = seconds2hms(search_result.duration)
                 # --lyric results
                 params = {'countryCode': self.tidal_session.storage.country_code, 'include': 'lyrics'}
-                resp = self._requestget(f'https://openapi.tidal.com/v2/tracks/{search_result.id}', params=params, **request_overrides)
+                resp = self._saferequestget(f'https://openapi.tidal.com/v2/tracks/{search_result.id}', params=params, **request_overrides)
                 if isvalidresp(resp):
                     try:
                         lyric_result = resp2json(resp)

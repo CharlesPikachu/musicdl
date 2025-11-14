@@ -30,6 +30,30 @@ class NeteaseMusicClient(BaseMusicClient):
         if not self.default_search_cookies: self.default_search_cookies = default_cookies
         if not self.default_download_cookies: self.default_download_cookies = default_cookies
         self._initsession()
+    '''_boostquality'''
+    def _boostquality(self, song_id, request_overrides):
+        # _safefetchfilesize
+        def _safefetchfilesize(meta: dict):
+            if not isinstance(meta, dict): return 0
+            file_size = str(meta.get('size', '0.00MB'))
+            file_size = file_size.strip('MB').strip(' ')
+            try: return float(file_size)
+            except: return 0
+        # parse
+        download_url, download_url_status, file_size, ext = "", dict(), 0, 'flac'
+        for quality in ['jymaster', 'sky', 'jyeffect', 'hires', 'lossless', 'exhigh', 'standard']:
+            resp = self.get(url=f'https://api.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}')
+            if not isvalidresp(resp=resp): continue
+            download_result = resp2json(resp=resp)
+            if 'data' not in download_result or (_safefetchfilesize(download_result['data']) < 0.01): continue
+            download_url, file_size = download_result['data'].get('url', ''), _safefetchfilesize(download_result['data'])
+            if not download_url: continue
+            ext = download_url.split('.')[-1].split('?')[0]
+            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+            if download_url_status['ok']: break
+        # return
+        boost_result = dict(download_result=download_result, download_url=download_url, file_size=file_size, download_url_status=download_url_status, ext=ext)
+        return boost_result
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
@@ -94,6 +118,19 @@ class NeteaseMusicClient(BaseMusicClient):
                         lyric_result, lyric = dict(), 'NULL'
                 else:
                     lyric_result, lyric = dict(), 'NULL'
+                # --improve music quality if possible
+                try:
+                    boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
+                except:
+                    boost_result = dict()
+                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
+                    file_size_ori = download_result['file_size']
+                    try: file_size_ori = float(file_size.split(' ')[0])
+                    except: file_size_ori = 0
+                    file_size_imp = boost_result['file_size']
+                    if file_size_imp > file_size_ori:
+                        download_result['boost_result'] = boost_result
+                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
