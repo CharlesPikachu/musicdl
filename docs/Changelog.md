@@ -1,6 +1,6 @@
 # Release Log
 
-- 2025-11-15: Released musicdl v2.4.2 — save meta info to music files from TIDAL, fix user input bugs.
+- 2025-11-15: Released musicdl v2.4.2 — save meta info to music files from TIDAL, fix user input bugs and migu search bugs.
 
 - 2025-11-14: Released musicdl v2.4.1 — beautify print, add support for TIDAL (TIDAL is an artist-first, fan-centered music streaming platform that delivers over 110 million songs in HiFi sound quality to the global music community).
 

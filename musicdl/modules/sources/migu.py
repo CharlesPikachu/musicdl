@@ -45,6 +45,12 @@ class MiguMusicClient(BaseMusicClient):
         return search_urls
     '''_search'''
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # _safefetchfilesize
+        def _safefetchfilesize(meta: dict):
+            file_size = meta.get('asize') or meta.get('isize') or meta.get('size') or '0'
+            if byte2mb(file_size) == 'NULL':
+                file_size = '0'
+            return file_size
         # successful
         try:
             # --search results
@@ -56,11 +62,11 @@ class MiguMusicClient(BaseMusicClient):
                 if 'copyrightId' not in search_result or 'contentId' not in search_result:
                     continue
                 file_size, ext = 'NULL', 'NULL'
-                for rate in sorted(search_result.get('audioFormats', []), key=lambda x: int(x['isize']), reverse=True):
-                    if byte2mb(rate.get('isize', '0')) == 'NULL' or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')):
+                for rate in sorted(search_result.get('audioFormats', []), key=lambda x: int(_safefetchfilesize(x)), reverse=True):
+                    if byte2mb(_safefetchfilesize(rate)) == 'NULL' or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')):
                         continue
                     ext = {'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ24': 'flac'}.get(rate['formatType'], 'NULL')
-                    file_size = byte2mb(rate.get('isize', '0'))
+                    file_size = byte2mb(_safefetchfilesize(rate))
                     download_url = f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId=15548614588710179085069&netType=00"
                     download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
