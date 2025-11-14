@@ -86,6 +86,7 @@ class MusicClient():
             # process user inputs, music file download
             user_input_select_song_info_pointer = self.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
             user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]
+            user_input_select_song_info_pointer = list(set(user_input_select_song_info_pointer))
             selected_song_infos = []
             for idx in user_input_select_song_info_pointer: selected_song_infos.append(song_infos[idx])
             self.download(selected_song_infos)

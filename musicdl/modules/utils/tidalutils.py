@@ -19,9 +19,10 @@ import subprocess
 from .misc import resp2json
 from .logger import colorize
 from Crypto.Cipher import AES
+from mutagen.flac import FLAC
 from Crypto.Util import Counter
 from urllib.parse import urljoin
-from typing import List, Optional
+from typing import List, Optional, Any
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
@@ -32,31 +33,11 @@ try: import av
 except: av = None
 
 
-'''Lyrics'''
-class Lyrics(aigpy.model.ModelBase):
+'''MediaMetadata'''
+class MediaMetadata(aigpy.model.ModelBase):
     def __init__(self) -> None:
         super().__init__()
-        self.trackId = None
-        self.lyricsProvider = None
-        self.providerCommontrackId = None
-        self.providerLyricsId = None
-        self.lyrics = None
-        self.subtitles = None
-
-
-'''StreamRespond'''
-class StreamRespond(aigpy.model.ModelBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.trackid = None
-        self.videoid = None
-        self.streamType = None
-        self.assetPresentation = None
-        self.audioMode = None
-        self.audioQuality = None
-        self.videoQuality = None
-        self.manifestMimeType = None
-        self.manifest = None
+        self.tags = []
 
 
 '''StreamUrl'''
@@ -73,13 +54,14 @@ class StreamUrl(aigpy.model.ModelBase):
         self.bitDepth = None
 
 
-'''SearchDataBase'''
-class SearchDataBase(aigpy.model.ModelBase):
+'''VideoStreamUrl'''
+class VideoStreamUrl(aigpy.model.ModelBase):
     def __init__(self) -> None:
         super().__init__()
-        self.limit = 0
-        self.offset = 0
-        self.totalNumberOfItems = 0
+        self.codec = None
+        self.resolution = None
+        self.resolutions = None
+        self.m3u8Url = None
 
 
 '''Artist'''
@@ -90,13 +72,6 @@ class Artist(aigpy.model.ModelBase):
         self.name = None
         self.type = None
         self.picture = None
-
-
-'''SearchArtists'''
-class SearchArtists(SearchDataBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.items = Artist()
 
 
 '''Album'''
@@ -113,18 +88,31 @@ class Album(aigpy.model.ModelBase):
         self.type = None
         self.version = None
         self.cover = None
+        self.videoCover = None
         self.explicit = False
         self.audioQuality = None
         self.audioModes = None
+        self.upc = None
+        self.popularity = None
+        self.copyright = None
+        self.streamStartDate = None
+        self.mediaMetadata = MediaMetadata()
         self.artist = Artist()
         self.artists = Artist()
 
 
-'''SearchAlbums'''
-class SearchAlbums(SearchDataBase):
+'''Playlist'''
+class Playlist(aigpy.model.ModelBase):
     def __init__(self) -> None:
         super().__init__()
-        self.items = Album()
+        self.uuid = None
+        self.title = None
+        self.numberOfTracks = 0
+        self.numberOfVideos = 0
+        self.description = None
+        self.duration = 0
+        self.image = None
+        self.squareImage = None
 
 
 '''Track'''
@@ -141,19 +129,18 @@ class Track(aigpy.model.ModelBase):
         self.isrc = None
         self.explicit = False
         self.audioQuality = None
+        self.audioModes = None
         self.copyRight = None
+        self.replayGain = None
+        self.peak = None
+        self.popularity = None
+        self.streamStartDate = None
+        self.mediaMetadata = MediaMetadata()
         self.artist = Artist()
         self.artists = Artist()
         self.album = Album()
         self.allowStreaming = False
         self.playlist = None
-
-
-'''SearchTracks'''
-class SearchTracks(SearchDataBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.items = Track()
 
 
 '''Video'''
@@ -176,25 +163,62 @@ class Video(aigpy.model.ModelBase):
         self.playlist = None
 
 
+'''Mix'''
+class Mix(aigpy.model.ModelBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.id = None
+        self.tracks = Track()
+        self.videos = Video()
+
+
+'''Lyrics'''
+class Lyrics(aigpy.model.ModelBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.trackId = None
+        self.lyricsProvider = None
+        self.providerCommontrackId = None
+        self.providerLyricsId = None
+        self.lyrics = None
+        self.subtitles = None
+
+
+'''SearchDataBase'''
+class SearchDataBase(aigpy.model.ModelBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.limit = 0
+        self.offset = 0
+        self.totalNumberOfItems = 0
+
+
+'''SearchAlbums'''
+class SearchAlbums(SearchDataBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.items = Album()
+
+
+'''SearchArtists'''
+class SearchArtists(SearchDataBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.items = Artist()
+
+
+'''SearchTracks'''
+class SearchTracks(SearchDataBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.items = Track()
+
+
 '''SearchVideos'''
 class SearchVideos(SearchDataBase):
     def __init__(self) -> None:
         super().__init__()
         self.items = Video()
-
-
-'''Playlist'''
-class Playlist(aigpy.model.ModelBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.uuid = None
-        self.title = None
-        self.numberOfTracks = 0
-        self.numberOfVideos = 0
-        self.description = None
-        self.duration = 0
-        self.image = None
-        self.squareImage = None
 
 
 '''SearchPlaylists'''
@@ -213,6 +237,21 @@ class SearchResult(aigpy.model.ModelBase):
         self.tracks = SearchTracks()
         self.videos = SearchVideos()
         self.playlists = SearchPlaylists()
+
+
+'''StreamRespond'''
+class StreamRespond(aigpy.model.ModelBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.trackid = None
+        self.videoid = None
+        self.streamType = None
+        self.assetPresentation = None
+        self.audioMode = None
+        self.audioQuality = None
+        self.videoQuality = None
+        self.manifestMimeType = None
+        self.manifest = None
 
 
 '''SegmentTimelineEntry'''
@@ -260,52 +299,6 @@ class Representation:
         return []
 
 
-'''buildsegmentlist'''
-def buildsegmentlist(segment_list: SegmentList, base_url: str) -> List[str]:
-    segments: List[str] = []
-    if segment_list.initialization:
-        segments.append(urljoin(base_url, segment_list.initialization))
-    for media in segment_list.media_segments:
-        segments.append(urljoin(base_url, media))
-    return segments
-
-
-'''completeurl'''
-def completeurl(template: str, base_url: str, representation: Representation, *, number: Optional[int] = None, time: Optional[int] = None) -> str:
-    mapping = {
-        '$RepresentationID$': representation.id, '$Bandwidth$': representation.bandwidth, '$Number$': None if number is None else str(number),
-        '$Time$': None if time is None else str(time),
-    }
-    result = template
-    for placeholder, value in mapping.items():
-        if value is not None:
-            result = result.replace(placeholder, value)
-    result = result.replace('$$', '$')
-    return urljoin(base_url, result)
-
-
-'''buildsegmenttemplate'''
-def buildsegmenttemplate(template: SegmentTemplate, base_url: str, representation: Representation) -> List[str]:
-    segments: List[str] = []
-    if template.initialization:
-        segments.append(completeurl(template.initialization, base_url, representation))
-    number = template.start_number
-    current_time: Optional[int] = None
-    for entry in template.timeline:
-        if entry.start_time is not None:
-            current_time = entry.start_time
-        elif current_time is None:
-            current_time = template.presentation_time_offset
-        for _ in range(entry.repeat + 1):
-            media = template.media
-            if media:
-                segments.append(completeurl(media, base_url, representation, number=number, time=current_time))
-            number += 1
-            if current_time is not None:
-                current_time += entry.duration
-    return segments
-
-
 '''AdaptationSet'''
 @dataclass
 class AdaptationSet:
@@ -349,7 +342,7 @@ class SessionStorage:
     '''fromjsonbytes'''
     @classmethod
     def fromjsonbytes(cls, b: bytes):
-        data = json.loads(b.decode("utf-8"))
+        data: dict = json.loads(b.decode("utf-8"))
         if data.get("expires"):
             data["expires"] = datetime.fromisoformat(data["expires"])
         else:
@@ -530,6 +523,52 @@ class TIDALTvSession():
             return False
 
 
+'''buildsegmentlist'''
+def buildsegmentlist(segment_list: SegmentList, base_url: str) -> List[str]:
+    segments: List[str] = []
+    if segment_list.initialization:
+        segments.append(urljoin(base_url, segment_list.initialization))
+    for media in segment_list.media_segments:
+        segments.append(urljoin(base_url, media))
+    return segments
+
+
+'''completeurl'''
+def completeurl(template: str, base_url: str, representation: Representation, *, number: Optional[int] = None, time: Optional[int] = None) -> str:
+    mapping = {
+        '$RepresentationID$': representation.id, '$Bandwidth$': representation.bandwidth, '$Number$': None if number is None else str(number),
+        '$Time$': None if time is None else str(time),
+    }
+    result = template
+    for placeholder, value in mapping.items():
+        if value is not None:
+            result = result.replace(placeholder, value)
+    result = result.replace('$$', '$')
+    return urljoin(base_url, result)
+
+
+'''buildsegmenttemplate'''
+def buildsegmenttemplate(template: SegmentTemplate, base_url: str, representation: Representation) -> List[str]:
+    segments: List[str] = []
+    if template.initialization:
+        segments.append(completeurl(template.initialization, base_url, representation))
+    number = template.start_number
+    current_time: Optional[int] = None
+    for entry in template.timeline:
+        if entry.start_time is not None:
+            current_time = entry.start_time
+        elif current_time is None:
+            current_time = template.presentation_time_offset
+        for _ in range(entry.repeat + 1):
+            media = template.media
+            if media:
+                segments.append(completeurl(media, base_url, representation, number=number, time=current_time))
+            number += 1
+            if current_time is not None:
+                current_time += entry.duration
+    return segments
+
+
 '''decryptsecuritytoken'''
 def decryptsecuritytoken(security_token):
     master_key = 'UIlTTEMmmLfGowo/UC60x2H45W6MdGgTRfo/umg4754='
@@ -609,3 +648,88 @@ def remuxflacstream(src_path: str, dest_path: str):
         last_reason = reason
         if os.path.exists(dest_path): os.remove(dest_path)
     return src_path, last_reason
+
+
+'''formatgain'''
+def formatgain(value: Optional[Any]) -> Optional[str]:
+    if value is None: return None
+    try: return f"{float(value):.2f} dB"
+    except (TypeError, ValueError): return str(value)
+
+
+'''extractmediatags'''
+def extractmediatags(track: Track, album: Optional[Album]) -> list[str]:
+    tags: list[str] = []
+    for source in (getattr(track, "mediaMetadata", None), getattr(album, "mediaMetadata", None) if album else None):
+        if source and getattr(source, "tags", None):
+            tags = [tag for tag in source.tags if tag]
+            if tags: break
+    return tags
+
+
+'''formatpeak'''
+def formatpeak(value: Optional[Any]) -> Optional[str]:
+    if value is None: return None
+    try: return f"{float(value):.6f}"
+    except (TypeError, ValueError): return str(value)
+
+
+'''updateflacmetadata'''
+def updateflacmetadata(filepath: str, track: Track, stream: Optional[StreamUrl]):
+    # instance
+    audio = FLAC(filepath)
+    # set tag
+    def _settag(key: str, value: Any) -> None:
+        if value is None: return
+        if isinstance(value, bool):
+            text = "1" if value else "0"
+            audio[key] = [text]
+            return
+        if isinstance(value, (list, tuple, set)):
+            values = []
+            for item in value:
+                if item is None: continue
+                if isinstance(item, bool): item = "1" if item else "0"
+                item_text = str(item).strip()
+                if item_text: values.append(item_text)
+            if values: audio[key] = values
+            return
+        text = str(value).strip()
+        if text: audio[key] = [text]
+    # set tags from track
+    _settag("TIDAL_TRACK_ID", track.id)
+    _settag("TIDAL_TRACK_VERSION", track.version)
+    _settag("TIDAL_TRACK_POPULARITY", track.popularity)
+    _settag("TIDAL_STREAM_START_DATE", track.streamStartDate)
+    _settag("TIDAL_EXPLICIT", track.explicit)
+    _settag("TIDAL_AUDIO_QUALITY", getattr(track, "audioQuality", None))
+    _settag("TIDAL_AUDIO_MODES", getattr(track, "audioModes", None) or [])
+    _settag("REPLAYGAIN_TRACK_GAIN", formatgain(getattr(track, "replayGain", None)))
+    _settag("REPLAYGAIN_TRACK_PEAK", formatpeak(getattr(track, "peak", None)))
+    # set tags from stream
+    if stream is not None:
+        _settag("CODEC", stream.codec)
+        _settag("TIDAL_STREAM_SOUND_QUALITY", stream.soundQuality)
+        _settag("BITS_PER_SAMPLE", stream.bitDepth)
+        _settag("SAMPLERATE", stream.sampleRate)
+    # misc
+    if track.trackNumberOnPlaylist: _settag("TIDAL_PLAYLIST_TRACK_NUMBER", track.trackNumberOnPlaylist)
+    _settag("URL", f"https://listen.tidal.com/track/{track.id}")
+    # save
+    audio.save()
+
+
+'''setmetadata'''
+def setmetadata(track: Track, filepath: str, stream: Optional[StreamUrl]):
+    is_flac_file = filepath.lower().endswith(".flac")
+    obj = aigpy.tag.TagTool(filepath)
+    obj.album = track.album.title
+    obj.title = track.title
+    if not aigpy.string.isNull(track.version): obj.title += ' (' + track.version + ')'
+    obj.artist = list(map(lambda artist: artist.name, track.artists)) if track.artists else list()
+    obj.copyright = track.copyRight
+    obj.tracknumber = track.trackNumber
+    obj.discnumber = track.volumeNumber
+    obj.isrc = track.isrc
+    if is_flac_file:
+        updateflacmetadata(filepath, track, stream)

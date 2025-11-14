@@ -20,7 +20,7 @@ from urllib.parse import urlencode, urljoin
 from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, touchdir, replacefile, AudioLinkTester
 from ..utils.tidalutils import (
     TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry,
-    decryptfile, decryptsecuritytoken, pyavready, ffmpegready, remuxflacstream
+    decryptfile, decryptsecuritytoken, pyavready, ffmpegready, remuxflacstream, setmetadata
 )
 
 
@@ -263,6 +263,7 @@ class TIDALMusicClient(BaseMusicClient):
                     save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}{final_ext}")
                     same_name_file_idx += 1
                 replacefile(decrypted_path, save_path)
+                setmetadata(track=song_info['raw_data']['search_result'], filepath=save_path, stream=stream_url)
             # update progress
             progress.advance(song_progress_id, 1)
             progress.advance(songs_progress_id, 1)
