@@ -62,7 +62,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  QQMusicClient                 |  QQ音乐                             |   ✓                |  ✓                   |    [qq.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qq.py)                    |
 |  XimalayaMusicClient           |  喜马拉雅                           |   ✓                |  ✓                   |    [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)        |
 |  JooxMusicClient               |  JOOX (QQ音乐海外版)                |   ✓                |  ✓                   |    [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                |
-|  TIDALMusicClient              |  TIDAL (提供HiFi音质的流媒体平台)   |   ✓                |  ✗                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
+|  TIDALMusicClient              |  TIDAL (提供HiFi音质的流媒体平台)   |   ✓                |  ✓                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
 
 
 # Playground

@@ -6,17 +6,22 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import re
 import copy
 import aigpy
 import base64
+import tempfile
 import json_repair
 from xml.etree import ElementTree
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode, urljoin
-from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, AudioLinkTester
-from ..utils.tidalutils import TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry
+from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, touchdir, replacefile, AudioLinkTester
+from ..utils.tidalutils import (
+    TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry,
+    decryptfile, decryptsecuritytoken, pyavready, ffmpegready, remuxflacstream
+)
 
 
 '''TIDALMusicClient'''
@@ -165,6 +170,32 @@ class TIDALMusicClient(BaseMusicClient):
             if len(stream_url.urls) > 0:
                 stream_url.url = stream_url.urls[0]
             return stream_url
+    '''_guessextension'''
+    def _guessextension(self, stream_url: StreamUrl):
+        url = (stream_url.url or '').lower()
+        codec = (stream_url.codec or '').lower()
+        if '.flac' in url: return '.flac'
+        if '.mp4' in url:
+            if 'ac4' in codec or 'mha1' in codec: return '.mp4'
+            elif 'flac' in codec: return '.flac'
+            return '.m4a'
+        return '.m4a'
+    '''_guessstreamextension'''
+    def _guessstreamextension(self, stream_url: StreamUrl):
+        candidates = []
+        if stream_url.url: candidates.append(stream_url.url)
+        if stream_url.urls: candidates.extend(stream_url.urls)
+        for candidate in candidates:
+            if not candidate: continue
+            lowered: str = candidate.split("?")[0].lower()
+            for ext in (".flac", ".mp4", ".m4a", ".m4b", ".mp3", ".ogg", ".aac"):
+                if lowered.endswith(ext): return ext
+        codec = (stream_url.codec or "").lower()
+        if "flac" in codec:
+            return ".flac"
+        if "mp4" in codec or "m4a" in codec or "aac" in codec:
+            return ".m4a"
+        return ".m4a"
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
@@ -180,6 +211,68 @@ class TIDALMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
+    '''_download'''
+    def _download(self, song_info: dict, request_overrides: dict = {}, downloaded_song_infos: list = [], progress: Progress = None, 
+                  song_progress_id: int = 0, songs_progress_id: int = 0):
+        try:
+            touchdir(song_info['work_dir'])
+            # parse basic information
+            stream_url: StreamUrl = song_info['download_url']
+            download_ext, final_ext = self._guessstreamextension(stream_url=stream_url), song_info['ext']
+            if (final_ext != ".flac") or (download_ext == ".flac"):
+                remux_required = False
+            else:
+                remux_required = "flac" in (stream_url.codec or "").lower()
+            if remux_required and (not ffmpegready() and not pyavready()):
+                final_ext, remux_required = download_ext, False
+            chunk_size = 1048576
+            progress.update(song_progress_id, total=1)
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading")
+            # download music file
+            with tempfile.TemporaryDirectory(prefix="musicdl-TIDALMusicClient-track-") as tmpdir:
+                download_part = os.path.join(
+                    tmpdir, f"download{download_ext}.part" if download_ext else "download.part"
+                )
+                tool = aigpy.download.DownloadTool(download_part, stream_url.urls)
+                tool.setUserProgress(None)
+                tool.setPartSize(chunk_size)
+                check, err = tool.start(showProgress=False)
+                assert check
+                decrypted_target = os.path.join(
+                    tmpdir, f"decrypted{download_ext}" if download_ext else "decrypted"
+                )
+                if aigpy.string.isNull(stream_url.encryptionKey):
+                    replacefile(download_part, decrypted_target)
+                    decrypted_path = decrypted_target
+                else:
+                    key, nonce = decryptsecuritytoken(stream_url.encryptionKey)
+                    decryptfile(download_part, decrypted_target, key, nonce)
+                    os.remove(download_part)
+                    decrypted_path = decrypted_target
+                if remux_required:
+                    remux_target = os.path.join(tmpdir, "remux.flac")
+                    processed_path, backend_used = remuxflacstream(decrypted_path, remux_target)
+                    if processed_path != decrypted_path:
+                        if os.path.exists(decrypted_path): os.remove(decrypted_path)
+                        decrypted_path = processed_path
+                    else:
+                        final_ext = download_ext
+                        decrypted_path = decrypted_path
+                save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}.{final_ext}"), 1
+                while os.path.exists(save_path):
+                    save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}.{final_ext}")
+                    same_name_file_idx += 1
+                replacefile(decrypted_path, save_path)
+            # update progress
+            progress.advance(song_progress_id, 1)
+            progress.advance(songs_progress_id, 1)
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
+            downloaded_song_info = copy.deepcopy(song_info)
+            downloaded_song_info['save_path'] = save_path
+            downloaded_song_info['ext'] = final_ext
+            downloaded_song_infos.append(downloaded_song_info)
+        except Exception as err:
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
     '''_search'''
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # successful
@@ -209,6 +302,7 @@ class TIDALMusicClient(BaseMusicClient):
                     download_result, download_url, ext, file_size = {}, "", "m4a", "0"
                 if not download_url: continue
                 if not download_url_status['ok']: continue
+                ext = self._guessextension(stream_url=download_url)
                 duration = seconds2hms(search_result.duration)
                 # --lyric results
                 params = {'countryCode': self.tidal_session.storage.country_code, 'include': 'lyrics'}

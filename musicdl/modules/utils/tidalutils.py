@@ -11,14 +11,24 @@ import sys
 import time
 import json
 import aigpy
+import base64
+import shutil
 import requests
 import webbrowser
+import subprocess
 from .misc import resp2json
+from Crypto.Cipher import AES
+from Crypto.Util import Counter
 from urllib.parse import urljoin
 from typing import List, Optional
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
+
+
+'''AV'''
+try: import av
+except: av = None
 
 
 '''Lyrics'''
@@ -520,3 +530,84 @@ class TIDALTvSession():
             return True
         else:
             return False
+
+
+'''decryptsecuritytoken'''
+def decryptsecuritytoken(security_token):
+    master_key = 'UIlTTEMmmLfGowo/UC60x2H45W6MdGgTRfo/umg4754='
+    master_key = base64.b64decode(master_key)
+    security_token = base64.b64decode(security_token)
+    iv = security_token[:16]
+    encrypted_st = security_token[16:]
+    decryptor = AES.new(master_key, AES.MODE_CBC, iv)
+    decrypted_st = decryptor.decrypt(encrypted_st)
+    key = decrypted_st[:16]
+    nonce = decrypted_st[16:24]
+    return key, nonce
+
+
+'''decryptfile'''
+def decryptfile(efile, dfile, key, nonce):
+    counter = Counter.new(64, prefix=nonce, initial_value=0)
+    decryptor = AES.new(key, AES.MODE_CTR, counter=counter)
+    with open(efile, 'rb') as eflac:
+        flac = decryptor.decrypt(eflac.read())
+        with open(dfile, 'wb') as dflac:
+            dflac.write(flac)
+
+
+'''ffmpegready'''
+def ffmpegready():
+    ffmpeg_available = shutil.which("ffmpeg") is not None
+    return ffmpeg_available
+
+
+'''pyavready'''
+def pyavready():
+    av_available = av is not None
+    return av_available
+
+
+'''remuxwithpyav'''
+def remuxwithpyav(src_path: str, dest_path: str):
+    if not pyavready(): return False, "PyAV backend unavailable"
+    assert av is not None
+    try:
+        with av.open(src_path) as container:
+            audio_stream = next((s for s in container.streams if s.type == "audio"), None)
+            if audio_stream is None:
+                return False, "PyAV could not locate an audio stream"
+            with av.open(dest_path, mode="w", format="flac") as output:
+                out_stream = output.add_stream(template=audio_stream)
+                for packet in container.demux(audio_stream):
+                    if packet.dts is None:
+                        continue
+                    packet.stream = out_stream
+                    output.mux(packet)
+    except Exception as exc:
+        return False, f"PyAV error: {exc}"
+    return os.path.exists(dest_path) and os.path.getsize(dest_path) > 0, "PyAV"
+
+
+'''remuxwithffmpeg'''
+def remuxwithffmpeg(src_path: str, dest_path: str):
+    if not ffmpegready():
+        return False, "ffmpeg backend unavailable"
+    cmd = ["ffmpeg", "-y", "-v", "error", "-i", src_path, "-map", "0:a:0", "-c:a", "copy", dest_path]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    except subprocess.CalledProcessError as exc:
+        return False, f"ffmpeg exited with code {exc.returncode}"
+    return os.path.exists(dest_path) and os.path.getsize(dest_path) > 0, "ffmpeg"
+
+
+'''remuxflacstream'''
+def remuxflacstream(src_path: str, dest_path: str):
+    if os.path.exists(dest_path): os.remove(dest_path)
+    last_reason: Optional[str] = None
+    for backend in (remuxwithpyav, remuxwithffmpeg):
+        ok, reason = backend(src_path, dest_path)
+        if ok: return dest_path, reason
+        last_reason = reason
+        if os.path.exists(dest_path): os.remove(dest_path)
+    return src_path, last_reason

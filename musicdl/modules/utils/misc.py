@@ -11,7 +11,9 @@ import os
 import html
 import copy
 import emoji
+import errno
 import pickle
+import shutil
 import bleach
 import requests
 import json_repair
@@ -24,6 +26,18 @@ from pathvalidate import sanitize_filepath, sanitize_filename
 def touchdir(directory, exist_ok=True, mode=511, auto_sanitize=True):
     if auto_sanitize: directory = sanitize_filepath(directory)
     return os.makedirs(directory, exist_ok=exist_ok, mode=mode)
+
+
+'''replacefile'''
+def replacefile(src: str, dest: str):
+    try:
+        os.replace(src, dest)
+    except OSError as exc:
+        if exc.errno != errno.EXDEV: raise
+        if os.path.exists(dest):
+            if os.path.isdir(dest): raise
+            os.remove(dest)
+        shutil.move(src, dest)
 
 
 '''legalizestring'''

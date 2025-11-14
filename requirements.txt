@@ -13,3 +13,6 @@ rich
 emoji
 bleach
 beautifulsoup4
+aigpy
+webbrowser
+av
