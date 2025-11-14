@@ -1,6 +1,6 @@
 # Release Log
 
-- 2025-11-13: Released musicdl v2.4.1 — add support for TIDAL (TIDAL is an artist-first, fan-centered music streaming platform that delivers over 110 million songs in HiFi sound quality to the global music community).
+- 2025-11-13: Released musicdl v2.4.1 — beautify print, add support for TIDAL (TIDAL is an artist-first, fan-centered music streaming platform that delivers over 110 million songs in HiFi sound quality to the global music community).
 
 - 2025-11-12: Released musicdl v2.4.0 — complete code refactor; reintroduced support for music search and downloads on major platforms.
 

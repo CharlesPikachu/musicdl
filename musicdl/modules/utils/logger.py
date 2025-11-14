@@ -9,7 +9,9 @@ WeChat Official Account (微信公众号):
 import os
 import shutil
 import logging
+import textwrap
 import collections.abc
+from tabulate import tabulate
 from prettytable import PrettyTable
 from platformdirs import user_log_dir
 
@@ -90,12 +92,57 @@ class LoggerHandle():
 
 
 '''printtable'''
-def printtable(titles, items):
+def printtable(titles, items, terminal_right_space_len=10):
     assert isinstance(titles, collections.abc.Sequence) and isinstance(items, collections.abc.Sequence), 'title and items should be iterable'
     table = PrettyTable(titles)
     for item in items: table.add_row(item)
+    max_width = shutil.get_terminal_size().columns - terminal_right_space_len
+    assert max_width > 0, f'"terminal_right_space_len" should smaller than {shutil.get_terminal_size()}'
+    table.max_table_width = max_width
     print(table)
     return table
+
+
+'''smarttrunctable'''
+def smarttrunctable(headers, rows, max_col_width=40, padding=3, terminal_right_space_len=10):
+    term_width = shutil.get_terminal_size().columns - terminal_right_space_len
+    assert term_width > 0, f'"terminal_right_space_len" should smaller than {shutil.get_terminal_size()}'
+    # max len for each row
+    col_lens = {col: len(col) for col in headers}
+    for row in rows:
+        for i, cell in enumerate(row):
+            cell_str = str(cell)
+            col = headers[i]
+            col_lens[col] = max(col_lens[col], len(cell_str))
+    # estimate total len
+    est_total_width = sum(min(col_lens[col], max_col_width) for col in headers) + len(headers) * padding
+    # text shorten
+    need_trunc = est_total_width > term_width
+    trunc_cols = set()
+    if need_trunc:
+        sorted_cols = sorted(col_lens.items(), key=lambda x: -x[1])
+        cumulative = 0
+        for col, length in sorted_cols:
+            if length <= max_col_width: continue
+            trunc_cols.add(col)
+            cumulative += (length - max_col_width)
+            est_total_width -= (length - max_col_width)
+            if est_total_width <= term_width: break
+    # new table after text shorten
+    truncated_rows = []
+    for row in rows:
+        new_row = []
+        for i, cell in enumerate(row):
+            cell_str = str(cell)
+            col = headers[i]
+            if col in trunc_cols and len(cell_str) > max_col_width:
+                short = textwrap.shorten(cell_str, width=max_col_width, placeholder="...")
+            else:
+                short = cell_str
+            new_row.append(short)
+        truncated_rows.append(new_row)
+    # return
+    return tabulate(truncated_rows, headers=headers, tablefmt="fancy_grid")
 
 
 '''colorize'''
@@ -106,6 +153,7 @@ def colorize(string, color):
 
 
 '''printfullline'''
-def printfullline(ch: str = "*", end: str = '\n'):
-    cols = shutil.get_terminal_size().columns
+def printfullline(ch: str = "*", end: str = '\n', terminal_right_space_len: int = 1):
+    cols = shutil.get_terminal_size().columns - terminal_right_space_len
+    assert cols > 0, f'"terminal_right_space_len" should smaller than {shutil.get_terminal_size()}'
     print(ch * cols, end=end)

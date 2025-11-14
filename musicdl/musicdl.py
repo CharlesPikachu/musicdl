@@ -11,10 +11,10 @@ import click
 import json_repair
 if __name__ == '__main__':
     from __init__ import __version__
-    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable, printfullline
+    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, smarttrunctable, printfullline
 else:
     from .__init__ import __version__
-    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, printtable, printfullline
+    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, colorize, smarttrunctable, printfullline
 
 
 '''BASIC_INFO'''
@@ -26,7 +26,7 @@ Instructions:
     Enter q: exit the program
     Download multiple songs: when selecting songs to download, enter "1,2,5" to download songs 1, 2, and 5 simultaneously
 Music Files Save Path:
-    Inside the %s folder (root dir is the current directory if using relative path).'''
+    %s (root dir is the current directory if using relative path).'''
 
 
 '''MusicClient'''
@@ -62,7 +62,7 @@ class MusicClient():
     '''printbasicinfo'''
     def printbasicinfo(self):
         printfullline(ch='-')
-        print(BASIC_INFO % (__version__, ', '.join([f'{k}: {v}' for k, v in self.work_dirs.items()])))
+        print(BASIC_INFO % (__version__, ', '.join([f'"{v} for {k}"' for k, v in self.work_dirs.items()])))
         printfullline(ch='-')
     '''startcmdui'''
     def startcmdui(self):
@@ -82,7 +82,7 @@ class MusicClient():
                         search_result['file_size'] if search_result['ext'] not in ['flac', 'ogg'] else colorize(search_result['file_size'], 'flac'), 
                         search_result['duration'], search_result['album'], colorize(search_result['source'], 'highlight'),
                     ])
-            printtable(titles=print_titles, items=print_items)
+            print(smarttrunctable(headers=print_titles, rows=print_items))
             # process user inputs, music file download
             user_input_select_song_info_pointer = self.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
             user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]

@@ -16,3 +16,4 @@ beautifulsoup4
 aigpy
 webbrowser
 av
+tabulate
