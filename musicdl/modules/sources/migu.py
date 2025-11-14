@@ -26,6 +26,25 @@ class MiguMusicClient(BaseMusicClient):
         }
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''_boostquality'''
+    def _boostquality(self, song_id, request_overrides):
+        # _safefetchfilesize
+        def _safefetchfilesize(meta: dict):
+            file_size = meta.get('size', '0.00 MB')
+            file_size = file_size.split( )[0]
+            try: return float(file_size)
+            except: return 0
+        # parse
+        resp = self.get(url=f'https://api.cenguigui.cn/api/mg_music/api.php?id={song_id}', **request_overrides)
+        download_result = resp2json(resp=resp)
+        download_url, download_url_status, file_size, ext = "", dict(), 0, 'flac'
+        for rate in sorted(download_result.get('data', []), key=lambda x: _safefetchfilesize(x), reverse=True):
+            download_url, file_size, ext = rate['url'], _safefetchfilesize(rate), rate['format'].lower()
+            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+            if download_url_status['ok']: break
+        # return
+        boost_result = dict(download_result=download_result, download_url=download_url, file_size=file_size, download_url_status=download_url_status, ext=ext)
+        return boost_result
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
         # search rules
@@ -80,6 +99,20 @@ class MiguMusicClient(BaseMusicClient):
                 if download_result['file_size'] == 'NULL':
                     download_result['file_size'] = file_size
                 duration = seconds2hms(search_result.get('duration', '0'))
+                # --improve music quality if possible
+                try:
+                    boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
+                except:
+                    boost_result = dict()
+                ext, file_size = download_result['ext'], download_result['file_size']
+                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
+                    file_size_ori = download_result['file_size']
+                    try: file_size_ori = float(file_size.split(' ')[0])
+                    except: file_size_ori = 0
+                    file_size_imp = boost_result['file_size']
+                    if file_size_imp > file_size_ori:
+                        download_result['boost_result'] = boost_result
+                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
                 # --lyric results
                 lyric_url = safeextractfromdict(search_result, ['ext', 'lrcUrl'], '') or safeextractfromdict(search_result, ['ext', 'mrcUrl'], '') or \
                             safeextractfromdict(search_result, ['ext', 'trcUrl'], '')
@@ -95,8 +128,8 @@ class MiguMusicClient(BaseMusicClient):
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=download_result['ext'], file_size=download_result['file_size'], 
-                    lyric=lyric, duration=duration, song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
+                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration, 
+                    song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singerList', [])]), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['copyrightId'] + '-' + search_result['contentId'],
