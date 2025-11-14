@@ -4,6 +4,7 @@ from .joox import JooxMusicClient
 from .base import BaseMusicClient
 from .kuwo import KuwoMusicClient
 from .migu import MiguMusicClient
+from .tidal import TIDALMusicClient
 from .lizhi import LizhiMusicClient
 from .kugou import KugouMusicClient
 from ..utils import BaseModuleBuilder
@@ -19,7 +20,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'FiveSingMusicClient': FiveSingMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient,
         'QianqianMusicClient': QianqianMusicClient, 'QQMusicClient': QQMusicClient, 'MiguMusicClient': MiguMusicClient,
         'JooxMusicClient': JooxMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'NeteaseMusicClient': NeteaseMusicClient,
-        'XimalayaMusicClient': XimalayaMusicClient,
+        'XimalayaMusicClient': XimalayaMusicClient, 'TIDALMusicClient': TIDALMusicClient,
     }
 
 

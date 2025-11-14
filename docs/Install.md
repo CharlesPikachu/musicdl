@@ -7,6 +7,8 @@
 
 #### Installation Instructions
 
+You have three installation methods to choose from,
+
 ```sh
 # from pip
 pip install musicdl
@@ -17,3 +19,6 @@ git clone https://github.com/CharlesPikachu/musicdl.git
 cd musicdl
 python setup.py install
 ```
+
+Some music platforms require [FFmpeg](https://www.ffmpeg.org/) to be directly callable in your environment in order to obtain higher-quality audio. 
+You can choose whether to install [FFmpeg](https://www.ffmpeg.org/) depending on your needs.

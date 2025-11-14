@@ -33,6 +33,7 @@
 
 # What's New
 
+- 2025-11-13: Released musicdl v2.4.1 — add support for TIDAL (TIDAL is an artist-first, fan-centered music streaming platform that delivers over 110 million songs in HiFi sound quality to the global music community).
 - 2025-11-12: Released musicdl v2.4.0 — complete code refactor; reintroduced support for music search and downloads on major platforms.
 
 
@@ -84,6 +85,8 @@ For example, the Music Downloader GUI looks/works like this,
 
 # Install
 
+You have three installation methods to choose from,
+
 ```sh
 # from pip
 pip install musicdl
@@ -94,6 +97,9 @@ git clone https://github.com/CharlesPikachu/musicdl.git
 cd musicdl
 python setup.py install
 ```
+
+Some music platforms require [FFmpeg](https://www.ffmpeg.org/) to be directly callable in your environment in order to obtain higher-quality audio. 
+You can choose whether to install [FFmpeg](https://www.ffmpeg.org/) depending on your needs.
 
 # Quick Start
 
@@ -156,6 +162,17 @@ your_vip_cookies_with_dict_format = dict(item.split("=", 1) for item in your_vip
 init_music_clients_cfg = dict()
 init_music_clients_cfg['NeteaseMusicClient'] = {'default_search_cookies': your_vip_cookies_with_dict_format, 'default_download_cookies': your_vip_cookies_with_dict_format, 'search_size_per_source': 20}
 music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+If you want to download lossless-quality music from [TIDAL](https://tidal.com/), 
+you need to make sure that [PyAV](https://github.com/PyAV-Org/PyAV) is available or that [FFmpeg](https://www.ffmpeg.org/) is in your environment variables, 
+and then use musicdl as follows,
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'])
 music_client.startcmdui()
 ```
 

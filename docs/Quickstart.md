@@ -55,12 +55,24 @@ for song_infos_per_source in list(search_results.values()):
 music_client.download(song_infos=song_infos)
 ```
 
+If you want to download lossless-quality music from [TIDAL](https://tidal.com/), 
+you need to make sure that [PyAV](https://github.com/PyAV-Org/PyAV) is available or that [FFmpeg](https://www.ffmpeg.org/) is in your environment variables, 
+and then use musicdl as follows,
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'])
+music_client.startcmdui()
+```
+
 #### Dedicated MusicClient
 
 Example code for searching and downloading music files on different platforms such as NeteaseMusicClient and QQMusicClient is as follows,
 
 ```python
 from musicdl.modules.sources.qq import QQMusicClient
+from musicdl.modules.sources.tidal import TIDALMusicClient
 from musicdl.modules.sources.netease import NeteaseMusicClient
 
 # QQMusicClient
@@ -68,6 +80,11 @@ qq_music_client = QQMusicClient()
 search_results = qq_music_client.search(keyword='那些年')
 print(search_results)
 qq_music_client.download(song_infos=search_results)
+# TIDALMusicClient
+tidal_music_client = TIDALMusicClient()
+search_results = tidal_music_client.search(keyword='Something Just Like This')
+print(search_results)
+tidal_music_client.download(song_infos=search_results)
 # NeteaseMusicClient
 netease_music_client = NeteaseMusicClient()
 search_results = netease_music_client.search(keyword='那些年')
