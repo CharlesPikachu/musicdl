@@ -120,7 +120,7 @@ class NeteaseMusicClient(BaseMusicClient):
                     lyric_result, lyric = dict(), 'NULL'
                 # --improve music quality if possible
                 try:
-                    boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
+                    boost_result = self._boostquality(search_result['id'], request_overrides=request_overrides)
                 except:
                     boost_result = dict()
                 if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
