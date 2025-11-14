@@ -30,7 +30,8 @@ class MiguMusicClient(BaseMusicClient):
     def _boostquality(self, song_id, request_overrides):
         # _safefetchfilesize
         def _safefetchfilesize(meta: dict):
-            file_size = meta.get('size', '0.00 MB')
+            if not isinstance(meta, dict): return 0
+            file_size = str(meta.get('size', '0.00 MB'))
             file_size = file_size.split( )[0]
             try: return float(file_size)
             except: return 0
@@ -38,7 +39,7 @@ class MiguMusicClient(BaseMusicClient):
         resp = self.get(url=f'https://api.cenguigui.cn/api/mg_music/api.php?id={song_id}', **request_overrides)
         download_result = resp2json(resp=resp)
         download_url, download_url_status, file_size, ext = "", dict(), 0, 'flac'
-        for rate in sorted(download_result.get('data', []), key=lambda x: _safefetchfilesize(x), reverse=True):
+        for rate in sorted(safeextractfromdict(download_result, ['data', 'level', 'quality'], []), key=lambda x: _safefetchfilesize(x), reverse=True):
             download_url, file_size, ext = rate['url'], _safefetchfilesize(rate), rate['format'].lower()
             download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
             if download_url_status['ok']: break
@@ -99,6 +100,18 @@ class MiguMusicClient(BaseMusicClient):
                 if download_result['file_size'] == 'NULL':
                     download_result['file_size'] = file_size
                 duration = seconds2hms(search_result.get('duration', '0'))
+                # --lyric results
+                lyric_url = safeextractfromdict(search_result, ['ext', 'lrcUrl'], '') or safeextractfromdict(search_result, ['ext', 'mrcUrl'], '') or \
+                            safeextractfromdict(search_result, ['ext', 'trcUrl'], '')
+                if lyric_url:
+                    resp = self.get(lyric_url, **request_overrides)
+                    if isvalidresp(resp):
+                        resp.encoding = 'utf-8'
+                        lyric_result, lyric = {'lyric': resp.text}, resp.text
+                    else:
+                        lyric_result, lyric = {}, 'NULL'
+                else:
+                    lyric_result, lyric = {}, 'NULL'
                 # --improve music quality if possible
                 try:
                     boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
@@ -113,18 +126,6 @@ class MiguMusicClient(BaseMusicClient):
                     if file_size_imp > file_size_ori:
                         download_result['boost_result'] = boost_result
                         download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
-                # --lyric results
-                lyric_url = safeextractfromdict(search_result, ['ext', 'lrcUrl'], '') or safeextractfromdict(search_result, ['ext', 'mrcUrl'], '') or \
-                            safeextractfromdict(search_result, ['ext', 'trcUrl'], '')
-                if lyric_url:
-                    resp = self.get(lyric_url, **request_overrides)
-                    if isvalidresp(resp):
-                        resp.encoding = 'utf-8'
-                        lyric_result, lyric = {'lyric': resp.text}, resp.text
-                    else:
-                        lyric_result, lyric = {}, 'NULL'
-                else:
-                    lyric_result, lyric = {}, 'NULL'
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
