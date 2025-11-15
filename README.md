@@ -238,6 +238,11 @@ If you use this project in your research, please cite the repository.
 ```
 
 
+# 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=CharlesPikachu/musicdl&type=date&legend=top-left)](https://www.star-history.com/#CharlesPikachu/musicdl&type=date&legend=top-left)
+
+
 # 📢 WeChat Official Account (微信公众号):
 
 Charles的皮卡丘 (*Charles_pikachu*)  
