@@ -141,7 +141,7 @@ def truncatebydispwidth(text: str, max_width: int) -> str:
 
 
 '''smarttrunctable'''
-def smarttrunctable(headers, rows, max_col_width=40, terminal_right_space_len=4, no_trunc_cols=None, min_col_width=4, max_iterations=2000):
+def smarttrunctable(headers, rows, max_col_width=40, terminal_right_space_len=10, no_trunc_cols=None, min_col_width=4, max_iterations=2000):
     headers = [str(h) for h in headers]
     rows = [[str(c) for c in row] for row in rows]
     ncols = len(headers)

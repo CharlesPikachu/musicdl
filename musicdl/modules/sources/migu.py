@@ -83,6 +83,12 @@ class MiguMusicClient(BaseMusicClient):
                 # --download results
                 if 'copyrightId' not in search_result or 'contentId' not in search_result:
                     continue
+                # ----try to obtain high quality music file infos
+                try:
+                    boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
+                except:
+                    boost_result = dict()
+                # ----general parse
                 file_size, ext = 'NULL', 'NULL'
                 for rate in sorted(search_result.get('audioFormats', []), key=lambda x: int(_safefetchfilesize(x)), reverse=True):
                     if byte2mb(_safefetchfilesize(rate)) == 'NULL' or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')):
@@ -92,7 +98,6 @@ class MiguMusicClient(BaseMusicClient):
                     download_url = f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId=15548614588710179085069&netType=00"
                     download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
-                if not download_url_status['ok']: continue
                 try:
                     download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
                 except:
@@ -101,6 +106,18 @@ class MiguMusicClient(BaseMusicClient):
                     download_result['ext'] = ext if (ext and ext != 'NULL') else 'mp3'
                 if download_result['file_size'] == 'NULL':
                     download_result['file_size'] = file_size
+                # ----boost music quality if possible
+                ext, file_size = download_result['ext'], download_result['file_size']
+                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
+                    try: file_size_ori = float(file_size.split(' ')[0])
+                    except: file_size_ori = 0
+                    file_size_imp = boost_result['file_size']
+                    if file_size_imp > file_size_ori:
+                        download_result['boost_result'] = boost_result
+                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
+                # ----misc
+                if not download_url: continue
+                if (not download_url_status.get('ok', False)) and (not safeextractfromdict(boost_result, ['download_url_status', 'ok'], False)): continue
                 duration = seconds2hms(search_result.get('duration', '0'))
                 # --lyric results
                 lyric_url = safeextractfromdict(search_result, ['ext', 'lrcUrl'], '') or safeextractfromdict(search_result, ['ext', 'mrcUrl'], '') or \
@@ -114,20 +131,6 @@ class MiguMusicClient(BaseMusicClient):
                         lyric_result, lyric = {}, 'NULL'
                 else:
                     lyric_result, lyric = {}, 'NULL'
-                # --improve music quality if possible
-                try:
-                    boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
-                except:
-                    boost_result = dict()
-                ext, file_size = download_result['ext'], download_result['file_size']
-                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
-                    file_size_ori = download_result['file_size']
-                    try: file_size_ori = float(file_size.split(' ')[0])
-                    except: file_size_ori = 0
-                    file_size_imp = boost_result['file_size']
-                    if file_size_imp > file_size_ori:
-                        download_result['boost_result'] = boost_result
-                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
