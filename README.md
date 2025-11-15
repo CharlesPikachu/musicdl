@@ -30,7 +30,7 @@
   <p><a href="https://musicdl.readthedocs.io/">Documents: musicdl.readthedocs.io</a></p>
   
   <p>
-    <strong>🎧 Live Demo · MusicSquare：</strong><br />
+    <strong>🎧 Live Demo · MusicSquare</strong><br />
     <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
       https://charlespikachu.github.io/musicsquare/
     </a>
