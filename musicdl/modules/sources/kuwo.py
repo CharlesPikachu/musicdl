@@ -73,7 +73,7 @@ class KuwoMusicClient(BaseMusicClient):
                     download_result['ext'] = download_url.split('.')[-1].split('?')[0] or 'mp3'
                 duration = seconds2hms(search_result.get('DURATION', '0'))
                 # --lyric results
-                params = {'musicId': search_result['MUSICRID'].strip('MUSIC_'), 'httpsStatus': '1'}
+                params = {'musicId': search_result['MUSICRID'].removeprefix('MUSIC_'), 'httpsStatus': '1'}
                 resp = self.get('http://m.kuwo.cn/newh5/singles/songinfoandlrc', params=params, **request_overrides)
                 if isvalidresp(resp):
                     lyric_result: dict = resp2json(resp)

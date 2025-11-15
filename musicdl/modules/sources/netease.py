@@ -36,7 +36,7 @@ class NeteaseMusicClient(BaseMusicClient):
         def _safefetchfilesize(meta: dict):
             if not isinstance(meta, dict): return 0
             file_size = str(meta.get('size', '0.00MB'))
-            file_size = file_size.strip('MB').strip(' ')
+            file_size = file_size.removesuffix('MB').strip()
             try: return float(file_size)
             except: return 0
         # parse

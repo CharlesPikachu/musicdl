@@ -9,8 +9,8 @@ WeChat Official Account (微信公众号):
 import os
 import shutil
 import logging
-import textwrap
 import collections.abc
+from wcwidth import wcswidth
 from tabulate import tabulate
 from prettytable import PrettyTable
 from platformdirs import user_log_dir
@@ -92,7 +92,7 @@ class LoggerHandle():
 
 
 '''printtable'''
-def printtable(titles, items, terminal_right_space_len=10):
+def printtable(titles, items, terminal_right_space_len=4):
     assert isinstance(titles, collections.abc.Sequence) and isinstance(items, collections.abc.Sequence), 'title and items should be iterable'
     table = PrettyTable(titles)
     for item in items: table.add_row(item)
@@ -103,46 +103,98 @@ def printtable(titles, items, terminal_right_space_len=10):
     return table
 
 
+'''displen'''
+def displen(s: str) -> int:
+    if s is None:
+        return 0
+    return max(wcswidth(str(s)), 0)
+
+
+'''tablewidth'''
+def tablewidth(table_str: str) -> int:
+    lines = table_str.splitlines()
+    if not lines:
+        return 0
+    return max(displen(line) for line in lines)
+
+
+'''truncatebydispwidth'''
+def truncatebydispwidth(text: str, max_width: int) -> str:
+    text, cur_w = str(text), displen(text)
+    if cur_w <= max_width: return text
+    if max_width <= 0: return ""
+    if max_width <= 3:
+        acc, out = 0, []
+        for ch in text:
+            w = displen(ch)
+            if acc + w > max_width: break
+            out.append(ch)
+            acc += w
+        return "".join(out)
+    target, acc, out_chars = max_width - 3, 0, []
+    for ch in text:
+        w = displen(ch)
+        if acc + w > target: break
+        out_chars.append(ch)
+        acc += w
+    return "".join(out_chars) + "..."
+
+
 '''smarttrunctable'''
-def smarttrunctable(headers, rows, max_col_width=40, padding=3, terminal_right_space_len=10):
-    term_width = shutil.get_terminal_size().columns - terminal_right_space_len
-    assert term_width > 0, f'"terminal_right_space_len" should smaller than {shutil.get_terminal_size()}'
-    # max len for each row
-    col_lens = {col: len(col) for col in headers}
-    for row in rows:
-        for i, cell in enumerate(row):
-            cell_str = str(cell)
-            col = headers[i]
-            col_lens[col] = max(col_lens[col], len(cell_str))
-    # estimate total len
-    est_total_width = sum(min(col_lens[col], max_col_width) for col in headers) + len(headers) * padding
-    # text shorten
-    need_trunc = est_total_width > term_width
-    trunc_cols = set()
-    if need_trunc:
-        sorted_cols = sorted(col_lens.items(), key=lambda x: -x[1])
-        cumulative = 0
-        for col, length in sorted_cols:
-            if length <= max_col_width: continue
-            trunc_cols.add(col)
-            cumulative += (length - max_col_width)
-            est_total_width -= (length - max_col_width)
-            if est_total_width <= term_width: break
-    # new table after text shorten
-    truncated_rows = []
-    for row in rows:
-        new_row = []
-        for i, cell in enumerate(row):
-            cell_str = str(cell)
-            col = headers[i]
-            if col in trunc_cols and len(cell_str) > max_col_width:
-                short = textwrap.shorten(cell_str, width=max_col_width, placeholder="...")
+def smarttrunctable(headers, rows, max_col_width=40, terminal_right_space_len=4, no_trunc_cols=None, min_col_width=4, max_iterations=2000):
+    headers = [str(h) for h in headers]
+    rows = [[str(c) for c in row] for row in rows]
+    ncols = len(headers)
+    assert all(len(r) == ncols for r in rows), "all rows must have same length as headers"
+    term_width = shutil.get_terminal_size().columns
+    target_width = term_width - terminal_right_space_len
+    if target_width <= 0: target_width = term_width
+    protected_idx = set()
+    if no_trunc_cols:
+        for spec in no_trunc_cols:
+            if isinstance(spec, int):
+                if 0 <= spec < ncols: protected_idx.add(spec)
             else:
-                short = cell_str
-            new_row.append(short)
-        truncated_rows.append(new_row)
-    # return
-    return tabulate(truncated_rows, headers=headers, tablefmt="fancy_grid")
+                for j, h in enumerate(headers):
+                    if h == str(spec): protected_idx.add(j)
+    col_max = []
+    for j in range(ncols):
+        w = displen(headers[j])
+        for row in rows: w = max(w, displen(row[j]))
+        col_max.append(w)
+    col_limits = []
+    for j in range(ncols):
+        if j in protected_idx: col_limits.append(None)
+        else:
+            limit = col_max[j]
+            if max_col_width: limit = min(limit, max_col_width)
+            limit = max(limit, min_col_width)
+            col_limits.append(limit)
+    last_table = ""
+    for _ in range(max_iterations):
+        truncated_headers = []
+        for j, h in enumerate(headers):
+            if col_limits[j] is None: truncated_headers.append(h)
+            else: truncated_headers.append(truncatebydispwidth(h, col_limits[j]))
+        truncated_rows = []
+        for row in rows:
+            new_row = []
+            for j, cell in enumerate(row):
+                if col_limits[j] is None: new_row.append(cell)
+                else: new_row.append(truncatebydispwidth(cell, col_limits[j]))
+            truncated_rows.append(new_row)
+        table_str = tabulate(truncated_rows, headers=truncated_headers, tablefmt="fancy_grid")
+        last_table = table_str
+        w = tablewidth(table_str)
+        if w <= target_width: return table_str
+        col_cur = [displen(h) for h in truncated_headers]
+        for row in truncated_rows:
+            for j, cell in enumerate(row): col_cur[j] = max(col_cur[j], displen(cell))
+        candidates = [j for j in range(ncols) if col_limits[j] is not None and col_limits[j] > min_col_width]
+        if not candidates: return last_table
+        j_longest = max(candidates, key=lambda k: col_cur[k])
+        col_limits[j_longest] -= 1
+    return last_table
 
 
 '''colorize'''
