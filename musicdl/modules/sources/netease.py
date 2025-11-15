@@ -83,7 +83,13 @@ class NeteaseMusicClient(BaseMusicClient):
                 # --download results
                 if 'id' not in search_result:
                     continue
-                qualties = ["jymaster", "jyeffect", "sky", "hires", "lossless", "exhigh", "standard"]
+                # ----try to obtain high quality music file infos
+                try:
+                    boost_result = self._boostquality(search_result['id'], request_overrides=request_overrides)
+                except:
+                    boost_result = dict()
+                # ----general parse
+                qualties, download_result, ext, file_size, download_url_status = ["jymaster", "jyeffect", "sky", "hires", "lossless", "exhigh", "standard"], dict(), 'NULL', 'NULL', {}
                 for quality in qualties:
                     header = {"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!"}
                     header["requestId"] = str(random.randrange(20000000, 30000000))
@@ -102,11 +108,20 @@ class NeteaseMusicClient(BaseMusicClient):
                     if not download_url: continue
                     download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
+                # ----boost music quality if possible
+                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
+                    try: file_size_ori = float(byte2mb(download_result['data'][0].get('size', '0')).split(' ')[0])
+                    except: file_size_ori = 0
+                    file_size_imp = boost_result['file_size']
+                    if file_size_imp > file_size_ori:
+                        download_result['boost_result'] = boost_result
+                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
+                # ----misc
                 if not download_url: continue
-                if not download_url_status['ok']: continue
-                duration = seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else '0')
-                ext = download_result['data'][0].get('type', 'mp3')
-                file_size = byte2mb(download_result['data'][0].get('size', '0'))
+                if (not download_url_status.get('ok', False)) and (not safeextractfromdict(boost_result, ['download_url_status', 'ok'], False)): continue
+                duration = seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0)
+                ext = download_result['data'][0].get('type', 'mp3') if ext == 'NULL' else ext
+                file_size = byte2mb(download_result['data'][0].get('size', '0')) if file_size == 'NULL' else file_size
                 # --lyric results
                 data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
                 resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
@@ -118,18 +133,6 @@ class NeteaseMusicClient(BaseMusicClient):
                         lyric_result, lyric = dict(), 'NULL'
                 else:
                     lyric_result, lyric = dict(), 'NULL'
-                # --improve music quality if possible
-                try:
-                    boost_result = self._boostquality(search_result['id'], request_overrides=request_overrides)
-                except:
-                    boost_result = dict()
-                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
-                    try: file_size_ori = float(file_size.split(' ')[0])
-                    except: file_size_ori = 0
-                    file_size_imp = boost_result['file_size']
-                    if file_size_imp > file_size_ori:
-                        download_result['boost_result'] = boost_result
-                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
                 # --construct song_info
                 song_info = dict(
                     source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
