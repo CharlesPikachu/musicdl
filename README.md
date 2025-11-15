@@ -28,10 +28,30 @@
   </a>
 
   <p><a href="https://musicdl.readthedocs.io/">Documents: musicdl.readthedocs.io</a></p>
+  
+  <p>
+    <strong>🎧 Live Demo · MusicSquare：</strong><br />
+    <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
+      https://charlespikachu.github.io/musicsquare/
+    </a>
+  </p>
+  <p>
+    <em>
+      A browser-based music playground — search, play, and download tracks directly in your browser.  
+      ⚠️ For learning and testing only: please respect copyright and the terms of each music platform.
+    </em>
+  </p>
+
+  <p>
+    <strong>🛠 Source Code:</strong><br />
+    <a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">
+      https://github.com/CharlesPikachu/musicsquare
+    </a>
+  </p>
 </div>
 
 
-# What's New
+# 🎉 What's New
 
 - 2025-11-15: Released musicdl v2.4.3 — migu and netease have introduced an automatic audio quality enhancement feature, which significantly increases the chances of getting lossless quality, Hi-Res audio, JyEffect (HD surround sound), Sky (immersive surround sound), and JyMaster (ultra-clear master quality).
 - 2025-11-15: Released musicdl v2.4.2 — save meta info to music files from TIDAL, fix user input bugs and migu search bugs.
@@ -39,19 +59,19 @@
 - 2025-11-12: Released musicdl v2.4.0 — complete code refactor; reintroduced support for music search and downloads on major platforms.
 
 
-# Introduction
+# 🎵 Introduction
 
 A lightweight music downloader written in pure Python. Like it? ⭐ Star the repository to stay up to date. Thanks!
 
 
-# Disclaimer
+# ⚠️ Disclaimer
 
 This project is for educational use only and is not intended for commercial purposes. It interacts with publicly available web endpoints and does not host or distribute copyrighted content.
 To access paid tracks, please purchase or subscribe to the relevant music service—do not use this project to bypass paywalls or DRM.
 If you are a rights holder and believe this repository infringes your rights, please contact me and I will promptly address it.
 
 
-# Supported Music Client
+# 🎧 Supported Music Client
 
 |  MusicClient (EN)              |  MusicClient (CN)                   |   Search           |  Download            |    Code Snippet                                                                                                    |
 |  :----:                        |  :----:                             |   :----:           |  :----:              |    :----:                                                                                                          |
@@ -68,7 +88,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  TIDALMusicClient              |  TIDAL (提供HiFi音质的流媒体平台)   |   ✓                |  ✓                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
 
 
-# Playground
+# 🧪 Playground
 
 Here are some projects built on top of musicdl,
 
@@ -85,7 +105,7 @@ For example, the Music Downloader GUI looks/works like this,
 </div>
 
 
-# Install
+# 📦 Install
 
 You have three installation methods to choose from,
 
@@ -103,7 +123,7 @@ python setup.py install
 Some music platforms require [FFmpeg](https://www.ffmpeg.org/) to be directly callable in your environment in order to obtain higher-quality audio. 
 You can choose whether to install [FFmpeg](https://www.ffmpeg.org/) depending on your needs.
 
-# Quick Start
+# 🚀 Quick Start
 
 After a successful installation, you can run the snippet below,
 
@@ -181,7 +201,7 @@ music_client.startcmdui()
 For more practical examples, please refer to the usage documentation.
 
 
-# Recommended Projects
+# ⭐ Recommended Projects
 
 - [Games](https://github.com/CharlesPikachu/Games): Create interesting games in pure python.
 - [DecryptLogin](https://github.com/CharlesPikachu/DecryptLogin): APIs for loginning some websites by using requests.
@@ -202,7 +222,7 @@ For more practical examples, please refer to the usage documentation.
 - [NovelDL](https://github.com/CharlesPikachu/noveldl): Search and download novels from some specific websites.
 
 
-# Citation
+# 📚 Citation
 
 If you use this project in your research, please cite the repository.
 
@@ -218,7 +238,7 @@ If you use this project in your research, please cite the repository.
 ```
 
 
-# WeChat Official Account (微信公众号):
+# 📢 WeChat Official Account (微信公众号):
 
 Charles的皮卡丘 (*Charles_pikachu*)  
 ![img](https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/docs/pikachu.jpg)
