@@ -124,7 +124,6 @@ class NeteaseMusicClient(BaseMusicClient):
                 except:
                     boost_result = dict()
                 if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
-                    file_size_ori = download_result['file_size']
                     try: file_size_ori = float(file_size.split(' ')[0])
                     except: file_size_ori = 0
                     file_size_imp = boost_result['file_size']
