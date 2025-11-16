@@ -138,6 +138,7 @@ class BaseMusicClient():
                 downloaded_song_infos.append(downloaded_song_info)
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
+        return downloaded_song_infos
     '''download'''
     def download(self, song_infos: list, num_threadings=5, request_overrides: dict = {}):
         # logging
@@ -172,6 +173,8 @@ class BaseMusicClient():
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
+        # return
+        return downloaded_song_infos
     '''get'''
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
@@ -184,14 +187,14 @@ class BaseMusicClient():
                 try:
                     self.session.proxies = self.proxied_session_client.getrandomproxy()
                 except Exception as err:
-                    self.logger_handle.error(err, disable_print=self.disable_print)
+                    self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err})', disable_print=self.disable_print)
                     self.session.proxies = {}
             else:
                 self.session.proxies = {}
             try:
                 resp = self.session.get(url, **kwargs)
             except Exception as err:
-                self.logger_handle.error(err, disable_print=self.disable_print)
+                self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err})', disable_print=self.disable_print)
                 continue
             if resp.status_code != 200: continue
             return resp
@@ -208,14 +211,14 @@ class BaseMusicClient():
                 try:
                     self.session.proxies = self.proxied_session_client.getrandomproxy()
                 except Exception as err:
-                    self.logger_handle.error(err, disable_print=self.disable_print)
+                    self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err})', disable_print=self.disable_print)
                     self.session.proxies = {}
             else:
                 self.session.proxies = {}
             try:
                 resp = self.session.post(url, **kwargs)
             except Exception as err:
-                self.logger_handle.error(err, disable_print=self.disable_print)
+                self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err})', disable_print=self.disable_print)
                 continue
             if resp.status_code != 200: continue
             return resp

@@ -274,6 +274,7 @@ class TIDALMusicClient(BaseMusicClient):
             downloaded_song_infos.append(downloaded_song_info)
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
+        return downloaded_song_infos
     '''_search'''
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # successful
