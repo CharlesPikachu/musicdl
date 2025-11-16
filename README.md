@@ -34,8 +34,7 @@
         src="https://img.shields.io/badge/demo-online-brightgreen?style=for-the-badge"
       />
     </a> <br />
-	<strong>🛠 Source Code (MusicSquare):</strong>
-	<a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a> 
+	<a href="https://github.com/CharlesPikachu/musicsquare" target="_blank"><strong>🛠 Source Code (MusicSquare)</strong></a> 
   </p>
 
   <p>
