@@ -47,8 +47,7 @@
 </div>
 
 <p align="center">
-	<strong>📚 Documents: musicdl.readthedocs.io</strong>
-	<a href="https://musicdl.readthedocs.io/" target="_blank">musicdl.readthedocs.io</a>
+	<a href="https://musicdl.readthedocs.io/" target="_blank"><strong>📚 Documents: musicdl.readthedocs.io</strong></a>
 </p>
 
 
