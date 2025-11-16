@@ -32,6 +32,7 @@
 	<a href="https://musicdl.readthedocs.io/" target="_blank"><strong>📚 Documents: musicdl.readthedocs.io</strong></a>
 </p>
 
+<div align="center">
 <p>
 <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
 <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
@@ -49,6 +50,7 @@
   ⚠️ For learning and testing only: please respect copyright and the terms of each music platform.
 </em>
 </p>
+</div>
 
 
 # 🎉 What's New
