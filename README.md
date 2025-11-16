@@ -28,13 +28,13 @@
   </a>
   <p>
     <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
-	<strong>🛠 Source Code (MusicSquare):</strong>
     <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
       <img
         alt="demo"
         src="https://img.shields.io/badge/demo-online-brightgreen?style=for-the-badge"
       />
     </a> <br />
+	<strong>🛠 Source Code (MusicSquare):</strong>
 	<a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a> 
   </p>
 
@@ -46,7 +46,7 @@
   </p>
 </div>
 
-<p>
+<p align="center">
 	<strong>📚 Documents: musicdl.readthedocs.io</strong>
 	<a href="https://musicdl.readthedocs.io/" target="_blank">musicdl.readthedocs.io</a>
 </p>
