@@ -28,6 +28,8 @@
   </a>
   <p>
     <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
+	<strong>🛠 Source Code (MusicSquare):</strong>
+	<a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a> <br />
     <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
       <img
         alt="demo"
@@ -35,20 +37,19 @@
       />
     </a>
   </p>
-  <p>
-    <strong>📚 Documents:</strong>
-    <a href="https://musicdl.readthedocs.io/" target="_blank">musicdl.readthedocs.io</a>
-    &nbsp;·&nbsp;
-    <strong>🛠 Source Code (MusicSquare):</strong>
-    <a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a>
-  </p>
+
   <p>
     <em>
-      A browser-based music playground — search, play, and download tracks directly in your browser.<br />
+      MusicSquare is a browser-based music playground — search, play, and download tracks directly in your browser.<br />
       ⚠️ For learning and testing only: please respect copyright and the terms of each music platform.
     </em>
   </p>
 </div>
+
+<p>
+	<strong>📚 Documents: musicdl.readthedocs.io</strong>
+	<a href="https://musicdl.readthedocs.io/" target="_blank">musicdl.readthedocs.io</a>
+</p>
 
 
 # 🎉 What's New
