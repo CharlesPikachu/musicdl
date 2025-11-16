@@ -27,39 +27,29 @@
     <img src="https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg" alt="open issues" />
   </a>
 
-	<p>
-	  <strong>📚 Documents:</strong>
-	  <a href="https://musicdl.readthedocs.io/" target="_blank">
-		https://musicdl.readthedocs.io/
-	  </a>
-	</p>
-
-	<p>
-	  <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
-	  <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
-		<img
-		  alt="demo"
-		  src="https://img.shields.io/badge/demo-online-brightgreen?style=for-the-badge"
-		/>
-	  </a><br />
-	  <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
-		https://charlespikachu.github.io/musicsquare/
-	  </a>
-	</p>
-
-	<p>
-	  <em>
-		A browser-based music playground — search, play, and download tracks directly in your browser.<br />
-		⚠️ For learning and testing only: please respect copyright and the terms of each music platform.
-	  </em>
-	</p>
-
-	<p>
-	  <strong>🛠 Source Code:</strong>
-	  <a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">
-		https://github.com/CharlesPikachu/musicsquare
-	  </a>
-	</p>
+  <br /><br />
+  <p>
+    <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
+    <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
+      <img
+        alt="demo"
+        src="https://img.shields.io/badge/demo-online-brightgreen?style=for-the-badge"
+      />
+    </a>
+  </p>
+  <p>
+    <strong>📚 Documents:</strong>
+    <a href="https://musicdl.readthedocs.io/" target="_blank">musicdl.readthedocs.io</a>
+    &nbsp;·&nbsp;
+    <strong>🛠 Source Code (MusicSquare):</strong>
+    <a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a>
+  </p>
+  <p>
+    <em>
+      A browser-based music playground — search, play, and download tracks directly in your browser.<br />
+      ⚠️ For learning and testing only: please respect copyright and the terms of each music platform.
+    </em>
+  </p>
 </div>
 
 
