@@ -29,13 +29,13 @@
   <p>
     <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
 	<strong>🛠 Source Code (MusicSquare):</strong>
-	<a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a> <br />
     <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
       <img
         alt="demo"
         src="https://img.shields.io/badge/demo-online-brightgreen?style=for-the-badge"
       />
-    </a>
+    </a> <br />
+	<a href="https://github.com/CharlesPikachu/musicsquare" target="_blank">GitHub</a> 
   </p>
 
   <p>
