@@ -26,8 +26,6 @@
   <a href="https://github.com/CharlesPikachu/musicdl/issues">
     <img src="https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg" alt="open issues" />
   </a>
-
-  <br /><br />
   <p>
     <strong>🎧 Live Demo · MusicSquare (音乐广场)</strong><br />
     <a href="https://charlespikachu.github.io/musicsquare/" target="_blank">
