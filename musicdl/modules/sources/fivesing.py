@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, AudioLinkTester
+from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, usesearchheaderscookies, AudioLinkTester
 
 
 '''FiveSingMusicClient'''
@@ -42,6 +42,7 @@ class FiveSingMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_search'''
+    @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # successful
         try:

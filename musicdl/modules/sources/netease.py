@@ -12,7 +12,7 @@ import random
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.neteaseutils import EapiCryptoUtils
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, AudioLinkTester
 
 
 '''NeteaseMusicClient'''
@@ -70,6 +70,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_search'''
+    @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         search_meta = copy.deepcopy(search_url)
         search_url = search_meta.pop('url')

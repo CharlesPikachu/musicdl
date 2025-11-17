@@ -16,6 +16,7 @@ import pickle
 import shutil
 import bleach
 import requests
+import functools
 import json_repair
 import unicodedata
 from bs4 import BeautifulSoup
@@ -137,6 +138,39 @@ def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cook
     with open(cache_cookie_path, 'wb') as fp:
         cookies[client_name] = client_cookies
         pickle.dump(cookies, fp)
+
+
+'''usedownloadheaderscookies'''
+def usedownloadheaderscookies(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.default_headers = self.default_download_headers
+        self.default_cookies = self.default_download_cookies
+        if hasattr(self, '_initsession'): self._initsession()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+'''useparseheaderscookies'''
+def useparseheaderscookies(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.default_headers = self.default_parse_headers
+        self.default_cookies = self.default_parse_cookies
+        if hasattr(self, '_initsession'): self._initsession()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+'''usesearchheaderscookies'''
+def usesearchheaderscookies(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.default_headers = self.default_search_headers
+        self.default_cookies = self.default_search_cookies
+        if hasattr(self, '_initsession'): self._initsession()
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 '''AudioLinkTester'''

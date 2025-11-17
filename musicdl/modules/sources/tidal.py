@@ -17,7 +17,7 @@ from xml.etree import ElementTree
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode, urljoin
-from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, touchdir, replacefile, AudioLinkTester
+from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, touchdir, replacefile, usesearchheaderscookies, usedownloadheaderscookies, AudioLinkTester
 from ..utils.tidalutils import (
     TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry,
     decryptfile, decryptsecuritytoken, pyavready, ffmpegready, remuxflacstream, setmetadata
@@ -212,6 +212,7 @@ class TIDALMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_download'''
+    @usedownloadheaderscookies
     def _download(self, song_info: dict, request_overrides: dict = {}, downloaded_song_infos: list = [], progress: Progress = None, 
                   song_progress_id: int = 0, songs_progress_id: int = 0):
         try:
@@ -276,6 +277,7 @@ class TIDALMusicClient(BaseMusicClient):
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
         return downloaded_song_infos
     '''_search'''
+    @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # successful
         try:

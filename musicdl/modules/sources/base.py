@@ -14,8 +14,8 @@ from datetime import datetime
 from freeproxy import freeproxy
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
-from ..utils import LoggerHandle, touchdir
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from ..utils import LoggerHandle, touchdir, usedownloadheaderscookies, usesearchheaderscookies
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn
 
 
@@ -73,18 +73,17 @@ class BaseMusicClient():
             unique_song_infos.append(song_info)
         return unique_song_infos
     '''_search'''
+    @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         raise NotImplementedError('not be implemented')
     '''search'''
+    @usesearchheaderscookies
     def search(self, keyword: str, num_threadings=5, request_overrides: dict = {}, rule: dict = {}):
         # logging
         self.logger_handle.info(f'Start to search music files using {self.source}.', disable_print=self.disable_print)
         # construct search urls
         search_urls = self._constructsearchurls(keyword=keyword, rule=rule, request_overrides=request_overrides)
         # multi threadings for searching music files
-        self.default_headers = self.default_search_headers
-        self.default_cookies = self.default_search_cookies
-        self._initsession()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn()) as progress:
             progress_id = progress.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)})", total=len(search_urls))
             song_infos, submitted_tasks = [], []
@@ -111,6 +110,7 @@ class BaseMusicClient():
         # return
         return song_infos
     '''_download'''
+    @usedownloadheaderscookies
     def _download(self, song_info: dict, request_overrides: dict = {}, downloaded_song_infos: list = [], progress: Progress = None, 
                   song_progress_id: int = 0, songs_progress_id: int = 0):
         try:
@@ -140,13 +140,11 @@ class BaseMusicClient():
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
         return downloaded_song_infos
     '''download'''
+    @usedownloadheaderscookies
     def download(self, song_infos: list, num_threadings=5, request_overrides: dict = {}):
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
-        self.default_headers = self.default_download_headers
-        self.default_cookies = self.default_download_cookies
-        self._initsession()
         columns = [
             SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(),
             DownloadColumn(), TransferSpeedColumn(), TimeRemainingColumn(),

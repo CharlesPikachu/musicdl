@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, AudioLinkTester
+from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, AudioLinkTester
 
 
 '''MiguMusicClient'''
@@ -66,6 +66,7 @@ class MiguMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_search'''
+    @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # _safefetchfilesize
         def _safefetchfilesize(meta: dict):
