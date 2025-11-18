@@ -78,13 +78,13 @@ class QianqianMusicClient(BaseMusicClient):
                 download_result: dict = resp2json(resp)
                 download_url = safeextractfromdict(download_result, ['data', 'path'], '') or safeextractfromdict(download_result, ['data', 'trail_audio_info', 'path'], '')
                 if not download_url: continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                 if not download_url_status['ok']: continue
                 file_size = byte2mb(download_result.get('size', '0'))
                 duration = seconds2hms(download_result.get('duration', '0'))
                 ext = download_result.get('format', 'mp3')
                 if file_size == 'NULL':
-                    download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url, request_overrides)
                     download_result['download_result_suppl'] = download_result_suppl
                     file_size, ext = download_result_suppl['file_size'], download_result_suppl['ext'] if download_result_suppl['ext'] not in ['NULL'] else ext
                 # --lyric results

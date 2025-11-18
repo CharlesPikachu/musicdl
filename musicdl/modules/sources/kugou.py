@@ -61,7 +61,7 @@ class KugouMusicClient(BaseMusicClient):
                 download_url = download_result.get('url') or download_result.get('backup_url')
                 if not download_url: continue
                 if isinstance(download_url, list): download_url = download_url[0]
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                 if not download_url_status['ok']: continue
                 file_size = byte2mb(download_result.get('fileSize', '0'))
                 duration = seconds2hms(download_result.get('timeLength', '0'))

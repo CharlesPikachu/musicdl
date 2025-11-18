@@ -132,7 +132,7 @@ class QQMusicClient(BaseMusicClient):
                         download_url = "https://isure.stream.qqmusic.qq.com/" + download_url
                         ext = quality[1][1:]
                         file_size = default_file_size
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                         if download_url_status['ok']: break
                         download_result, download_url, ext, file_size = {}, "", "mp3", "0"
                 # ----common user in post try
@@ -168,7 +168,7 @@ class QQMusicClient(BaseMusicClient):
                         download_url = "https://isure.stream.qqmusic.qq.com/" + download_url
                         ext = quality[1][1:]
                         file_size = default_file_size
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                         if download_url_status['ok']: break
                         download_result, download_url, ext, file_size = {}, "", "mp3", "0"
                 # ----common user in get try
@@ -197,7 +197,7 @@ class QQMusicClient(BaseMusicClient):
                     download_url = 'http://ws.stream.qqmusic.qq.com/' + download_url
                     ext = "mp3"
                     file_size = file_size_infos['size_128mp3']
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                 # ----parse more infos
                 if not download_url: continue
                 if not download_url_status['ok']: continue

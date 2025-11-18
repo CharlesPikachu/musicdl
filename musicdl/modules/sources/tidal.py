@@ -301,7 +301,7 @@ class TIDALMusicClient(BaseMusicClient):
                     except:
                         download_url = ''
                     if not download_url: continue
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url.urls[0], request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url.urls[0], request_overrides)
                     if download_url_status['ok']: break
                     download_result, download_url, ext, file_size = {}, "", "m4a", "0"
                 if not download_url: continue

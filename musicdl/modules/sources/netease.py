@@ -49,7 +49,7 @@ class NeteaseMusicClient(BaseMusicClient):
             download_url, file_size = download_result['data'].get('url', ''), _safefetchfilesize(download_result['data'])
             if not download_url: continue
             ext = download_url.split('.')[-1].split('?')[0]
-            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
             if download_url_status['ok']: break
         # return
         boost_result = dict(download_result=download_result, download_url=download_url, file_size=file_size, download_url_status=download_url_status, ext=ext)
@@ -107,7 +107,7 @@ class NeteaseMusicClient(BaseMusicClient):
                         continue
                     download_url = download_result['data'][0].get('url', '')
                     if not download_url: continue
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
                 # ----boost music quality if possible
                 if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:

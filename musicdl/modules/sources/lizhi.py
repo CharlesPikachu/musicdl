@@ -67,12 +67,12 @@ class LizhiMusicClient(BaseMusicClient):
                 if not download_url: continue
                 for quality in ['_ud.mp3', '_hd.mp3', '_sd.m4a']:
                     download_url = download_url[:-7] + quality
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).test(download_url, request_overrides)
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                     if download_url_status['ok']: break
                 if not download_url_status['ok']: continue
                 duration = seconds2hms(search_result['voiceInfo'].get('duration', '0'))
                 try:
-                    download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_cookies).probe(download_url, request_overrides)
+                    download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url, request_overrides)
                 except:
                     download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
                 if download_result['ext'] == 'NULL':
@@ -81,7 +81,7 @@ class LizhiMusicClient(BaseMusicClient):
                 try:
                     if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true':
                         lyric_result = WhisperLRC(model_size_or_path='small').fromurl(
-                            download_url, headers=self.default_download_headers, cookies=self.default_cookies, request_overrides=request_overrides
+                            download_url, headers=self.default_download_headers, cookies=self.default_download_cookies, request_overrides=request_overrides
                         )
                         lyric = lyric_result['lyric']
                     else:
