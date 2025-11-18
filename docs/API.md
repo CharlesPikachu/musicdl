@@ -1,11 +1,8 @@
 # Musicdl APIs
 
+## `musicdl.musicdl.MusicClient`
 
-#### `musicdl.musicdl.MusicClient`
-
-A unified interface encapsulated for all supported music platforms.
-
-Arguments supported when initializing this class include:
+A unified interface encapsulated for all supported music platforms. Arguments supported when initializing this class include:
 
 - **music_sources** (`list[str]`, optional):  A list of music client names to be enabled. 
   Each name must be a key registered in `MusicClientBuilder.REGISTERED_MODULES`.  
@@ -21,7 +18,7 @@ Arguments supported when initializing this class include:
       "random_update_ua": False,
       "max_retries": 5,
       "maintain_session": False,
-      "logger_handle": self.logger_handle,
+      "logger_handle": LoggerHandle(),
       "disable_print": True,
       "work_dir": "musicdl_outputs",
       "proxy_sources": None,
@@ -47,37 +44,81 @@ Arguments supported when initializing this class include:
 
 Once initialized, `MusicClient` exposes high-level `search` and `download` methods that automatically dispatch requests to all configured music sources.
 
+#### `MusicClient.startcmdui()`
+
+Start an interactive command-line interface for searching and downloading music.
+
+This method:
+
+1. Prints basic usage information (version, save paths, etc.).
+2. Prompts the user to input keywords for music search.
+3. Calls `MusicClient.search()` to retrieve search results from all configured music sources.
+4. Displays a formatted table of candidate songs with IDs.
+5. Prompts the user to select one or multiple IDs (e.g. `"1,2,5"`).
+6. Collects the corresponding song info entries and calls `MusicClient.download()` to download them.
+
+Special commands:
+
+- Enter `r` to **reinitialize** the program (*i.e.*, return to the main menu).
+- Enter `q` to **exit** the program.
+
+This method blocks and runs in a loop until the user quits.
+
+#### `MusicClient.search(keyword: str)`
+
+Search for songs from all configured music platforms using a given `keyword`.
+The results from all sources are collected into a dictionary.
+Each per-source result is a list of song info dictionaries, which typically include: `singers`, `song_name`. `file_size`, `duration`, `album`, `source`, `ext` and other client-specific metadata.
+
+- Arguments:
+
+  - **keyword** (`str`): Search keyword, *e.g.*, song name, artist name, *etc*.
+
+- Returns:
+  
+  - `dict[str, list[dict]]:` A mapping from music source name (*e.g.*, `"NeteaseMusicClient"`) to a list of song info dictionaries returned by that source.
+
+#### `MusicClient.download(song_infos: list[dict])`
+
+Download one or more songs given a list of song info dictionaries.
+Thread settings and request overrides are automatically taken from `MusicClient.clients_threadings` and `MusicClient.requests_overrides`.
+
+- Arguments:
+
+  - **song_infos** (`list[dict]`): A list of song info dictionaries, usually taken from the output of `MusicClient.search()`.
+    Each dictionary must contain a source key so that the method can route it to the appropriate client.
+  
+- Returns:
+  
+  - `None`.
+
+
+## `musicdl.musicdl.modules.sources.fivesing.FiveSingMusicClient`
+
+
+## `musicdl.musicdl.modules.sources.joox.JooxMusicClient`
+
+
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
+
+
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
+
+
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
+
+
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
+
+
+
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
+
+
+
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
 
 
 
 
-
-#### musicdl.musicdl.modules.sources.fivesing.FiveSingMusicClient
-
-
-#### musicdl.musicdl.modules.sources.joox.JooxMusicClient
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
-
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
-
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
-
-
-
-
-#### musicdl.musicdl.modules.sources.kugou.KugouMusicClient
+## `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
