@@ -102,7 +102,7 @@ class QQMusicClient(BaseMusicClient):
                     size_48aac=safeextractfromdict(search_result, ['file', 'size_48aac'], '0'),
                 )
                 # ----if cookies exits, assume user with vip first
-                if self.default_cookies:
+                if self.default_cookies or request_overrides.get('cookies', {}):
                     default_vip_rule = {
                         'comm': {
                             'cv': self.version_info['version_code'], 'v': self.version_info['version_code'], 'QIMEI36': self.qimei_info['q36'], 'ct': '11', 
