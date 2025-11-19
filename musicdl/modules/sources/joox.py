@@ -31,7 +31,9 @@ class JooxMusicClient(BaseMusicClient):
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
+        # init
+        rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
         default_rule = {'country': 'sg', 'lang': 'zh_cn', 'keyword': keyword}
         default_rule.update(rule)
@@ -46,7 +48,9 @@ class JooxMusicClient(BaseMusicClient):
         return search_urls
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # init
+        request_overrides = request_overrides or {}
         # successful
         try:
             # --search results

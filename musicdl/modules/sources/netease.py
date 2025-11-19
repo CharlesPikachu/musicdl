@@ -55,7 +55,9 @@ class NeteaseMusicClient(BaseMusicClient):
         boost_result = dict(download_result=download_result, download_url=download_url, file_size=file_size, download_url_status=download_url_status, ext=ext)
         return boost_result
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
+        # init
+        rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
         default_rule = {'s': keyword, 'type': 1, 'limit': 10, 'offset': 0}
         default_rule.update(rule)
@@ -71,7 +73,9 @@ class NeteaseMusicClient(BaseMusicClient):
         return search_urls
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # init
+        request_overrides = request_overrides or {}
         search_meta = copy.deepcopy(search_url)
         search_url = search_meta.pop('url')
         # successful

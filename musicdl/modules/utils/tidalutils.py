@@ -372,17 +372,18 @@ class TIDALTvSession():
         {'client_id': 'zU4XHVVkc2tDPo4t', 'client_secret': 'VJKhDFqJPqvsPVNBV6ukXTJmwlvbttP7wlMlrc72se4='},
     ]
     def __init__(self, client_id: str = '7m7Ap0JC9j1cOM3n', client_secret: str = 'vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY=',
-                 headers: dict = {}, cookies: dict = {}):
+                 headers: dict = None, cookies: dict = None):
         self.session = requests.Session()
         self.client_id = client_id
         self.client_secret = client_secret
         self.headers = {'User-Agent': 'TIDAL_ANDROID/1039 okhttp/3.14.9'}
-        self.headers.update(headers)
-        self.cookies = cookies
+        self.headers.update(headers or {})
+        self.cookies = cookies or {}
         self.storage = SessionStorage()
     '''auth'''
-    def auth(self, request_overrides: dict = {}):
+    def auth(self, request_overrides: dict = None):
         # init
+        request_overrides = request_overrides or {}
         outputs = dict(
             ok=False, client_id=self.client_id, client_secret=self.client_secret, reason="",
             device_authorization=dict(device_code=None, user_code=None, verification_url=None, auth_check_timeout=None, auth_check_interval=None),
@@ -479,7 +480,9 @@ class TIDALTvSession():
         ))
         return outputs
     '''refresh'''
-    def refresh(self, request_overrides: dict = {}):
+    def refresh(self, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}
         # assert
         assert self.storage.access_token is not None
         # refresh

@@ -19,7 +19,8 @@ class WhisperLRC:
         self.whisper_model = WhisperModel(model_size_or_path, device=device, compute_type=compute_type, cpu_threads=cpu_threads, num_workers=num_workers, **kwargs)
     '''downloadtotmpdir'''
     @staticmethod
-    def downloadtotmpdir(url: str, headers: dict = {}, timeout: int = 300, cookies: dict = {}, request_overrides: dict = {}):
+    def downloadtotmpdir(url: str, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):
+        headers, cookies, request_overrides = headers or {}, cookies or {}, request_overrides or {}
         if 'headers' not in request_overrides: request_overrides['headers'] = headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = cookies
@@ -37,7 +38,8 @@ class WhisperLRC:
         t = max(0.0, float(t)); mm = int(t//60); ss = t - mm*60
         return f"[{mm:02d}:{ss:05.2f}]"
     '''fromurl'''
-    def fromurl(self, url: str, transcribe_overrides: dict = {}, headers: dict = {}, timeout: int = 300, cookies: dict = {}, request_overrides: dict = {}):
+    def fromurl(self, url: str, transcribe_overrides: dict = None, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):
+        transcribe_overrides, headers, cookies, request_overrides = transcribe_overrides or {}, headers or {}, cookies or {}, request_overrides or {}
         tmp_file_path = ''
         try:
             tmp_file_path = self.downloadtotmpdir(url, headers=headers, timeout=timeout, cookies=cookies, request_overrides=request_overrides)
@@ -54,7 +56,8 @@ class WhisperLRC:
                 try: os.remove(tmp_file_path)
                 except: pass
     '''fromfilepath'''
-    def fromfilepath(self, file_path: str, transcribe_overrides: dict = {}):
+    def fromfilepath(self, file_path: str, transcribe_overrides: dict = None):
+        transcribe_overrides = transcribe_overrides or {}
         default_transcribe_settings = {
             'language': None, 'vad_filter': True, 'vad_parameters': dict(min_silence_duration_ms=300), 'chunk_length': 30, 'beam_size': 5
         }

@@ -23,8 +23,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 class BaseMusicClient():
     source = 'BaseMusicClient'
     def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 5, maintain_session: bool = False, 
-                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None, default_search_cookies: dict = {},
-                 default_download_cookies: dict = {}):
+                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None, default_search_cookies: dict = None,
+                 default_download_cookies: dict = None):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -37,8 +37,8 @@ class BaseMusicClient():
         self.disable_print = disable_print
         self.work_dir = work_dir
         self.proxy_sources = proxy_sources
-        self.default_search_cookies = default_search_cookies if default_search_cookies else {}
-        self.default_download_cookies = default_download_cookies if default_download_cookies else {}
+        self.default_search_cookies = default_search_cookies or {}
+        self.default_download_cookies = default_download_cookies or {}
         self.default_cookies = default_search_cookies
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
@@ -55,7 +55,7 @@ class BaseMusicClient():
         self.session = requests.Session()
         self.session.headers = self.default_headers
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         raise NotImplementedError('not to be implemented')
     '''_constructuniqueworkdir'''
     def _constructuniqueworkdir(self, keyword: str):
@@ -74,11 +74,13 @@ class BaseMusicClient():
         return unique_song_infos
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         raise NotImplementedError('not be implemented')
     '''search'''
     @usesearchheaderscookies
-    def search(self, keyword: str, num_threadings=5, request_overrides: dict = {}, rule: dict = {}):
+    def search(self, keyword: str, num_threadings=5, request_overrides: dict = None, rule: dict = None):
+        # init
+        rule, request_overrides = rule or {}, request_overrides or {}
         # logging
         self.logger_handle.info(f'Start to search music files using {self.source}.', disable_print=self.disable_print)
         # construct search urls
@@ -111,8 +113,9 @@ class BaseMusicClient():
         return song_infos
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: dict, request_overrides: dict = {}, downloaded_song_infos: list = [], progress: Progress = None, 
+    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, 
                   song_progress_id: int = 0, songs_progress_id: int = 0):
+        request_overrides = request_overrides or {}
         try:
             touchdir(song_info['work_dir'])
             with self.get(song_info['download_url'], stream=True, **request_overrides) as resp:
@@ -141,7 +144,9 @@ class BaseMusicClient():
         return downloaded_song_infos
     '''download'''
     @usedownloadheaderscookies
-    def download(self, song_infos: list, num_threadings=5, request_overrides: dict = {}):
+    def download(self, song_infos: list, num_threadings=5, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files

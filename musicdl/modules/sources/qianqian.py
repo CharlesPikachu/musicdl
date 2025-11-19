@@ -43,7 +43,9 @@ class QianqianMusicClient(BaseMusicClient):
         params['sign'] = hashlib.md5((string + secret).encode('utf-8')).hexdigest()
         return params
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
+        # init
+        rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
         default_rule = {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': self.appid}
         default_rule.update(rule)
@@ -60,7 +62,9 @@ class QianqianMusicClient(BaseMusicClient):
         return search_urls
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # init
+        request_overrides = request_overrides or {}
         # successful
         try:
             # --search results

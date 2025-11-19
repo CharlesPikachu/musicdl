@@ -197,7 +197,9 @@ class TIDALMusicClient(BaseMusicClient):
             return ".m4a"
         return ".m4a"
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
+        # init
+        rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
         default_rule = {'countryCode': self.tidal_session.storage.country_code, 'limit': 10, 'offset': 0, 'query': keyword, 'includeContributors': 'truee'}
         default_rule.update(rule)
@@ -213,8 +215,11 @@ class TIDALMusicClient(BaseMusicClient):
         return search_urls
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: dict, request_overrides: dict = {}, downloaded_song_infos: list = [], progress: Progress = None, 
+    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, 
                   song_progress_id: int = 0, songs_progress_id: int = 0):
+        # init
+        request_overrides = request_overrides or {}
+        # success
         try:
             touchdir(song_info['work_dir'])
             # parse basic information
@@ -273,12 +278,16 @@ class TIDALMusicClient(BaseMusicClient):
             downloaded_song_info['save_path'] = save_path
             downloaded_song_info['ext'] = final_ext
             downloaded_song_infos.append(downloaded_song_info)
+        # failure
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
+        # return
         return downloaded_song_infos
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # init
+        request_overrides = request_overrides or {}
         # successful
         try:
             # --search results

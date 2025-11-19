@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import sys
+import copy
 import click
 import json_repair
 if __name__ == '__main__':
@@ -35,6 +36,8 @@ class MusicClient():
         # assert
         assert isinstance(music_sources, list) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and \
                isinstance(requests_overrides, dict) and isinstance(search_rules, dict)
+        music_sources, init_music_clients_cfg, clients_threadings, requests_overrides, search_rules = \
+            copy.deepcopy(music_sources), copy.deepcopy(init_music_clients_cfg), copy.deepcopy(clients_threadings), copy.deepcopy(requests_overrides), copy.deepcopy(search_rules)
         # set attributes
         self.work_dirs = {}
         self.search_rules = search_rules

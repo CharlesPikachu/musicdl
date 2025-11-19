@@ -55,7 +55,8 @@
 
 # 🎉 What's New
 
-- 2025-11-15: Released musicdl v2.4.4 — some minor improvements and bug fixes.
+- 2025-11-19: Released musicdl v2.4.5 — fix potential in-place modified bugs in HTTP requests.
+- 2025-11-19: Released musicdl v2.4.4 — some minor improvements and bug fixes.
 - 2025-11-15: Released musicdl v2.4.3 — migu and netease have introduced an automatic audio quality enhancement feature, which significantly increases the chances of getting lossless quality, Hi-Res audio, JyEffect (HD surround sound), Sky (immersive surround sound), and JyMaster (ultra-clear master quality).
 - 2025-11-15: Released musicdl v2.4.2 — save meta info to music files from TIDAL, fix user input bugs and migu search bugs.
 - 2025-11-14: Released musicdl v2.4.1 — beautify print, add support for TIDAL (TIDAL is an artist-first, fan-centered music streaming platform that delivers over 110 million songs in HiFi sound quality to the global music community).

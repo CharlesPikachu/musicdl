@@ -51,7 +51,9 @@ class QQMusicClient(BaseMusicClient):
     def _randomguid(self):
         return "".join(random.choices("abcdef1234567890", k=32))
     '''_constructsearchurls'''
-    def _constructsearchurls(self, keyword: str, rule: dict = {}, request_overrides: dict = {}):
+    def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
+        # init
+        rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
         default_rule = {
             'comm': {
@@ -76,8 +78,9 @@ class QQMusicClient(BaseMusicClient):
         return search_urls
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = {}, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
-        search_meta = copy.deepcopy(search_url)
+    def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+        # init
+        search_meta, request_overrides = copy.deepcopy(search_url), request_overrides or {}
         search_url = search_meta.pop('url')
         # successful
         try:

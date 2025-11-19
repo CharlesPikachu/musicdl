@@ -129,7 +129,7 @@ def safeextractfromdict(data, progressive_keys, default_value):
 
 
 '''cachecookies'''
-def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cookies: dict = {}):
+def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cookies: dict = None):
     if os.path.exists(cache_cookie_path):
         with open(cache_cookie_path, 'rb') as fp:
             cookies = pickle.load(fp)
@@ -186,15 +186,15 @@ class AudioLinkTester(object):
         "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", 
         "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg",
     }
-    def __init__(self, timeout=(5, 15), headers={}, cookies={}):
+    def __init__(self, timeout=(5, 15), headers: dict = None, cookies: dict = None):
         self.session = requests.Session()
         self.timeout = timeout
         self.headers = {
             'Accept': '*/*',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }
-        self.headers.update(headers)
-        self.cookies = cookies
+        self.headers.update(headers or {})
+        self.cookies = cookies or {}
     '''isaudioct'''
     @staticmethod
     def isaudioct(ct: str):
@@ -212,7 +212,8 @@ class AudioLinkTester(object):
             return "aac/adts"
         return None
     '''probe'''
-    def probe(self, url: str, request_overrides: dict = {}):
+    def probe(self, url: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
@@ -246,7 +247,8 @@ class AudioLinkTester(object):
             outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
         return outputs
     '''test'''
-    def test(self, url: str, request_overrides: dict = {}):
+    def test(self, url: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
