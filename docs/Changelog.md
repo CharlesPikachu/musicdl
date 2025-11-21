@@ -1,5 +1,7 @@
 # Release Log
 
+- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched arguments in MusicClient.download and optimized music_sources.
+
 - 2025-11-19: Released musicdl v2.4.5 — fix potential in-place modified bugs in HTTP requests.
 
 - 2025-11-19: Released musicdl v2.4.4 — some minor improvements and bug fixes.

@@ -55,6 +55,7 @@
 
 # 🎉 What's New
 
+- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched parameters in MusicClient.download and optimized music_sources.
 - 2025-11-19: Released musicdl v2.4.5 — fix potential in-place modified bugs in HTTP requests.
 - 2025-11-19: Released musicdl v2.4.4 — some minor improvements and bug fixes.
 - 2025-11-15: Released musicdl v2.4.3 — migu and netease have introduced an automatic audio quality enhancement feature, which significantly increases the chances of getting lossless quality, Hi-Res audio, JyEffect (HD surround sound), Sky (immersive surround sound), and JyMaster (ultra-clear master quality).

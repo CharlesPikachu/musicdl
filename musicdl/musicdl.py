@@ -44,6 +44,7 @@ class MusicClient():
         self.clients_threadings = clients_threadings
         self.requests_overrides = requests_overrides
         self.music_sources = music_sources if music_sources else ['MiguMusicClient', 'NeteaseMusicClient', 'KuwoMusicClient', 'KugouMusicClient', 'QQMusicClient', 'QianqianMusicClient']
+        self.music_sources = list(set(self.music_sources))
         # init
         self.logger_handle, self.music_clients = LoggerHandle(), dict()
         for music_source in self.music_sources:
@@ -116,7 +117,7 @@ class MusicClient():
                 classified_song_infos[song_info['source']] = [song_info]
         for source, source_song_infos in classified_song_infos.items():
             self.music_clients[source].download(
-                song_infos=source_song_infos, num_threadings=self.clients_threadings[song_info['source']], request_overrides=self.requests_overrides[song_info['source']]
+                song_infos=source_song_infos, num_threadings=self.clients_threadings[source], request_overrides=self.requests_overrides[source]
             )
     '''processinputs'''
     def processinputs(self, input_tip='', prefix: str = '\n'):
