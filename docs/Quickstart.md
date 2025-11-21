@@ -13,6 +13,49 @@ music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMus
 music_client.startcmdui()
 ```
 
+Or just run `musicdl` (maybe `musicdl --help` to show usage information) from the terminal.
+
+```
+Usage: musicdl [OPTIONS]
+
+Options:
+  --version                       Show the version and exit.
+  -k, --keyword TEXT              The keywords for the music search. If left
+                                  empty, an interactive terminal will open
+                                  automatically.
+  -m, --music-sources, --music_sources TEXT
+                                  The music search and download sources.
+                                  [default: MiguMusicClient,NeteaseMusicClient
+                                  ,KuwoMusicClient,KugouMusicClient,QQMusicCli
+                                  ent,QianqianMusicClient]
+  -i, --init-music-clients-cfg, --init_music_clients_cfg TEXT
+                                  Config such as `work_dir` for each music
+                                  client as a JSON string.
+  -r, --requests-overrides, --requests_overrides TEXT
+                                  Requests.get kwargs such as `headers` and
+                                  `proxies` for each music client as a JSON
+                                  string.
+  -c, --clients-threadings, --clients_threadings TEXT
+                                  Number of threads used for each music client
+                                  as a JSON string.
+  -s, --search-rules, --search_rules TEXT
+                                  Search rules for each music client as a JSON
+                                  string.
+  --help                          Show this message and exit.
+```
+
+The demonstration is as follows,
+
+<div align="center">
+  <div>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.png" width="600"/>
+  </div>
+  <div>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.gif" width="600"/>
+  </div>
+</div>
+<br />
+
 If you are a VIP user on each music platform, for example, a VIP user of Netease Cloud Music, 
 you can pass in the cookies from your logged-in account so that musicdl can download more tracks with higher quality (*e.g.*, flac music files). 
 Example code is as follows:
@@ -34,7 +77,7 @@ If you want to use the [pyfreeproxy](https://github.com/CharlesPikachu/freeproxy
 from musicdl import musicdl
 
 init_music_clients_cfg = dict()
-init_music_clients_cfg['NeteaseMusicClient'] = {'search_size_per_source': 10, 'auto_set_proxies': True, 'proxy_sources': 'QiyunipProxiedSession'}
+init_music_clients_cfg['NeteaseMusicClient'] = {'search_size_per_source': 10, 'auto_set_proxies': True, 'proxy_sources': ['QiyunipProxiedSession']}
 music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
