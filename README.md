@@ -253,6 +253,13 @@ If you use this project in your research, please cite the repository.
 [![Star History Chart](https://api.star-history.com/svg?repos=CharlesPikachu/musicdl&type=date&legend=top-left)](https://www.star-history.com/#CharlesPikachu/musicdl&type=date&legend=top-left)
 
 
+# ☕ Appreciation (赞赏 / 打赏)
+
+| WeChat Appreciation QR Code (微信赞赏码)                                                                                       | Alipay Appreciation QR Code (支付宝赞赏码)                                                                                     |
+| :--------:                                                                                                                     | :----------:                                                                                                                   |
+| <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/.github/pictures/wechat_reward.jpg" width="260" />   | <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/.github/pictures/alipay_reward.png" width="260" />   |
+
+
 # 📢 WeChat Official Account (微信公众号):
 
 Charles的皮卡丘 (*Charles_pikachu*)  
