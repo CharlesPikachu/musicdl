@@ -120,7 +120,7 @@ class BaseMusicClient():
             touchdir(song_info['work_dir'])
             with self.get(song_info['download_url'], stream=True, **request_overrides) as resp:
                 resp.raise_for_status()
-                total_size, chunk_size, downloaded_size = int(resp.headers['content-length']), song_info.get('chunk_size', 1024), 0
+                total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
                 progress.update(song_progress_id, total=total_size)
                 save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}.{song_info['ext']}"), 1
                 while os.path.exists(save_path):
@@ -131,7 +131,11 @@ class BaseMusicClient():
                         if not chunk: continue
                         fp.write(chunk)
                         downloaded_size = downloaded_size + len(chunk)
-                        downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
+                        if total_size > 0:
+                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
+                        else:
+                            progress.update(song_progress_id, total=downloaded_size)
+                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
                         progress.advance(song_progress_id, len(chunk))
                         progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading: {downloading_text})")
                 progress.advance(songs_progress_id, 1)

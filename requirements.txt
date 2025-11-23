@@ -17,3 +17,4 @@ aigpy
 av
 tabulate
 mutagen
+ytmusicapi

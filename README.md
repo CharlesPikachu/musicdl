@@ -15,10 +15,10 @@
     <img src="https://img.shields.io/github/license/CharlesPikachu/musicdl.svg" alt="license" />
   </a>
   <a href="https://pypi.org/project/musicdl/">
-    <img src="https://pepy.tech/badge/musicdl" alt="PyPI - Downloads" />
+    <img src="https://static.pepy.tech/badge/musicdl" alt="PyPI - Downloads">
   </a>
   <a href="https://pypi.org/project/musicdl/">
-    <img src="https://img.shields.io/pypi/dm/musicdl?style=flat-square" alt="downloads" />
+    <img src="https://static.pepy.tech/badge/musicdl/month" alt="PyPI - Downloads">
   </a>
   <a href="https://github.com/CharlesPikachu/musicdl/issues">
     <img src="https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg" alt="issue resolution" />
@@ -91,6 +91,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  XimalayaMusicClient           |  喜马拉雅                           |   ✓                |  ✓                   |    [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)        |
 |  JooxMusicClient               |  JOOX (QQ音乐海外版)                |   ✓                |  ✓                   |    [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                |
 |  TIDALMusicClient              |  TIDAL (提供HiFi音质的流媒体平台)   |   ✓                |  ✓                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
+|  YouTubeMusicClient            |  油管音乐                           |   ✓                |  ✓                   |    [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)          |
 
 
 # 🧪 Playground
@@ -127,6 +128,7 @@ python setup.py install
 
 Some music platforms require [FFmpeg](https://www.ffmpeg.org/) to be directly callable in your environment in order to obtain higher-quality audio. 
 You can choose whether to install [FFmpeg](https://www.ffmpeg.org/) depending on your needs.
+
 
 # 🚀 Quick Start
 

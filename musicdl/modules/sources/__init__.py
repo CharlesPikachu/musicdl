@@ -9,6 +9,7 @@ from .lizhi import LizhiMusicClient
 from .kugou import KugouMusicClient
 from ..utils import BaseModuleBuilder
 from .netease import NeteaseMusicClient
+from .youtube import YouTubeMusicClient
 from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .ximalaya import XimalayaMusicClient
@@ -20,7 +21,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'FiveSingMusicClient': FiveSingMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient,
         'QianqianMusicClient': QianqianMusicClient, 'QQMusicClient': QQMusicClient, 'MiguMusicClient': MiguMusicClient,
         'JooxMusicClient': JooxMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'NeteaseMusicClient': NeteaseMusicClient,
-        'XimalayaMusicClient': XimalayaMusicClient, 'TIDALMusicClient': TIDALMusicClient,
+        'XimalayaMusicClient': XimalayaMusicClient, 'TIDALMusicClient': TIDALMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
     }
 
 
