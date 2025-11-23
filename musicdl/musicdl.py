@@ -68,6 +68,23 @@ class MusicClient():
         printfullline(ch='-')
         print(BASIC_INFO % (__version__, ', '.join([f'"{v} for {k}"' for k, v in self.work_dirs.items()])))
         printfullline(ch='-')
+    '''printsearchresults'''
+    def printsearchresults(self, search_results: dict):
+        print_titles, print_items, song_infos, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, 0
+        for _, per_search_results in search_results.items():
+            for search_result in per_search_results:
+                song_info_pointer += 1
+                song_infos[str(song_info_pointer)] = search_result
+                print_items.append([
+                    colorize(str(song_info_pointer), 'number'), 
+                    colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
+                    search_result['song_name'], 
+                    search_result['file_size'] if search_result['ext'] not in ['flac', 'ogg'] else colorize(search_result['file_size'], 'flac'), 
+                    search_result['duration'], search_result['album'], 
+                    colorize(search_result['source'].removesuffix('MusicClient').upper(), 'highlight'),
+                ])
+        print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
+        return song_infos
     '''startcmdui'''
     def startcmdui(self):
         while True:
@@ -76,20 +93,7 @@ class MusicClient():
             user_input_keyword = self.processinputs('Please enter keywords to search for songs: ')
             search_results = self.search(keyword=user_input_keyword)
             # print search_results
-            print_titles, print_items, song_infos, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, 0
-            for music_source, per_search_results in search_results.items():
-                for search_result in per_search_results:
-                    song_info_pointer += 1
-                    song_infos[str(song_info_pointer)] = search_result
-                    print_items.append([
-                        colorize(str(song_info_pointer), 'number'), 
-                        colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
-                        search_result['song_name'], 
-                        search_result['file_size'] if search_result['ext'] not in ['flac', 'ogg'] else colorize(search_result['file_size'], 'flac'), 
-                        search_result['duration'], search_result['album'], 
-                        colorize(search_result['source'].removesuffix('MusicClient').upper(), 'highlight'),
-                    ])
-            print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
+            song_infos = self.printsearchresults(search_results=search_results)
             # process user inputs, music file download
             user_input_select_song_info_pointer = self.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
             user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]
@@ -184,11 +188,16 @@ def MusicClientCMD(keyword: str, music_sources: str, init_music_clients_cfg: str
         print(music_client)
         # --search
         search_results = music_client.search(keyword=keyword)
-        song_infos = []
-        for song_infos_per_source in list(search_results.values()):
-            song_infos.extend(song_infos_per_source)
+        # print search_results
+        song_infos = music_client.printsearchresults(search_results=search_results)
+        # process user inputs, music file download
+        user_input_select_song_info_pointer = music_client.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
+        user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]
+        user_input_select_song_info_pointer = list(set(user_input_select_song_info_pointer))
+        selected_song_infos = []
+        for idx in user_input_select_song_info_pointer: selected_song_infos.append(song_infos[idx])
         # --download
-        music_client.download(song_infos=song_infos)
+        music_client.download(song_infos=selected_song_infos)
 
 
 '''tests'''
