@@ -1,1 +1,1 @@
-recursive-include musicdl/modules/utils/youtubeutilsjs *.js
+recursive-include musicdl/modules/js/youtube *.js

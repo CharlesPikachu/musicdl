@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
-from .youtubeutilsjs.jsinterp import JSInterpreter, extractplayerjsglobalvar
+from ..js.youtube import JSInterpreter, extractplayerjsglobalvar
 from typing import Callable, List, Optional, Union, Callable, BinaryIO, Dict, Any, Tuple
 
 
@@ -487,7 +487,7 @@ def generatepotoken(video_id: str):
     suffix = ".exe" if os.name == "nt" else ""
     bin_dir = nodejs_wheel.executable.ROOT_DIR if os.name == "nt" else os.path.join(nodejs_wheel.executable.ROOT_DIR, "bin")
     try:
-        result = subprocess.check_output([os.path.join(bin_dir, 'node' + suffix), os.path.join(os.path.dirname(os.path.realpath(__file__)), 'youtubeutilsjs/botGuard.js'), video_id], stderr=subprocess.PIPE).decode()
+        result = subprocess.check_output([os.path.join(bin_dir, 'node' + suffix), str(Path(__file__).resolve().parent.parent / "js" / "youtube" / "botguard.js"), video_id], stderr=subprocess.PIPE).decode()
         return result.replace("\n", "")
     except Exception as err:
         raise RuntimeError(err)
@@ -668,7 +668,7 @@ class NodeRunner:
     def __init__(self, code: str):
         self.code = code
         self.function_name = None
-        self.proc = subprocess.Popen([self._nodepath(), os.path.join(os.path.dirname(__file__), "youtubeutilsjs", "runner.js")], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        self.proc = subprocess.Popen([self._nodepath(), str(Path(__file__).resolve().parent.parent / "js" / "youtube" / "runner.js")], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     '''_nodepath'''
     @staticmethod
     def _nodepath():

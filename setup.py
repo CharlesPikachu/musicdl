@@ -36,7 +36,7 @@ setup(
     license=musicdl.__license__,
     include_package_data=True,
     packages=find_packages(),
-    package_data={"musicdl": ["modules/utils/youtubeutilsjs/*.js"]},
+    package_data={"musicdl": ["modules/js/youtube/*.js"]},
     entry_points={'console_scripts': ['musicdl = musicdl.musicdl:MusicClientCMD']},
     install_requires=[lab.strip('\n') for lab in list(open('requirements.txt', 'r').readlines())],
     zip_safe=True,
