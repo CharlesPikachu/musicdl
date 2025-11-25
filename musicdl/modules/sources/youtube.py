@@ -193,9 +193,12 @@ class YouTubeMusicClient(BaseMusicClient):
                         download_result, download_url, download_url_status, ext, file_size, duration = {}, "", {}, 'mp3', 'NULL', search_result.get('duration')
                 # --download with UMP
                 if not download_result or not download_url:
-                    download_url = YouTube(video_id=search_result['videoId']).streams.getaudioonly()
-                    file_size, duration, ext = byte2mb(download_url.filesize), seconds2hms(int(download_url.durationMs) / 1000), 'mp3'
-                    download_result, download_url_status = {'download_url': download_url, 'file_size': file_size, 'duration': duration}, {'ok': True}
+                    try:
+                        download_url = YouTube(video_id=search_result['videoId']).streams.getaudioonly()
+                        file_size, duration, ext = byte2mb(download_url.filesize), seconds2hms(int(download_url.durationMs) / 1000), 'mp3'
+                        download_result, download_url_status = {'download_url': download_url, 'file_size': file_size, 'duration': duration}, {'ok': True}
+                    except:
+                        download_result, download_url, download_url_status, ext, file_size, duration = {}, "", {}, 'mp3', 'NULL', search_result.get('duration')
                 # --lyric
                 try:
                     if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true':
