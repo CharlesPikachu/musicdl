@@ -55,7 +55,8 @@
 
 # 🎉 What's New
 
-- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched parameters in MusicClient.download and optimized music_sources.
+- 2025-11-25: Released musicdl v2.5.0 — supports searching and downloading from YouTube Music and make musicdl more robust. 
+- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched parameters in MusicClient.download and optimized music sources.
 - 2025-11-19: Released musicdl v2.4.5 — fix potential in-place modified bugs in HTTP requests.
 - 2025-11-19: Released musicdl v2.4.4 — some minor improvements and bug fixes.
 - 2025-11-15: Released musicdl v2.4.3 — migu and netease have introduced an automatic audio quality enhancement feature, which significantly increases the chances of getting lossless quality, Hi-Res audio, JyEffect (HD surround sound), Sky (immersive surround sound), and JyMaster (ultra-clear master quality).
@@ -126,8 +127,27 @@ cd musicdl
 python setup.py install
 ```
 
-Some music platforms require [FFmpeg](https://www.ffmpeg.org/) to be directly callable in your environment in order to obtain higher-quality audio. 
-You can choose whether to install [FFmpeg](https://www.ffmpeg.org/) depending on your needs.
+Some music platforms require [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://nodejs.org/en) to be directly callable in your environment 
+(*i.e.*, `ffmpeg` and `node` must be available on your system `PATH`) in order to obtain higher-quality audio or improve the robustness of the download process.  
+
+To verify that they are installed and available on your `PATH`, run the following commands in a terminal (Command Prompt / PowerShell on Windows, Terminal on macOS/Linux):
+
+- **Check FFmpeg**
+  ```bash
+  ffmpeg -version
+  ```
+  If FFmpeg is installed correctly and on your `PATH`, this command will print the FFmpeg version information (*e.g.*, a few lines starting with `ffmpeg version ...`).
+  If you see an error like `command not found` or `'ffmpeg' is not recognized as an internal or external command`, then FFmpeg is either not installed or not added to your `PATH`.
+
+- **Check Node.js**
+  ```bash
+  node -v
+  npm -v
+  ```
+  If Node.js is installed correctly, `node -v` will print the Node.js version (*e.g.*, `v22.11.0`), and `npm -v` will print the npm version.
+  If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
+
+FFmpeg is primarily used by `TIDALMusicClient`, while Node.js is primarily used by `YouTubeMusicClient`.
 
 
 # 🚀 Quick Start
@@ -207,6 +227,15 @@ and then use musicdl as follows,
 from musicdl import musicdl
 
 music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'])
+music_client.startcmdui()
+```
+
+For searching and downloading from YouTube Music, an example usage is shown below,
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['YouTubeMusicClient'])
 music_client.startcmdui()
 ```
 

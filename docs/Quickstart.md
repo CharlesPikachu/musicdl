@@ -109,6 +109,15 @@ music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'])
 music_client.startcmdui()
 ```
 
+For searching and downloading from YouTube Music, an example usage is shown below,
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['YouTubeMusicClient'])
+music_client.startcmdui()
+```
+
 #### Dedicated MusicClient
 
 Example code for searching and downloading music files on different platforms such as NeteaseMusicClient and QQMusicClient is as follows,

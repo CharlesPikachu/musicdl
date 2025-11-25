@@ -12,7 +12,8 @@ import random
 from ytmusicapi import YTMusic
 from .base import BaseMusicClient
 from rich.progress import Progress
-from ..utils import legalizestring, resp2json, isvalidresp, usesearchheaderscookies, AudioLinkTester, WhisperLRC
+from ..utils.youtubeutils import YouTube
+from ..utils import legalizestring, resp2json, isvalidresp, usesearchheaderscookies, byte2mb, seconds2hms, AudioLinkTester, WhisperLRC
 
 
 '''YouTubeMusicClient'''
@@ -152,6 +153,7 @@ class YouTubeMusicClient(BaseMusicClient):
             if self.search_size_per_source <= 5:
                 try:
                     search_results = self._searchwithytsearchanddownloadmp3rapidapi(keyword=keyword, request_overrides=request_overrides)
+                    if len(search_results) == 0: raise
                 except:
                     search_results = ytmusic_api.search(**search_rule)
                     search_results = [s for s in search_results if s['resultType'] in ['song']]
@@ -164,17 +166,18 @@ class YouTubeMusicClient(BaseMusicClient):
                 # --init download related results
                 download_result, download_url, download_url_status, ext, file_size, duration = {}, "", {}, 'mp3', 'NULL', search_result.get('duration')
                 # --parse with _parsewithytsearchanddownloadmp3rapidapi
-                try:
-                    download_result, download_url, download_url_status = self._parsewithytsearchanddownloadmp3rapidapi(vid=search_result['videoId'], request_overrides=request_overrides)
+                if not download_result or not download_url:
                     try:
-                        download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url, request_overrides)
+                        download_result, download_url, download_url_status = self._parsewithytsearchanddownloadmp3rapidapi(vid=search_result['videoId'], request_overrides=request_overrides)
+                        try:
+                            download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url, request_overrides)
+                        except:
+                            download_result_suppl = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
+                        download_result['download_result_suppl'] = download_result_suppl
+                        ext, file_size = download_result_suppl['ext'], download_result_suppl['file_size']
+                        if ext in ['NULL']: ext = 'mp3'
                     except:
-                        download_result_suppl = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
-                    download_result['download_result_suppl'] = download_result_suppl
-                    ext, file_size = download_result_suppl['ext'], download_result_suppl['file_size']
-                    if ext in ['NULL']: ext = 'mp3'
-                except:
-                    download_result, download_url, download_url_status, ext, file_size, duration = {}, "", {}, 'mp3', 'NULL', search_result.get('duration')
+                        download_result, download_url, download_url_status, ext, file_size, duration = {}, "", {}, 'mp3', 'NULL', search_result.get('duration')
                 # --parse with _parsvidewithmp3youtube
                 if not download_result or not download_url:
                     try:
@@ -188,8 +191,11 @@ class YouTubeMusicClient(BaseMusicClient):
                         if ext in ['NULL']: ext = 'mp3'
                     except:
                         download_result, download_url, download_url_status, ext, file_size, duration = {}, "", {}, 'mp3', 'NULL', search_result.get('duration')
-                # --fail to parse
-                if not download_result or not download_url: continue
+                # --download with UMP
+                if not download_result or not download_url:
+                    download_url = YouTube(video_id=search_result['videoId']).streams.getaudioonly()
+                    file_size, duration, ext = byte2mb(download_url.filesize), seconds2hms(int(download_url.durationMs) / 1000), 'mp3'
+                    download_result, download_url_status = {'download_url': download_url, 'file_size': file_size, 'duration': duration}, {'ok': True}
                 # --lyric
                 try:
                     if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true':

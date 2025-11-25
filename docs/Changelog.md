@@ -1,6 +1,8 @@
 # Release Log
 
-- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched arguments in MusicClient.download and optimized music_sources.
+- 2025-11-25: Released musicdl v2.5.0 — supports searching and downloading from YouTube Music and make musicdl more robust. 
+
+- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched parameters in MusicClient.download and optimized music sources.
 
 - 2025-11-19: Released musicdl v2.4.5 — fix potential in-place modified bugs in HTTP requests.
 

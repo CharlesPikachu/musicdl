@@ -18,3 +18,4 @@ av
 tabulate
 mutagen
 ytmusicapi
+nodejs-wheel
