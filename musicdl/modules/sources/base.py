@@ -39,7 +39,7 @@ class BaseMusicClient():
         self.proxy_sources = proxy_sources
         self.default_search_cookies = default_search_cookies or {}
         self.default_download_cookies = default_download_cookies or {}
-        self.default_cookies = default_search_cookies
+        self.default_cookies = self.default_search_cookies
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
         self.default_download_headers = {'User-Agent': UserAgent().random}

@@ -94,22 +94,22 @@ Thread settings and request overrides are automatically taken from `MusicClient.
   - `None`.
 
 
-## `musicdl.musicdl.modules.sources.base.BaseMusicClient`
+## `musicdl.modules.sources.base.BaseMusicClient`
 
 `BaseMusicClient` is the abstract base class for all concrete music clients, including,
 
-- `musicdl.musicdl.modules.sources.fivesing.FiveSingMusicClient`
-- `musicdl.musicdl.modules.sources.kugou.KugouMusicClient`
-- `musicdl.musicdl.modules.sources.kuwo.KuwoMusicClient`
-- `musicdl.musicdl.modules.sources.lizhi.LizhiMusicClient`
-- `musicdl.musicdl.modules.sources.migu.MiguMusicClient`
-- `musicdl.musicdl.modules.sources.netease.NeteaseMusicClient`
-- `musicdl.musicdl.modules.sources.qianqian.QianqianMusicClient`
-- `musicdl.musicdl.modules.sources.qq.QQMusicClient`
-- `musicdl.musicdl.modules.sources.ximalaya.XimalayaMusicClient`
-- `musicdl.musicdl.modules.sources.joox.JooxMusicClient`
-- `musicdl.musicdl.modules.sources.tidal.TIDALMusicClient`
-- `musicdl.musicdl.modules.sources.youtube.YouTubeMusicClient`
+- `musicdl.modules.sources.fivesing.FiveSingMusicClient`
+- `musicdl.modules.sources.kugou.KugouMusicClient`
+- `musicdl.modules.sources.kuwo.KuwoMusicClient`
+- `musicdl.modules.sources.lizhi.LizhiMusicClient`
+- `musicdl.modules.sources.migu.MiguMusicClient`
+- `musicdl.modules.sources.netease.NeteaseMusicClient`
+- `musicdl.modules.sources.qianqian.QianqianMusicClient`
+- `musicdl.modules.sources.qq.QQMusicClient`
+- `musicdl.modules.sources.ximalaya.XimalayaMusicClient`
+- `musicdl.modules.sources.joox.JooxMusicClient`
+- `musicdl.modules.sources.tidal.TIDALMusicClient`
+- `musicdl.modules.sources.youtube.YouTubeMusicClient`
 
 End users usually **do not** instantiate `BaseMusicClient` directly, but instead use one of the specific clients above.
 The methods documented here describe the common behavior of all these clients.
