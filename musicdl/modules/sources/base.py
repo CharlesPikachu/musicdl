@@ -10,13 +10,31 @@ import os
 import copy
 import pickle
 import requests
+from rich.text import Text
 from datetime import datetime
+from rich.progress import Task
 from freeproxy import freeproxy
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..utils import LoggerHandle, touchdir, usedownloadheaderscookies, usesearchheaderscookies
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
+
+
+'''AudioAwareColumn'''
+class AudioAwareColumn(ProgressColumn):
+    def __init__(self):
+        super(AudioAwareColumn, self).__init__()
+        self._download_col = DownloadColumn()
+    '''render'''
+    def render(self, task: Task):
+        kind = task.fields.get("kind", "download")
+        if kind == "overall":
+            completed = int(task.completed)
+            total = int(task.total) if task.total is not None else 0
+            return Text(f"{completed}/{total} audios")
+        else:
+            return self._download_col.render(task)
 
 
 '''BaseMusicClient'''
@@ -193,14 +211,14 @@ class BaseMusicClient():
         # multi threadings for downloading music files
         columns = [
             SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(),
-            DownloadColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
+            AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
         ]
         with Progress(*columns, refresh_per_second=20, expand=True) as progress:
-            songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos))
+            songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall')
             song_progress_ids, downloaded_song_infos, submitted_tasks = [], [], []
             for _, song_info in enumerate(song_infos):
                 desc = f"{self.source}.download >>> {song_info['song_name']} (Preparing)"
-                song_progress_ids.append(progress.add_task(desc, total=None))
+                song_progress_ids.append(progress.add_task(desc, total=None, kind='download'))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos):
                     submitted_tasks.append(pool.submit(
