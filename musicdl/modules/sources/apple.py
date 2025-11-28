@@ -127,19 +127,17 @@ class AppleMusicClient(BaseMusicClient):
                     if not isvalidresp(resp=resp): continue
                     download_result = resp2json(resp=resp)
                     def _qualitykey(item: dict):
-                        meta: dict = item.get("metadata", {})
+                        meta: dict = item.get("metadata", {}) or {}
                         bit_rate = int(meta.get("bitRate", 0) or 0)
                         sample_rate = int(meta.get("sampleRate", 0) or 0)
                         file_size = int(item.get("file-size", 0) or 0)
                         return (-bit_rate, -sample_rate, -file_size)
                     tracks = safeextractfromdict(download_result, ['songList', 0, 'assets'], [])
+                    tracks = [t for t in tracks if t.get('URL')]
                     if not tracks: continue
                     tracks = sorted(tracks, key=_qualitykey)
-                    for track in tracks:
-                        download_url = track.get('URL', '')
-                        if not download_url: continue
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                        if download_url_status['ok']: break
+                    download_url, download_url_status = tracks[0]['URL'], {}
+                    ext, file_size = safeextractfromdict(tracks[0], ['metadata', 'fileExtension'], 'm4p'), safeextractfromdict(tracks[0], ['metadata', 'file-size'], '0')
                 # --lyric results
                 # ----non-vip users
                 if not self.default_cookies or 'media-user-token' not in self.default_cookies:
@@ -155,7 +153,18 @@ class AppleMusicClient(BaseMusicClient):
                         lyric_result, lyric = dict(), 'NULL'
                 # ----vip users
                 else:
-                    pass
+                    try:
+                        params = {
+                            'art[url]': 'f', 'extend': 'lyricsExcerpt,offers', 'fields[albums]': 'artistName,artistUrl,artwork,name,url', 
+                            'fields[artists]': 'name,url', 'format[resources]': 'map', 'include': 'albums,artists,credits,lyrics,music-videos',
+                            'l': 'en-US', 'platform': 'web'
+                        }
+                        resp = self.get(f'https://amp-api.music.apple.com/v1/catalog/cn/songs/{search_result["id"]}', params=params, **request_overrides)
+                        resp.raise_for_status()
+                        lyric_result = resp2json(resp=resp)
+                        lyric = safeextractfromdict(lyric_result, ['resources', 'lyrics', search_result['id'], 'attributes', 'ttml'], 'NULL')
+                    except:
+                        lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info
                 duration = seconds2hms(float(safeextractfromdict(search_result, ['attributes', 'durationInMillis'], '0')) / 1000)
                 song_info = dict(
