@@ -79,21 +79,21 @@ If you are a rights holder and believe this repository infringes your rights, pl
 
 # 🎧 Supported Music Client
 
-|  MusicClient (EN)              |  MusicClient (CN)                   |   Search           |  Download            |    Code Snippet                                                                                                    |
-|  :----:                        |  :----:                             |   :----:           |  :----:              |    :----:                                                                                                          |
-|  FiveSingMusicClient           |  5SING音乐                          |   ✓                |  ✓                   |    [fivesing.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fivesing.py)        |
-|  KugouMusicClient              |  酷狗音乐                           |   ✓                |  ✓                   |    [kugou.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kugou.py)              |
-|  KuwoMusicClient               |  酷我音乐                           |   ✓                |  ✓                   |    [kuwo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kuwo.py)                |
-|  LizhiMusicClient              |  荔枝FM                             |   ✓                |  ✓                   |    [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/lizhi.py)              |
-|  MiguMusicClient               |  咪咕音乐                           |   ✓                |  ✓                   |    [migu.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/migu.py)                |
-|  NeteaseMusicClient            |  网易云音乐                         |   ✓                |  ✓                   |    [netease.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/netease.py)          |
-|  QianqianMusicClient           |  千千音乐                           |   ✓                |  ✓                   |    [qianqian.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qianqian.py)        |
-|  QQMusicClient                 |  QQ音乐                             |   ✓                |  ✓                   |    [qq.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qq.py)                    |
-|  XimalayaMusicClient           |  喜马拉雅                           |   ✓                |  ✓                   |    [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)        |
-|  JooxMusicClient               |  JOOX (QQ音乐海外版)                |   ✓                |  ✓                   |    [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                |
-|  TIDALMusicClient              |  TIDAL (提供HiFi音质的流媒体平台)   |   ✓                |  ✓                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
-|  YouTubeMusicClient            |  油管音乐                           |   ✓                |  ✓                   |    [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)          |
-|  AppleMusicClient              |  苹果音乐                           |   ✓                |  ✓                   |    [apple.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/apple.py)              |
+|  MusicClient (EN)                                                    |  MusicClient (CN)                                          |   Search           |  Download            |    Code Snippet                                                                                                    |
+|  :----:                                                              |  :----:                                                    |   :----:           |  :----:              |    :----:                                                                                                          |
+|  [FiveSingMusicClient](https://5sing.kugou.com/index.html)           |  [5SING音乐](https://5sing.kugou.com/index.html)           |   ✓                |  ✓                   |    [fivesing.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fivesing.py)        |
+|  [KugouMusicClient](http://www.kugou.com/)                           |  [酷狗音乐](http://www.kugou.com/)                         |   ✓                |  ✓                   |    [kugou.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kugou.py)              |
+|  [KuwoMusicClient](http://www.kuwo.cn/)                              |  [酷我音乐](http://www.kuwo.cn/)                           |   ✓                |  ✓                   |    [kuwo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kuwo.py)                |
+|  [LizhiMusicClient](https://www.lizhi.fm/)                           |  [荔枝FM](https://www.lizhi.fm/)                           |   ✓                |  ✓                   |    [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/lizhi.py)              |
+|  [MiguMusicClient](https://music.migu.cn/v5/#/musicLibrary)          |  [咪咕音乐](https://music.migu.cn/v5/#/musicLibrary)       |   ✓                |  ✓                   |    [migu.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/migu.py)                |
+|  [NeteaseMusicClient](https://music.163.com/)                        |  [网易云音乐](https://music.163.com/)                      |   ✓                |  ✓                   |    [netease.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/netease.py)          |
+|  [QianqianMusicClient](http://music.taihe.com/)                      |  [千千音乐](http://music.taihe.com/)                       |   ✓                |  ✓                   |    [qianqian.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qianqian.py)        |
+|  [QQMusicClient](https://y.qq.com/)                                  |  [QQ音乐](https://y.qq.com/)                               |   ✓                |  ✓                   |    [qq.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qq.py)                    |
+|  [XimalayaMusicClient](https://www.ximalaya.com/)                    |  [喜马拉雅](https://www.ximalaya.com/)                     |   ✓                |  ✓                   |    [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)        |
+|  [JooxMusicClient](https://www.joox.com/intl)                        |  [JOOX (QQ音乐海外版)](https://www.joox.com/intl)          |   ✓                |  ✓                   |    [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                |
+|  [TIDALMusicClient](https://tidal.com/)                              |  [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)    |   ✓                |  ✓                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
+|  [YouTubeMusicClient](https://music.youtube.com/)                    |  [油管音乐](https://music.youtube.com/)                    |   ✓                |  ✓                   |    [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)          |
+|  [AppleMusicClient](https://music.apple.com/)                        |  [苹果音乐](https://music.apple.com/)                      |   ✓                |  ✓                   |    [apple.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/apple.py)              |
 
 
 # 🧪 Playground
@@ -158,11 +158,11 @@ After a successful installation, you can run the snippet below,
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'KuwoMusicClient', 'KugouMusicClient', 'QQMusicClient', 'QianqianMusicClient'])
+music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient'])
 music_client.startcmdui()
 ```
 
-Or just run `musicdl` (maybe `musicdl --help` to show usage information) from the terminal.
+Or just run `musicdl -m NeteaseMusicClient` (maybe `musicdl --help` to show usage information) from the terminal.
 
 ```
 Usage: musicdl [OPTIONS]

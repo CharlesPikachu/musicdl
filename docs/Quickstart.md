@@ -9,11 +9,11 @@ After a successful installation, you can run the snippet below,
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'KuwoMusicClient', 'KugouMusicClient', 'QQMusicClient', 'QianqianMusicClient'])
+music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient'])
 music_client.startcmdui()
 ```
 
-Or just run `musicdl` (maybe `musicdl --help` to show usage information) from the terminal.
+Or just run `musicdl -m NeteaseMusicClient` (maybe `musicdl --help` to show usage information) from the terminal.
 
 ```
 Usage: musicdl [OPTIONS]
