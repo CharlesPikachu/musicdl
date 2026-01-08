@@ -22,10 +22,6 @@ from ..utils.tidalutils import (
     TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry, Track,
     decryptfile, decryptsecuritytoken, pyavready, ffmpegready, remuxflacstream, setmetadata
 )
-from mutagen import File
-from mutagen.flac import FLAC
-from mutagen.easyid3 import EasyID3
-from mutagen.mp4 import MP4
 
 '''TIDALMusicClient'''
 class TIDALMusicClient(BaseMusicClient):
