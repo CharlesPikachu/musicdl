@@ -220,17 +220,6 @@ class TIDALMusicClient(BaseMusicClient):
     '''_download'''
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
-        #_write_audio_tags
-        def _write_audio_tags(filepath: str, title: str, album: str, artist: str):
-            audio = File(filepath, easy=True)
-
-            if audio is None:
-                return  # unsupported file type
-
-            audio["title"] = title
-            audio["album"] = album
-            audio["artist"] = artist
-            audio.save()
         # init
         request_overrides = request_overrides or {}
         # success
@@ -280,17 +269,7 @@ class TIDALMusicClient(BaseMusicClient):
                         decrypted_path = decrypted_path
                 save_path = song_info.save_path
                 replacefile(decrypted_path, save_path)
-
-                # Add audio tags
-                track_data = song_info.raw_data["search"]
-                _write_audio_tags(
-                    filepath=save_path,
-                    title=song_info.song_name,
-                    album=song_info.album,
-                    artist=song_info.singers
-                )
-                setmetadata(track=track_data, filepath=save_path, stream=stream_url)
-
+                setmetadata(track=song_info.raw_data['search'], filepath=save_path, stream=stream_url)
             # update progress
             progress.update(song_progress_id, total=os.path.getsize(save_path))
             progress.advance(song_progress_id, os.path.getsize(save_path))

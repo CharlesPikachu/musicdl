@@ -734,5 +734,6 @@ def setmetadata(track: Track, filepath: str, stream: Optional[StreamUrl]):
     obj.tracknumber = track.trackNumber
     obj.discnumber = track.volumeNumber
     obj.isrc = track.isrc
+    obj.save()
     if is_flac_file:
         updateflacmetadata(filepath, track, stream)
