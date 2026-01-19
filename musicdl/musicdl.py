@@ -17,8 +17,12 @@ if __name__ == '__main__':
     from __init__ import __version__
     from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
 else:
-    from .__init__ import __version__
-    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
+    try:
+        from .__init__ import __version__
+        from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
+    except ImportError:
+        from __init__ import __version__
+        from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
 
 
 '''BASIC_INFO'''
@@ -32,12 +36,15 @@ Instructions:
 Music Files Save Path:
     %s (root dir is the current directory if using relative path).'''
 '''DEFAULT_MUSIC_SOURCES'''
-DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient', 'KugouMusicClient']
+DEFAULT_MUSIC_SOURCES = ['NeteaseMusicClient', 'QQMusicClient', 'TuneHubMusicClient']
+'''SUPPORTED_MUSIC_SOURCES'''
+SUPPORTED_MUSIC_SOURCES = list(MusicClientBuilder.REGISTERED_MODULES.keys())
+
 
 
 '''MusicClient'''
 class MusicClient():
-    def __init__(self, music_sources: list = [], init_music_clients_cfg: dict = {}, clients_threadings: dict = {}, requests_overrides: dict = {}, search_rules: dict = {}):
+    def __init__(self, music_sources: list = [], init_music_clients_cfg: dict = {}, clients_threadings: dict = {}, requests_overrides: dict = {}, search_rules: dict = {}, logger_handle = None):
         # assert
         assert isinstance(music_sources, list) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and \
                isinstance(requests_overrides, dict) and isinstance(search_rules, dict)
@@ -51,7 +58,8 @@ class MusicClient():
         self.music_sources = music_sources if music_sources else DEFAULT_MUSIC_SOURCES
         self.music_sources = list(set(self.music_sources))
         # init
-        self.logger_handle, self.music_clients = LoggerHandle(), dict()
+        self.logger_handle = logger_handle if logger_handle else LoggerHandle()
+        self.music_clients = dict()
         for music_source in self.music_sources:
             if music_source not in MusicClientBuilder.REGISTERED_MODULES.keys(): continue
             init_music_client_cfg = {
@@ -126,10 +134,14 @@ class MusicClient():
                 classified_song_infos[song_info['source']].append(song_info)
             else:
                 classified_song_infos[song_info['source']] = [song_info]
+        all_downloaded_infos = []
         for source, source_song_infos in classified_song_infos.items():
-            self.music_clients[source].download(
+            res = self.music_clients[source].download(
                 song_infos=source_song_infos, num_threadings=self.clients_threadings[source], request_overrides=self.requests_overrides[source]
             )
+            if res:
+                all_downloaded_infos.extend(res)
+        return all_downloaded_infos
     '''processinputs'''
     def processinputs(self, input_tip='', prefix: str = '\n'):
         # accept user inputs

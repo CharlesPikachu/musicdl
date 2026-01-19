@@ -13,6 +13,9 @@ import requests
 from threading import Lock
 from rich.text import Text
 from itertools import chain
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, USLT, TIT2, TPE1, TALB
+from mutagen.flac import FLAC
 from datetime import datetime
 from rich.progress import Task
 from fake_useragent import UserAgent
@@ -156,6 +159,7 @@ class BaseMusicClient():
             work_dir = song_infos[0].work_dir
             touchdir(work_dir)
             self._savetopkl([s.todict() for s in song_infos], os.path.join(work_dir, 'search_results.pkl'))
+            self._savetotxt(song_infos, os.path.join(work_dir, 'search_results.txt'))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished searching music files using {self.source}. Search results have been saved to {work_dir}, valid items: {len(song_infos)}.', disable_print=self.disable_print)
@@ -187,9 +191,40 @@ class BaseMusicClient():
                         progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Downloading: {downloading_text})")
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
                 downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+                self._embed_lyrics(downloaded_song_infos[-1])
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
         return downloaded_song_infos
+    '''_embed_lyrics'''
+    def _embed_lyrics(self, song_info: SongInfo):
+        try:
+            if not song_info.lyric or not song_info.save_path or not os.path.exists(song_info.save_path):
+                return
+            ext = song_info.ext.lower()
+            if ext == 'mp3':
+                try:
+                    audio = MP3(song_info.save_path, ID3=ID3)
+                    if audio.tags is None:
+                        audio.add_tags()
+                    audio.tags.add(USLT(encoding=3, lang='eng', desc='desc', text=song_info.lyric))
+                    if song_info.song_name: audio.tags.add(TIT2(encoding=3, text=song_info.song_name))
+                    if song_info.singers: audio.tags.add(TPE1(encoding=3, text=song_info.singers))
+                    if song_info.album: audio.tags.add(TALB(encoding=3, text=song_info.album))
+                    audio.save()
+                except Exception as err:
+                    self.logger_handle.warning(f'BaseMusicClient._embed_lyrics >>> {song_info.song_name} (MP3 Error: {err})', disable_print=self.disable_print)
+            elif ext == 'flac':
+                try:
+                    audio = FLAC(song_info.save_path)
+                    audio['lyrics'] = song_info.lyric
+                    if song_info.song_name: audio['title'] = song_info.song_name
+                    if song_info.singers: audio['artist'] = song_info.singers
+                    if song_info.album: audio['album'] = song_info.album
+                    audio.save()
+                except Exception as err:
+                    self.logger_handle.warning(f'BaseMusicClient._embed_lyrics >>> {song_info.song_name} (FLAC Error: {err})', disable_print=self.disable_print)
+        except Exception as err:
+             self.logger_handle.warning(f'BaseMusicClient._embed_lyrics >>> {song_info.song_name} (Global Error: {err})', disable_print=self.disable_print)
     '''download'''
     @usedownloadheaderscookies
     def download(self, song_infos: list[SongInfo], num_threadings=5, request_overrides: dict = None):
@@ -220,6 +255,7 @@ class BaseMusicClient():
             work_dir = downloaded_song_infos[0]['work_dir']
             touchdir(work_dir)
             self._savetopkl([s.todict() for s in downloaded_song_infos], os.path.join(work_dir, 'download_results.pkl'))
+            self._savetotxt(downloaded_song_infos, os.path.join(work_dir, 'download_results.txt'))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
@@ -279,3 +315,20 @@ class BaseMusicClient():
     def _savetopkl(self, data, file_path, auto_sanitize=True):
         if auto_sanitize: file_path = sanitize_filepath(file_path)
         with open(file_path, 'wb') as fp: pickle.dump(data, fp)
+    '''_savetotxt'''
+    def _savetotxt(self, song_infos, file_path, auto_sanitize=True):
+        if auto_sanitize: file_path = sanitize_filepath(file_path)
+        with open(file_path, 'w', encoding='utf-8') as fp:
+            for song_info in song_infos:
+                fp.write('='*50 + '\n')
+                fp.write(f'Song Name: {song_info.song_name}\n')
+                fp.write(f'Singers: {song_info.singers}\n')
+                fp.write(f'Album: {song_info.album}\n')
+                fp.write(f'Source: {song_info.source}\n')
+                fp.write(f'Duration: {song_info.duration}\n')
+                fp.write(f'File Size: {song_info.file_size}\n')
+                fp.write(f'Bitrate: {song_info.bitrate}\n')
+                fp.write(f'Save Path: {song_info.save_path}\n')
+                fp.write('-'*20 + ' Lyrics ' + '-'*20 + '\n')
+                fp.write(f'{song_info.lyric}\n')
+                fp.write('='*50 + '\n\n')
