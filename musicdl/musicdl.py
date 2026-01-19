@@ -63,20 +63,17 @@ class MusicClient():
         for music_source in self.music_sources:
             if music_source not in MusicClientBuilder.REGISTERED_MODULES.keys(): continue
             init_music_client_cfg = {
-                'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3,
-                'maintain_session': False, 'logger_handle': self.logger_handle, 'disable_print': True, 'work_dir': 'musicdl_outputs',
-                'freeproxy_settings': None, 'default_search_cookies': {}, 'default_download_cookies': {}, 'type': music_source,
+                'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3, 'maintain_session': False, 'logger_handle': self.logger_handle, 
+                'disable_print': True, 'work_dir': 'musicdl_outputs', 'freeproxy_settings': None, 'default_search_cookies': {}, 'default_download_cookies': {}, 'type': music_source,
                 'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}
             }
+            if music_source in {'GDStudioMusicClient'}: init_music_client_cfg['search_size_per_page'] = 3
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))
             self.music_clients[music_source] = BuildMusicClient(module_cfg=init_music_client_cfg)
             self.work_dirs[music_source] = init_music_client_cfg['work_dir']
-            if music_source not in self.clients_threadings:
-                self.clients_threadings[music_source] = 5 if music_source not in ['GDStudioMusicClient'] else 10
-            if music_source not in self.requests_overrides:
-                self.requests_overrides[music_source] = {}
-            if music_source not in self.search_rules:
-                self.search_rules[music_source] = {}
+            if music_source not in self.clients_threadings: self.clients_threadings[music_source] = 5 if music_source not in {'GDStudioMusicClient'} else 10
+            if music_source not in self.requests_overrides: self.requests_overrides[music_source] = {}
+            if music_source not in self.search_rules: self.search_rules[music_source] = {}
     '''printbasicinfo'''
     def printbasicinfo(self):
         printfullline(ch='-')
@@ -90,12 +87,9 @@ class MusicClient():
                 song_info_pointer += 1
                 song_infos[str(song_info_pointer)] = search_result
                 print_items.append([
-                    colorize(str(song_info_pointer), 'number'), 
-                    colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
-                    search_result['song_name'], 
-                    search_result['file_size'] if search_result['ext'] not in ['flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'] else colorize(search_result['file_size'], 'flac'), 
-                    search_result['duration'], search_result['album'], 
-                    colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
+                    colorize(str(song_info_pointer), 'number'), colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
+                    search_result['song_name'], search_result['file_size'] if search_result['ext'] not in {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'} else colorize(search_result['file_size'], 'flac'), 
+                    search_result['duration'], search_result['album'], colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
                 ])
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
         return song_infos

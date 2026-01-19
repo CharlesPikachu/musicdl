@@ -605,7 +605,7 @@ Or, equivalently, run the following command in the command line:
 musicdl -m GDStudioMusicClient
 ```
 
-By default, the above code will search for and download music from nine music platforms, excluding YouTube Music (as using `GDStudioMusicClient` for search and download on this platform seems to be unstable).
+By default, the above code will search for and download music from eight music platforms, excluding YouTube and Tencent Music (as using `GDStudioMusicClient` for search and download on both platforms seems to be unstable).
 The screenshot of the running result is as follows:
 
 <div align="center">

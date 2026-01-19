@@ -16,26 +16,16 @@ from prettytable import PrettyTable
 from platformdirs import user_log_dir
 
 
-'''predefined colors in terminal'''
+'''settings'''
 COLORS = {
-    'red': '\033[31m',
-    'green': '\033[32m',
-    'yellow': '\033[33m',
-    'blue': '\033[34m',
-    'pink': '\033[35m',
-    'cyan': '\033[36m',
-    'highlight': '\033[93m',
-    'number': '\033[96m',
-    'singer': '\033[93m',
-    'flac': '\033[95m',
-    'songname': '\033[91m'
+    'red': '\033[31m', 'green': '\033[32m', 'yellow': '\033[33m', 'blue': '\033[34m', 'pink': '\033[35m', 'cyan': '\033[36m',
+    'highlight': '\033[93m', 'number': '\033[96m', 'singer': '\033[93m', 'flac': '\033[95m', 'songname': '\033[91m'
 }
 
 
 '''LoggerHandle'''
 class LoggerHandle():
-    appname = 'musicdl'
-    appauthor = 'zcjin'
+    appname, appauthor = 'musicdl', 'zcjin'
     def __init__(self):
         # set up log dir
         log_dir = user_log_dir(appname=self.appname, appauthor=self.appauthor)
@@ -43,10 +33,7 @@ class LoggerHandle():
         log_file_path = os.path.join(log_dir, "musicdl.log")
         self.log_file_path = log_file_path
         # config logging
-        logging.basicConfig(
-            level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            handlers=[logging.FileHandler(log_file_path, encoding="utf-8"), logging.StreamHandler()]
-        )
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", handlers=[logging.FileHandler(log_file_path, encoding="utf-8"), logging.StreamHandler()])
     '''log'''
     @staticmethod
     def log(level, message):
@@ -76,8 +63,7 @@ class LoggerHandle():
             fp = open(self.log_file_path, 'a', encoding='utf-8')
             fp.write(message + '\n')
         else:
-            if '\033[31m' not in message:
-                message = colorize(message, 'red')
+            if '\033[31m' not in message: message = colorize(message, 'red')
             LoggerHandle.log(logging.WARNING, message)
     '''error'''
     def error(self, message, disable_print=False):
@@ -86,8 +72,7 @@ class LoggerHandle():
             fp = open(self.log_file_path, 'a', encoding='utf-8')
             fp.write(message + '\n')
         else:
-            if '\033[31m' not in message:
-                message = colorize(message, 'red')
+            if '\033[31m' not in message: message = colorize(message, 'red')
             LoggerHandle.log(logging.ERROR, message)
 
 
@@ -105,16 +90,14 @@ def printtable(titles, items, terminal_right_space_len=4):
 
 '''displen'''
 def displen(s: str) -> int:
-    if s is None:
-        return 0
+    if s is None: return 0
     return max(wcswidth(str(s)), 0)
 
 
 '''tablewidth'''
 def tablewidth(table_str: str) -> int:
     lines = table_str.splitlines()
-    if not lines:
-        return 0
+    if not lines: return 0
     return max(displen(line) for line in lines)
 
 
