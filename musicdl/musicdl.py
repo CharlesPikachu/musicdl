@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 if __name__ == '__main__':
     from __init__ import __version__
-    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
+    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline, cursorpickintable
 else:
     try:
         from .__init__ import __version__
@@ -32,7 +32,12 @@ WeChat Official Account (微信公众号): Charles_pikachu (Charles的皮卡丘)
 Instructions:
     Enter r: reinitialize the program (i.e., return to the main menu)
     Enter q: exit the program
-    Download multiple songs: when selecting songs to download, enter "1,2,5" to download songs 1, 2, and 5 simultaneously
+    Select songs to download:
+        Use ↑/↓ to move the cursor within the table
+        Press <space> to toggle selection
+        Press a to select all, i to invert selection
+        Press <enter> to confirm and start downloading
+        Press Esc or q to cancel selection
 Music Files Save Path:
     %s (root dir is the current directory if using relative path).'''
 '''DEFAULT_MUSIC_SOURCES'''
@@ -67,7 +72,7 @@ class MusicClient():
                 'disable_print': True, 'work_dir': 'musicdl_outputs', 'freeproxy_settings': None, 'default_search_cookies': {}, 'default_download_cookies': {}, 'type': music_source,
                 'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}
             }
-            if music_source in {'GDStudioMusicClient'}: init_music_client_cfg['search_size_per_page'] = 3
+            if music_source in {'GDStudioMusicClient'}: init_music_client_cfg['search_size_per_source'] = 3
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))
             self.music_clients[music_source] = BuildMusicClient(module_cfg=init_music_client_cfg)
             self.work_dirs[music_source] = init_music_client_cfg['work_dir']
@@ -81,33 +86,32 @@ class MusicClient():
         printfullline(ch='-')
     '''printsearchresults'''
     def printsearchresults(self, search_results: dict):
-        print_titles, print_items, song_infos, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, 0
+        print_titles, print_items, song_infos, row_ids, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, [], 0
         for _, per_search_results in search_results.items():
             for search_result in per_search_results:
                 song_info_pointer += 1
                 song_infos[str(song_info_pointer)] = search_result
+                row_ids.append(str(song_info_pointer))
                 print_items.append([
                     colorize(str(song_info_pointer), 'number'), colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
-                    search_result['song_name'], search_result['file_size'] if search_result['ext'] not in {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'} else colorize(search_result['file_size'], 'flac'), 
+                    search_result['song_name'], search_result['file_size'] if search_result['ext'] not in {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'} else colorize(search_result['file_size'], 'flac'),
                     search_result['duration'], search_result['album'], colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
                 ])
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
-        return song_infos
+        return song_infos, print_titles, print_items, row_ids
     '''startcmdui'''
     def startcmdui(self):
         while True:
             self.printbasicinfo()
-            # process user inputs, music file search
             user_input_keyword = self.processinputs('Please enter keywords to search for songs: ')
             search_results = self.search(keyword=user_input_keyword)
-            # print search_results
-            song_infos = self.printsearchresults(search_results=search_results)
-            # process user inputs, music file download
-            user_input_select_song_info_pointer = self.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
-            user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]
-            user_input_select_song_info_pointer = list(set(user_input_select_song_info_pointer))
-            selected_song_infos = []
-            for idx in user_input_select_song_info_pointer: selected_song_infos.append(song_infos[idx])
+            song_infos, headers, rows, row_ids = self.printsearchresults(search_results=search_results)
+            picked_ids = cursorpickintable(headers, rows, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
+            id2row = dict(zip(row_ids, rows))
+            selected_rows = [id2row[i] for i in picked_ids if i in id2row]
+            if selected_rows: print("\nSelected songs:\n"); print(smarttrunctable(headers=headers, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6]))
+            else: print("\nNo songs selected.\n")
+            selected_song_infos = [song_infos[i] for i in picked_ids if i in song_infos]
             self.download(selected_song_infos)
     '''search'''
     def search(self, keyword):
@@ -127,7 +131,7 @@ class MusicClient():
             with ThreadPoolExecutor(max_workers=max_workers) as ex:
                 return dict(ex.map(_search, self.music_sources))
     '''download'''
-    def download(self, song_infos):
+    def download(self, song_infos: list[dict]):
         classified_song_infos = {}
         for song_info in song_infos:
             if song_info['source'] in classified_song_infos:
@@ -184,38 +188,27 @@ class MusicClient():
 )
 def MusicClientCMD(keyword: str, music_sources: str, init_music_clients_cfg: str, requests_overrides: str, clients_threadings: str, search_rules: str):
     # load json string
-    def _safe_load(string):
-        if string is not None:
-            result = json_repair.loads(string) or {}
-        else:
-            result = {}
-        return result
-    init_music_clients_cfg = _safe_load(init_music_clients_cfg)
-    requests_overrides = _safe_load(requests_overrides)
-    clients_threadings = _safe_load(clients_threadings)
-    search_rules = _safe_load(search_rules)
+    safe_load_func = lambda s: (json_repair.loads(s) or {}) if s else {}
+    init_music_clients_cfg = safe_load_func(init_music_clients_cfg)
+    requests_overrides = safe_load_func(requests_overrides)
+    clients_threadings = safe_load_func(clients_threadings)
+    search_rules = safe_load_func(search_rules)
     # instance music client
     music_sources = music_sources.replace(' ', '').split(',')
-    music_client = MusicClient(
-        music_sources=music_sources, init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings, 
-        requests_overrides=requests_overrides, search_rules=search_rules,
-    )
+    music_client = MusicClient(music_sources=music_sources, init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings, requests_overrides=requests_overrides, search_rules=search_rules)
     # switch according to keyword
     if keyword is None:
         music_client.startcmdui()
     else:
         print(music_client)
-        # --search
         search_results = music_client.search(keyword=keyword)
-        # print search_results
-        song_infos = music_client.printsearchresults(search_results=search_results)
-        # process user inputs, music file download
-        user_input_select_song_info_pointer = music_client.processinputs('Please enter music IDs to download (e.g., "1,2"): ').replace(' ', '').split(',')
-        user_input_select_song_info_pointer = [idx for idx in user_input_select_song_info_pointer if idx in song_infos]
-        user_input_select_song_info_pointer = list(set(user_input_select_song_info_pointer))
-        selected_song_infos = []
-        for idx in user_input_select_song_info_pointer: selected_song_infos.append(song_infos[idx])
-        # --download
+        song_infos, headers, rows, row_ids = music_client.printsearchresults(search_results=search_results)
+        picked_ids = cursorpickintable(headers, rows, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
+        id2row = dict(zip(row_ids, rows))
+        selected_rows = [id2row[i] for i in picked_ids if i in id2row]
+        if selected_rows: print("\nSelected songs:\n"); print(smarttrunctable(headers=headers, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6]))
+        else: print("\nNo songs selected.\n")
+        selected_song_infos = [song_infos[i] for i in picked_ids if i in song_infos]
         music_client.download(song_infos=selected_song_infos)
 
 

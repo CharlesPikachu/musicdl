@@ -192,3 +192,59 @@ def printfullline(ch: str = "*", end: str = '\n', terminal_right_space_len: int 
     cols = shutil.get_terminal_size().columns - terminal_right_space_len
     assert cols > 0, f'"terminal_right_space_len" should smaller than {shutil.get_terminal_size()}'
     print(ch * cols, end=end)
+
+
+'''cursorpickintable'''
+def cursorpickintable(headers, rows, row_ids, no_trunc_cols=None, terminal_right_space_len=10):
+    from prompt_toolkit.layout import Layout
+    from prompt_toolkit.application import Application
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.layout.containers import HSplit, Window
+    from prompt_toolkit.layout.controls import FormattedTextControl
+    from prompt_toolkit.formatted_text import ANSI, to_formatted_text
+    assert len(rows) == len(row_ids)
+    cur, picked = [0], set()
+    def buildtablestr():
+        view_rows = []
+        for i, r in enumerate(rows):
+            rr = list(r)
+            prefix = "▶ " if i == cur[0] else "  "
+            if row_ids[i] in picked: prefix = "✓ " if i != cur[0] else "▶✓"
+            rr[0] = prefix + rr[0]
+            view_rows.append(rr)
+        return smarttrunctable(headers=headers, rows=view_rows, no_trunc_cols=no_trunc_cols, terminal_right_space_len=terminal_right_space_len)
+    def render():
+        table = buildtablestr()
+        lines = table.splitlines(True)
+        highlight_line, out = 3 + cur[0] * 2, []
+        for li, line in enumerate(lines):
+            frags = to_formatted_text(ANSI(line))
+            if li == highlight_line: frags = [((s + " reverse") if s else "reverse", t) for (s, t) in frags]
+            out.extend(frags)
+        out.extend(to_formatted_text(ANSI("\nUse ↑/↓ to move, <space> to toggle, a: select all, i: invert, <enter> to confirm, q/Esc to cancel.\n")))
+        return out
+    kb = KeyBindings()
+    @kb.add("up")
+    def _(_event):
+        if cur[0] > 0: cur[0] -= 1
+    @kb.add("down")
+    def _(_event):
+        if cur[0] < len(rows) - 1: cur[0] += 1
+    @kb.add(" ")
+    def _(_event):
+        rid = row_ids[cur[0]]
+        if rid in picked: picked.remove(rid)
+        else: picked.add(rid)
+    @kb.add("a")
+    @kb.add("A")
+    def _(_event): picked.clear(); picked.update(row_ids)
+    @kb.add("i")
+    @kb.add("I")
+    def _(_event): picked_sym = set(row_ids); picked_sym.difference_update(picked); picked.clear(); picked.update(picked_sym)
+    @kb.add("enter")
+    def _(_event): ordered = [rid for rid in row_ids if rid in picked]; _event.app.exit(result=ordered)
+    @kb.add("escape")
+    @kb.add("q")
+    def _(_event): _event.app.exit(result=[])
+    app = Application(layout=Layout(HSplit([Window(FormattedTextControl(render))])), key_bindings=kb, full_screen=True)
+    return app.run()

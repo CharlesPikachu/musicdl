@@ -1,6 +1,6 @@
 # Release Log
 
-- 2026-01-19: Released musicdl v2.8.5 — refactored the code for four multi-platform search sources to enable faster extraction of song covers and metadata via the musicdl API, while also fixing several potential bugs.
+- 2026-01-19: Released musicdl v2.8.5 — refactored four cross-platform search sources to speed up song cover and metadata extraction via the musicdl API, revamped the terminal UI, and fixed several potential bugs.
 
 - 2026-01-16: Released musicdl v2.8.4 — partial code optimizations, added support for Qishui Music, refactored the Bilibili and 5sing music APIs.
 

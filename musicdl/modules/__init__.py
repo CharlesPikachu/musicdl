@@ -5,5 +5,5 @@ from .utils import (
     cachecookies, resp2json, isvalidresp, safeextractfromdict, replacefile, printfullline, smarttrunctable, usesearchheaderscookies, byte2mb, 
     usedownloadheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, touchdir, seconds2hms, estimatedurationwithfilesizebr,
     estimatedurationwithfilelink, extractdurationsecondsfromlrc, searchdictbykey, colorize, printtable, legalizestring, lyricslisttolrc, 
-    shortenpathsinsonginfos, cleanlrc
+    shortenpathsinsonginfos, cursorpickintable, cleanlrc
 )

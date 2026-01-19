@@ -58,15 +58,20 @@ This method:
 2. Prompts the user to input keywords for music search.
 3. Calls `MusicClient.search()` to retrieve search results from all configured music sources.
 4. Displays a formatted table of candidate songs with IDs.
-5. Prompts the user to select one or multiple IDs (*e.g.*, `"1,2,5"`).
+5. Opens a cursor-based selection UI where the user can choose one or multiple songs:
+  - Use ↑/↓ to move the cursor
+  - Press Space to toggle selection
+  - Press a to select all, i to invert selection
+  - Press Enter to confirm and start downloading
+  - Press Esc or q to cancel selection
 6. Collects the corresponding song info entries and calls `MusicClient.download()` to download them.
 
-Special commands:
+Special commands (at the main prompt):
 
 - Enter `r` to **reinitialize** the program (*i.e.*, return to the main menu).
 - Enter `q` to **exit** the program.
 
-This method blocks and runs in a loop until the user quits.
+This method runs in a loop and blocks until the user quits.
 
 #### `MusicClient.search(keyword: str)`
 
