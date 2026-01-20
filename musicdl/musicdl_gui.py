@@ -369,6 +369,7 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("就绪")
 
         self.current_song_infos = {}
+        self.is_searching = False
 
     def browse_path(self):
         directory = QFileDialog.getExistingDirectory(self, "选择保存目录", self.path_input.text())
@@ -401,12 +402,24 @@ class MainWindow(QMainWindow):
         self.log_text.append(f'<span style="color:{color}">[{level}] {message}</span>')
 
     def start_search(self):
+        # Stop Logic
+        if self.is_searching:
+            self.is_searching = False
+            self.search_btn.setText("搜索")
+            self.status_bar.showMessage("搜索已停止")
+            return
+
+        # Start Logic
         keyword = self.search_input.text().strip()
         if not keyword:
             QMessageBox.warning(self, "提示", "请输入搜索关键词")
             return
         
-        self.search_btn.setEnabled(False)
+        self.is_searching = True
+        self.search_btn.setText("停止")
+        # Keep enabled to allow stopping
+        # self.search_btn.setEnabled(False)
+        
         self.status_bar.showMessage(f"正在搜索: {keyword} ...")
         self.results_table.setSortingEnabled(False) # Disable sorting while updating
         self.results_table.setRowCount(0)
@@ -418,8 +431,13 @@ class MainWindow(QMainWindow):
         self.search_worker.start()
 
     def on_search_finished(self, result):
+        if not self.is_searching:
+            return
+        self.is_searching = False
+        self.search_btn.setText("搜索")
+        
         search_results = result['data']
-        self.search_btn.setEnabled(True)
+        # self.search_btn.setEnabled(True) # Always enabled now
         self.status_bar.showMessage("搜索完成")
         
         row = 0
@@ -727,13 +745,25 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "完成", "选中的歌曲已处理完毕。\n(已自动重命名并整理到根目录)\n(已自动清理缓存)")
 
     def on_worker_error(self, error_msg):
-        self.search_btn.setEnabled(True)
+        if not self.is_searching:
+            return
+        self.is_searching = False
+        self.search_btn.setText("搜索")
+        
+        # self.search_btn.setEnabled(True)
         self.download_btn.setEnabled(True)
         self.status_bar.showMessage("发生错误")
         QMessageBox.critical(self, "错误", f"发生意外错误: {error_msg}")
         self.append_log("ERROR", error_msg)
 
     def select_sources(self):
+        was_searching = self.is_searching
+        if was_searching:
+            # Manually stop search logic
+            self.is_searching = False
+            self.search_btn.setText("搜索")
+            self.status_bar.showMessage("搜索已暂停 (正在设置源...)")
+        
         current_sources = self.music_client.music_sources
         dialog = SourceSelectionDialog(self, current_sources)
         if dialog.exec():
@@ -745,6 +775,11 @@ class MainWindow(QMainWindow):
             self.settings.setValue("selected_sources", new_sources)
             self.init_client()
             self.append_log("SYSTEM", f"音乐源已更新: {', '.join([s.replace('MusicClient', '') for s in new_sources])}")
+            
+            if was_searching and self.search_input.text().strip():
+                self.start_search()
+        else:
+            pass
 
     def cleanup_temp_folders(self):
         """Delete temporary client folders from the download directory."""
