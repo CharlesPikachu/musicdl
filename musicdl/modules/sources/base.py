@@ -188,12 +188,12 @@ class BaseMusicClient():
                             progress.update(song_progress_id, total=downloaded_size)
                             downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
                         progress.advance(song_progress_id, len(chunk))
-                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Downloading: {downloading_text})")
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
+                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Downloading: {downloading_text})")
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Success)")
                 downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
                 self._embed_lyrics(downloaded_song_infos[-1])
         except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Error: {err})")
         return downloaded_song_infos
     '''_embed_lyrics'''
     def _embed_lyrics(self, song_info: SongInfo):
@@ -241,7 +241,7 @@ class BaseMusicClient():
             songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall')
             song_progress_ids, downloaded_song_infos, submitted_tasks = [], [], []
             for _, song_info in enumerate(song_infos):
-                desc = f"{self.source}.download >>> {song_info.song_name} (Preparing)"
+                desc = f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Preparing)"
                 song_progress_ids.append(progress.add_task(desc, total=None, kind='download'))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos):

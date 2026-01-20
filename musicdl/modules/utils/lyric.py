@@ -17,7 +17,7 @@ from typing import Optional, Union, Dict, Any, List
 _LINE_RE = re.compile(r"^\[(\d+),(\d+)\]")
 _TOKEN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
 _TIME_RE = re.compile(r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
-cleanlrc = lambda text: "\n".join(line for raw in re.sub(r"\r\n?", "\n", text).split("\n") if (line := raw.strip("\ufeff\u200b\u200c\u200d\u2060\u00a0 \t").strip()) and not re.fullmatch(r"\[(\d{2}:)?\d{2}:\d{2}(?:\.\d{1,3})?\]", line))
+cleanlrc = lambda text: "\n".join(line for raw in re.sub(r"\r\n?", "\n", str(text)).split("\n") if (line := raw.strip("\ufeff\u200b\u200c\u200d\u2060\u00a0 \t").strip()) and not re.fullmatch(r"\[(\d{2}:)?\d{2}:\d{2}(?:\.\d{1,3})?\]", line))
 
 
 '''fractoseconds'''

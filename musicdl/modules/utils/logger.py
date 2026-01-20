@@ -14,6 +14,12 @@ from wcwidth import wcswidth
 from tabulate import tabulate
 from prettytable import PrettyTable
 from platformdirs import user_log_dir
+from prompt_toolkit.layout import Layout
+from prompt_toolkit.application import Application
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout.containers import HSplit, Window
+from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.formatted_text import ANSI, to_formatted_text
 
 
 '''settings'''
@@ -196,34 +202,33 @@ def printfullline(ch: str = "*", end: str = '\n', terminal_right_space_len: int 
 
 '''cursorpickintable'''
 def cursorpickintable(headers, rows, row_ids, no_trunc_cols=None, terminal_right_space_len=10):
-    from prompt_toolkit.layout import Layout
-    from prompt_toolkit.application import Application
-    from prompt_toolkit.key_binding import KeyBindings
-    from prompt_toolkit.layout.containers import HSplit, Window
-    from prompt_toolkit.layout.controls import FormattedTextControl
-    from prompt_toolkit.formatted_text import ANSI, to_formatted_text
     assert len(rows) == len(row_ids)
-    cur, picked = [0], set()
+    cur, picked, view_start, kb = [0], set(), [0], KeyBindings()
+    def calcview():
+        term_lines = shutil.get_terminal_size().lines
+        overhead = 8; usable = max(2, term_lines - overhead); max_vis = max(1, usable // 2)
+        start = cur[0] - max_vis // 2; start = max(0, min(start, len(rows) - max_vis))
+        end = min(len(rows), start + max_vis)
+        return start, end
     def buildtablestr():
-        view_rows = []
-        for i, r in enumerate(rows):
-            rr = list(r)
-            prefix = "▶ " if i == cur[0] else "  "
+        start, end = calcview(); view_start[0] = start; view_rows = []
+        for i in range(start, end):
+            r = rows[i]; rr = list(r); prefix = "▶ " if i == cur[0] else "  "
             if row_ids[i] in picked: prefix = "✓ " if i != cur[0] else "▶✓"
-            rr[0] = prefix + rr[0]
-            view_rows.append(rr)
-        return smarttrunctable(headers=headers, rows=view_rows, no_trunc_cols=no_trunc_cols, terminal_right_space_len=terminal_right_space_len)
+            rr[0] = prefix + rr[0]; view_rows.append(rr)
+        view_headers = list(headers)
+        view_headers[0] = f"{view_headers[0]}  ({start+1}-{end}/{len(rows)})"
+        return smarttrunctable(headers=view_headers, rows=view_rows, no_trunc_cols=no_trunc_cols, terminal_right_space_len=terminal_right_space_len)
     def render():
         table = buildtablestr()
         lines = table.splitlines(True)
-        highlight_line, out = 3 + cur[0] * 2, []
+        highlight_line, out = 3 + (cur[0] - view_start[0]) * 2, []
         for li, line in enumerate(lines):
             frags = to_formatted_text(ANSI(line))
             if li == highlight_line: frags = [((s + " reverse") if s else "reverse", t) for (s, t) in frags]
             out.extend(frags)
         out.extend(to_formatted_text(ANSI("\nUse ↑/↓ to move, <space> to toggle, a: select all, i: invert, <enter> to confirm, q/Esc to cancel.\n")))
         return out
-    kb = KeyBindings()
     @kb.add("up")
     def _(_event):
         if cur[0] > 0: cur[0] -= 1

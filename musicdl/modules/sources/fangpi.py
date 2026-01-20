@@ -9,10 +9,10 @@ WeChat Official Account (微信公众号):
 import re
 import json_repair
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from .base import BaseMusicClient
 from rich.progress import Progress
-from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, seconds2hms, SongInfo, QuarkParser
+from urllib.parse import urljoin, urlparse
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, seconds2hms, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser
 
 
 '''FangpiMusicClient'''
@@ -55,6 +55,65 @@ class FangpiMusicClient(BaseMusicClient):
             artist = artist_tag.get_text(strip=True) if artist_tag else ""
             search_results.append({"title": title, "artist": artist, "url": url})
         return search_results
+    '''_parsesearchresultfromquark'''
+    def _parsesearchresultfromquark(self, search_result: dict, download_result: dict, soup: BeautifulSoup, request_overrides: dict = None):
+        # init
+        request_overrides, song_info = request_overrides or {}, SongInfo(source=self.source)
+        # parse
+        quark_download_urls = download_result.get('mp3_extra_urls', []) or []
+        for quark_download_url in quark_download_urls:
+            quark_download_url = quark_download_url['share_link']
+            download_result['quark_parse_result'], download_url = QuarkParser.parsefromurl(quark_download_url, **self.quark_parser_config)
+            if not download_url or not str(download_url).startswith('http'): continue
+            duration = [int(float(d)) for d in searchdictbykey(download_result, 'duration') if int(float(d)) > 0]
+            duration_s = duration[0] if duration else 0
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['mp3_title'], None)), singers=legalizestring(safeextractfromdict(download_result, ['mp3_author'], None)), 
+                album='NULL', ext='mp3', file_size='NULL', identifier=download_result.get('mp3_id') or urlparse(str(search_result['url'])).path.strip('/').split('/')[-1], duration_s=duration_s, duration=seconds2hms(duration_s), lyric=cleanlrc(soup.find("div", id="content-lrc").get_text("\n", strip=True)), 
+                cover_url=safeextractfromdict(download_result, ['mp3_cover'], None), download_url=download_url, download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers,
+            )
+            song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
+            if song_info.with_valid_download_url: break
+        if not song_info.duration or song_info.duration == '-:-:-':
+            format_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(d.split(":"))) + list(map(int, d.split(":")))))
+            song_info.duration = format_duration_func(download_result.get('mp3_duration', '00:00:00') or '00:00:00')
+            if song_info.duration == '00:00:00': song_info.duration = '-:-:-'
+        if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        # return
+        return song_info
+    '''_parsesearchresultfromweb'''
+    def _parsesearchresultfromweb(self, search_result: dict, download_result: dict, soup: BeautifulSoup, request_overrides: dict = None):
+        # init
+        request_overrides, song_info = request_overrides or {}, SongInfo(source=self.source)
+        # parse
+        if 'play_id' not in download_result or not download_result['play_id']: return song_info
+        try:
+            resp = self.post('https://www.fangpi.net/api/play-url', json={'id': download_result['play_id']}, **request_overrides)
+            resp.raise_for_status()
+            download_result['api/play-url'] = resp2json(resp=resp)
+        except:
+            download_result['api/play-url'] = {}
+        download_url = safeextractfromdict(download_result['api/play-url'], ['data', 'url'], '')
+        if not download_url: return song_info
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['mp3_title'], None)), singers=legalizestring(safeextractfromdict(download_result, ['mp3_author'], None)), 
+            album='NULL', ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=download_result.get('mp3_id') or urlparse(str(search_result['url'])).path.strip('/').split('/')[-1], duration='-:-:-', lyric=cleanlrc(soup.find("div", id="content-lrc").get_text("\n", strip=True)), 
+            cover_url=safeextractfromdict(download_result, ['mp3_cover'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
+        song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
+        if not song_info.duration or song_info.duration == '-:-:-':
+            try: song_info.duration = '{:02d}:{:02d}:{:02d}'.format(*([0,0,0] + list(map(int, re.findall(r'\d+', safeextractfromdict(download_result, ['data', 'duration'], '')))))[-3:])
+            except: song_info.duration = '-:-:-'
+            if song_info.duration == '00:00:00': song_info.duration = '-:-:-'
+        if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        # return
+        return song_info
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
@@ -68,86 +127,24 @@ class FangpiMusicClient(BaseMusicClient):
             search_results = self._parsesearchresultsfromhtml(resp.text)
             for search_result in search_results:
                 # --download results
-                if not isinstance(search_result, dict) or ('url' not in search_result):
-                    continue
+                if not isinstance(search_result, dict) or ('url' not in search_result): continue
                 song_info = SongInfo(source=self.source)
                 # ----fetch basic information
-                try:
-                    resp = self.get(search_result['url'], **request_overrides)
-                    resp.raise_for_status()
-                    soup = BeautifulSoup(resp.text, "lxml")
-                    script_tag = soup.find("script", string=re.compile(r"window\.appData"))
-                    if script_tag is None: continue
-                    js_text: str = script_tag.string
-                    m = re.search(r"window\.appData\s*=\s*(\{.*?\})\s*;", js_text, re.S)
-                    if not m: continue
-                    download_result = json_repair.loads(m.group(1))
-                except:
-                    continue
+                try: resp = self.get(search_result['url'], **request_overrides); resp.raise_for_status()
+                except: continue
+                soup = BeautifulSoup(resp.text, "lxml")
+                script_tag = soup.find("script", string=re.compile(r"window\.appData"))
+                if script_tag is None: continue
+                js_text: str = script_tag.string
+                m = re.search(r"window\.appData\s*=\s*(\{.*?\})\s*;", js_text, re.S)
+                if not m: continue
+                download_result = json_repair.loads(m.group(1))
                 # ----parse from quark links
-                if self.quark_parser_config.get('cookies'):
-                    quark_download_urls = download_result.get('mp3_extra_urls', [])
-                    for quark_download_url in quark_download_urls:
-                        song_info = SongInfo(source=self.source)
-                        try:
-                            quark_wav_download_url = quark_download_url['share_link']
-                            download_result['quark_parse_result'], download_url = QuarkParser.parsefromurl(quark_wav_download_url, **self.quark_parser_config)
-                            duration = searchdictbykey(download_result['quark_parse_result'], 'duration')
-                            duration = [int(float(d)) for d in duration if int(float(d)) > 0]
-                            if duration: duration = duration[0]
-                            else: duration = 0
-                            if not download_url: continue
-                            download_url_status = self.quark_audio_link_tester.test(download_url, request_overrides)
-                            download_url_status['probe_status'] = self.quark_audio_link_tester.probe(download_url, request_overrides)
-                            ext = download_url_status['probe_status']['ext']
-                            if ext == 'NULL': ext = 'mp3'
-                            song_info.update(dict(
-                                download_url=download_url, download_url_status=download_url_status, raw_data={'search': search_result, 'download': download_result},
-                                default_download_headers=self.quark_default_download_headers, ext=ext, file_size=download_url_status['probe_status']['file_size'],
-                                duration_s=duration, duration=seconds2hms(duration),
-                            ))
-                            if song_info.with_valid_download_url: break
-                        except:
-                            continue
+                if self.quark_parser_config.get('cookies'): song_info = self._parsesearchresultfromquark(search_result, download_result, soup, request_overrides)
                 # ----parse from play url
-                if not song_info.with_valid_download_url:
-                    if 'play_id' not in download_result or not download_result['play_id']: continue
-                    song_info = SongInfo(source=self.source)
-                    try:
-                        resp = self.post('https://www.fangpi.net/api/play-url', json={'id': download_result['play_id']}, **request_overrides)
-                        resp.raise_for_status()
-                        download_result['api/play-url'] = resp2json(resp=resp)
-                        download_url = safeextractfromdict(download_result['api/play-url'], ['data', 'url'], '')
-                        if not download_url: continue
-                        download_url_status = self.audio_link_tester.test(download_url, request_overrides)
-                        download_url_status['probe_status'] = self.audio_link_tester.probe(download_url, request_overrides)
-                        ext = download_url_status['probe_status']['ext']
-                        if ext == 'NULL': download_url.split('?')[0].split('.')[-1] or 'mp3'
-                        song_info.update(dict(
-                            download_url=download_url, download_url_status=download_url_status, raw_data={'search': search_result, 'download': download_result},
-                            ext=ext, file_size=download_url_status['probe_status']['file_size']
-                        ))
-                    except:
-                        continue
+                if not song_info.with_valid_download_url: song_info = self._parsesearchresultfromweb(search_result, download_result, soup, request_overrides)
+                # ----filter if invalid
                 if not song_info.with_valid_download_url: continue
-                # ----parse more infos
-                try:
-                    lrc_div = soup.find("div", id="content-lrc")
-                    lyric, lyric_result = lrc_div.get_text("\n", strip=True), {'lrc_div': str(lrc_div)}
-                except:
-                    lyric, lyric_result = 'NULL', {}
-                if not song_info.duration or song_info.duration == '-:-:-':
-                    format_duration = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(d.split(":"))) + list(map(int, d.split(":")))))
-                    duration = format_duration(download_result.get('mp3_duration', '00:00:00') or '00:00:00')
-                    if duration == '00:00:00': duration = '-:-:-'
-                else:
-                    duration = song_info.duration
-                song_info.raw_data['lyric'] = lyric_result
-                song_info.update(dict(
-                    lyric=lyric, duration=duration, song_name=legalizestring(download_result.get('mp3_title', 'NULL'), replace_null_string='NULL'),
-                    singers=legalizestring(download_result.get('mp3_author', 'NULL'), replace_null_string='NULL'), album='NULL',
-                    identifier=download_result.get('play_id'),
-                ))
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
