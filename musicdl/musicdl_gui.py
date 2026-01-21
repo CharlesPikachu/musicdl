@@ -992,16 +992,16 @@ class MainWindow(QMainWindow):
 
 
         # 4. Clean Cache
-        try:
-            # Dynamically import script to avoid path issues at top level
-            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-            import clean_pkg_cache
-            clean_pkg_cache.removepycache(os.path.join(os.path.dirname(__file__), '..'))
-            if LOG_SIGNAL:
-                LOG_SIGNAL.log.emit("INFO", "System cache cleaned successfully.")
-        except Exception as e:
-             if LOG_SIGNAL:
-                 LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
+        # try:
+        #     # Dynamically import script to avoid path issues at top level
+        #     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+        #     import clean_pkg_cache
+        #     clean_pkg_cache.removepycache(os.path.join(os.path.dirname(__file__), '..'))
+        #     if LOG_SIGNAL:
+        #         LOG_SIGNAL.log.emit("INFO", "System cache cleaned successfully.")
+        # except Exception as e:
+        #      if LOG_SIGNAL:
+        #          LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
 
         return downloaded_infos
 

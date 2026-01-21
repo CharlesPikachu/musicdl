@@ -70,7 +70,7 @@ class MusicClient():
             init_music_client_cfg = {
                 'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3, 'maintain_session': False, 'logger_handle': self.logger_handle, 
                 'disable_print': True, 'work_dir': 'musicdl_outputs', 'freeproxy_settings': None, 'default_search_cookies': {}, 'default_download_cookies': {}, 'type': music_source,
-                'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}
+                'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {'cookies': 'your_cookies_with_str_or_dict_format'}
             }
             if music_source in {'GDStudioMusicClient'}: init_music_client_cfg['search_size_per_source'] = 3
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))

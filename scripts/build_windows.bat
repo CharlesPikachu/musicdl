@@ -4,7 +4,7 @@ python -m pip install PyQt6 pyinstaller -r ..\requirements.txt
 
 echo Building Executable...
 pyinstaller --noconfirm --noconsole --onefile --windowed ^
-    --name "MusicDL_GUI" ^
+    --name "MusicDL_GUI v2.8.6" ^
     --add-data "../musicdl;musicdl" ^
     --hidden-import "PyQt6" ^
     --hidden-import "requests" ^
