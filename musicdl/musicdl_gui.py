@@ -63,9 +63,9 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QTableWidget, QTableWidgetItem, QHeaderView, 
                              QTextEdit, QProgressBar, QCheckBox, QFileDialog, 
                              QMessageBox, QComboBox, QGroupBox, QSplitter, QDialog,
-                             QScrollArea, QGridLayout, QDialogButtonBox)
+                             QScrollArea, QGridLayout, QDialogButtonBox, QColorDialog, QFrame)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QSettings
-from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtGui import QIcon, QFont, QColor
 
 # Import MusicClient after patch
 try:
@@ -219,6 +219,260 @@ class SourceSelectionDialog(QDialog):
                 selected.append(source)
         return selected
 
+class ThemeManager:
+    DEFAULTS = {
+        # UI Colors
+        "window_bg": "#f0f0f0",
+        "window_text": "#000000",
+        "input_bg": "#ffffff",
+        "input_text": "#000000",
+        "btn_bg": "#e0e0e0",
+        "btn_text": "#000000",
+        "table_bg": "#ffffff",
+        "table_text": "#000000",
+        # Log Colors
+        "log_debug": "gray",
+        "log_info": "black",
+        "log_warning": "orange",
+        "log_error": "red",
+        "log_system": "blue"
+    }
+
+    def __init__(self):
+        self.settings = QSettings("MusicDL", "Theme")
+        self.colors = self.DEFAULTS.copy()
+        self.load()
+
+    def load(self):
+        for key in self.colors:
+            val = self.settings.value(key)
+            if val:
+                self.colors[key] = val
+
+    def save(self):
+        for key, val in self.colors.items():
+            self.settings.setValue(key, val)
+
+    def reset(self):
+        self.colors = self.DEFAULTS.copy()
+        self.save()
+
+    def ge(self, key):
+        return self.colors.get(key, self.DEFAULTS.get(key, "#000000"))
+    
+    def set(self, key, val):
+        self.colors[key] = val
+
+    def get_log_color(self, level_name):
+        key = f"log_{level_name.lower()}"
+        return self.colors.get(key, "black")
+
+    def get_stylesheet(self):
+        c = self.colors
+        # Basic QSS generation
+        qss = f"""
+            QWidget {{
+                background-color: {c['window_bg']};
+                color: {c['window_text']};
+            }}
+            QLineEdit, QTextEdit, QPlainTextEdit {{
+                background-color: {c['input_bg']};
+                color: {c['input_text']};
+                border: 1px solid #ccc;
+            }}
+            QTableWidget {{
+                background-color: {c['table_bg']};
+                color: {c['table_text']};
+                gridline-color: {c['window_text']};
+            }}
+            QHeaderView::section {{
+                background-color: {c['btn_bg']};
+                color: {c['btn_text']};
+            }}
+            QPushButton {{
+                background-color: {c['btn_bg']};
+                color: {c['btn_text']};
+                border: 1px solid #888;
+                padding: 4px;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                border: 1px solid {c['window_text']};
+            }}
+            QGroupBox {{
+                border: 1px solid {c['window_text']};
+                margin-top: 6px;
+                padding-top: 10px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 3px;
+                background-color: {c['window_bg']};
+                color: {c['window_text']};
+            }}
+            QLabel {{
+                background-color: transparent;
+                color: {c['window_text']};
+            }}
+            QComboBox {{
+                background-color: {c['input_bg']};
+                color: {c['input_text']};
+            }}
+            QStatusBar {{
+                color: {c['window_text']};
+            }}
+            /* Specific fix for QScrollArea contents */
+            QScrollArea, QScrollArea > QWidget > QWidget {{
+                background-color: {c['window_bg']};
+            }}
+            QCheckBox {{
+                color: {c['window_text']};
+                spacing: 5px;
+            }}
+            QCheckBox::indicator {{
+                width: 16px;
+                height: 16px;
+                border: 1px solid {c['window_text']};
+                border-radius: 2px;
+                background-color: {c['input_bg']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {c['window_text']};
+                border: 1px solid {c['window_text']};
+                image: url(none); /* In case some style sets an image */
+            }}
+            /* Add checks for standard checkmark visualization if needed, or just solid color for now */
+            /* Using a simple inner rect for checked state or relying on color distinction */
+             QCheckBox::indicator:checked {{
+                background-color: {c['btn_bg']}; 
+                border: 1px solid {c['window_text']};
+                /* Standard checkmark is hard to draw in pure CSS without an image. 
+                   Let's use a distinct color or inner generic indicator style if possible. 
+                   Actually, let's just make it look like a filled box. */
+                background-color: {c['window_text']};
+            }}
+            /* Better approach for checked: text color as bg, causing a solid box */
+            
+            /* ScrollBar styling to match theme (optional but good) */
+            QScrollBar:vertical {{
+                border: none;
+                background: {c['window_bg']};
+                width: 10px;
+                margin: 0px 0px 0px 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {c['btn_bg']};
+                min-height: 20px;
+                border-radius: 5px;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+        """
+        return qss
+
+class ThemeConfigDialog(QDialog):
+    def __init__(self, theme_manager, parent=None):
+        super().__init__(parent)
+        self.tm = theme_manager
+        self.temp_colors = self.tm.colors.copy()
+        self.setWindowTitle("外观设置")
+        self.resize(400, 500)
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        content = QWidget()
+        self.grid = QGridLayout(content)
+        
+        # Define readable names for keys
+        self.labels_map = {
+            "window_bg": "窗口背景",
+            "window_text": "通用文字",
+            "input_bg": "输入框背景",
+            "input_text": "输入框文字",
+            "btn_bg": "按钮背景",
+            "btn_text": "按钮文字",
+            "table_bg": "表格背景",
+            "table_text": "表格文字",
+            "log_debug": "日志 DEBUG",
+            "log_info": "日志 INFO",
+            "log_warning": "日志 WARNING",
+            "log_error": "日志 ERROR",
+            "log_system": "日志 SYSTEM"
+        }
+        
+        row = 0
+        self.btn_map = {}
+        
+        # Sort keys to group them logically (UI first, then Logs)
+        keys = list(self.tm.DEFAULTS.keys())
+        # Simple ensuring logs are at bottom
+        keys.sort(key=lambda k: (0 if k.startswith("log_") else 1)) 
+        # Actually I want UI first (not log_) then Log. 
+        # False < True. so (not startswith log) comes first? No. 
+        # log_ starts with l. window starts with w. 
+        # Let's just explicit sort
+        ui_keys = [k for k in keys if not k.startswith("log_")]
+        log_keys = [k for k in keys if k.startswith("log_")]
+        sorted_keys = ui_keys + log_keys
+        
+        for key in sorted_keys:
+            label_text = self.labels_map.get(key, key)
+            self.grid.addWidget(QLabel(label_text), row, 0)
+            
+            btn = QPushButton()
+            btn.setFixedSize(80, 25)
+            self.update_btn_style(btn, self.temp_colors[key])
+            btn.clicked.connect(lambda checked, k=key, b=btn: self.pick_color(k, b))
+            
+            self.grid.addWidget(btn, row, 1)
+            self.btn_map[key] = btn
+            row += 1
+            
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+        
+        # Tools
+        btn_layout = QHBoxLayout()
+        reset_btn = QPushButton("恢复默认")
+        reset_btn.clicked.connect(self.reset_defaults)
+        btn_layout.addWidget(reset_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        # Dialog Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def update_btn_style(self, btn, color_str):
+        # Set button background to the color, and text to readable contrast if possible
+        # For simplicity, just set bg
+        btn.setStyleSheet(f"background-color: {color_str}; border: 1px solid #555;")
+        btn.setText(color_str)
+
+    def pick_color(self, key, btn):
+        curr_color = QColor(self.temp_colors[key])
+        color = QColorDialog.getColor(curr_color, self, "选择颜色")
+        if color.isValid():
+            hex_color = color.name()
+            self.temp_colors[key] = hex_color
+            self.update_btn_style(btn, hex_color)
+
+    def reset_defaults(self):
+        self.temp_colors = self.tm.DEFAULTS.copy()
+        for key, btn in self.btn_map.items():
+            self.update_btn_style(btn, self.temp_colors[key])
+
+    def get_colors(self):
+        return self.temp_colors
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -232,11 +486,26 @@ class MainWindow(QMainWindow):
             LOG_SIGNAL = GlobalLogSignal()
         LOG_SIGNAL.log.connect(self.append_log)
         
+        
         self.logger = GUILoggerHandle()
+        self.tm = ThemeManager()
         
         self.music_client = None
         self.init_ui()
+        self.apply_theme()
         self.init_client()
+
+    def apply_theme(self):
+        qss = self.tm.get_stylesheet()
+        self.setStyleSheet(qss)
+        
+        # Also need to refresh log text colors? 
+        # Existing logs are HTML with hardcoded colors? 
+        # Yes, existing logs might have wrong colors if we just switch.
+        # But we can't easily re-parse them. 
+        # Future logs will use correct color.
+        # We could clear logs or just let it be.
+        pass
 
     def init_client(self):
         saved_path = self.settings.value("download_path", os.path.join(os.getcwd(), 'musicdl_outputs'))
@@ -308,6 +577,10 @@ class MainWindow(QMainWindow):
         self.source_btn = QPushButton("资源设置")
         self.source_btn.clicked.connect(self.select_sources)
         control_layout.addWidget(self.source_btn)
+
+        self.theme_btn = QPushButton("外观设置")
+        self.theme_btn.clicked.connect(self.open_theme_settings)
+        control_layout.addWidget(self.theme_btn)
 
         main_layout.addWidget(control_group)
 
@@ -391,14 +664,7 @@ class MainWindow(QMainWindow):
         self.append_log("SYSTEM", f"日志等级已设置为: {level_str}")
 
     def append_log(self, level, message):
-        color_map = {
-            "DEBUG": "gray",
-            "INFO": "black",
-            "WARNING": "orange",
-            "ERROR": "red",
-            "SYSTEM": "blue"
-        }
-        color = color_map.get(level, "black")
+        color = self.tm.get_log_color(level) if hasattr(self, 'tm') else "black"
         self.log_text.append(f'<span style="color:{color}">[{level}] {message}</span>')
 
     def start_search(self):
@@ -726,16 +992,16 @@ class MainWindow(QMainWindow):
 
 
         # 4. Clean Cache
-        # try:
-        #     # Dynamically import script to avoid path issues at top level
-        #     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-        #     import clean_pkg_cache
-        #     clean_pkg_cache.removepycache(os.path.join(os.path.dirname(__file__), '..'))
-        #     if LOG_SIGNAL:
-        #         LOG_SIGNAL.log.emit("INFO", "System cache cleaned successfully.")
-        # except Exception as e:
-        #      if LOG_SIGNAL:
-        #          LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
+        try:
+            # Dynamically import script to avoid path issues at top level
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+            import clean_pkg_cache
+            clean_pkg_cache.removepycache(os.path.join(os.path.dirname(__file__), '..'))
+            if LOG_SIGNAL:
+                LOG_SIGNAL.log.emit("INFO", "System cache cleaned successfully.")
+        except Exception as e:
+             if LOG_SIGNAL:
+                 LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
 
         return downloaded_infos
 
@@ -780,6 +1046,15 @@ class MainWindow(QMainWindow):
                 self.start_search()
         else:
             pass
+
+    def open_theme_settings(self):
+        dialog = ThemeConfigDialog(self.tm, self)
+        if dialog.exec():
+            new_colors = dialog.get_colors()
+            self.tm.colors = new_colors
+            self.tm.save()
+            self.apply_theme()
+            self.append_log("SYSTEM", "外观设置已更新")
 
     def cleanup_temp_folders(self):
         """Delete temporary client folders from the download directory."""
