@@ -103,7 +103,7 @@ class FangpiMusicClient(BaseMusicClient):
             album='NULL', ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=download_result.get('mp3_id') or urlparse(str(search_result['url'])).path.strip('/').split('/')[-1], duration='-:-:-', lyric=cleanlrc(soup.find("div", id="content-lrc").get_text("\n", strip=True)), 
             cover_url=safeextractfromdict(download_result, ['mp3_cover'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
-        song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
         song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
         if not song_info.duration or song_info.duration == '-:-:-':

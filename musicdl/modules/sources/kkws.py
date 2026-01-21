@@ -7,24 +7,17 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
-import copy
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 from .base import BaseMusicClient
 from rich.progress import Progress
-from urllib.parse import urlencode, urljoin
-from ..utils import legalizestring, usesearchheaderscookies, seconds2hms, searchdictbykey, SongInfo, QuarkParser
-
-
-'''settings'''
-FORMAT_RANK = {
-    "DSD": 100, "DSF": 100, "DFF": 100, "WAV": 95, "AIFF": 95, "FLAC": 90, "ALAC": 90, "APE": 88, "WV": 88, "OPUS": 70,
-    "AAC": 65, "M4A": 65, "OGG": 60, "VORBIS": 60, "MP3": 50, "WMA": 45,
-}
+from ..utils import legalizestring, usesearchheaderscookies, seconds2hms, searchdictbykey, safeextractfromdict, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser
 
 
 '''KKWSMusicClient'''
 class KKWSMusicClient(BaseMusicClient):
     source = 'KKWSMusicClient'
+    MUSIC_QUALITY_RANK = {"DSD": 100, "DSF": 100, "DFF": 100, "WAV": 95, "AIFF": 95, "FLAC": 90, "ALAC": 90, "APE": 88, "WV": 88, "OPUS": 70, "AAC": 65, "M4A": 65, "OGG": 60, "VORBIS": 60, "MP3": 50, "WMA": 45}
     def __init__(self, **kwargs):
         super(KKWSMusicClient, self).__init__(**kwargs)
         assert self.quark_parser_config.get('cookies'), f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so the songs cannot be downloaded.'
@@ -71,53 +64,33 @@ class KKWSMusicClient(BaseMusicClient):
             if len(ems) >= 2: singer = ems[-1].get_text(strip=True).replace("演唱：", "").strip()
             m_id = re.search(r"/detail/(\d+)\.html", href)
             item_id = m_id.group(1) if m_id else ""
-            search_results.append({
-                "id": item_id, "name": name, "format": file_format, "size": size, "share_time": share_time, "singer": singer, "detail_url": href,
-            })
+            search_results.append({"id": item_id, "name": name, "format": file_format, "size": size, "share_time": share_time, "singer": singer, "detail_url": href})
         return search_results
     '''_extractlyricsandquark'''
     def _extractlyricsandquark(self, html_text: str):
         soup = BeautifulSoup(html_text, "lxml")
-        # lyrics
-        textbox, lyrics = soup.select_one("#textbox"), ""
-        if textbox:
-            for br in textbox.find_all("br"): br.replace_with("\n")
-            lyrics = textbox.get_text().strip()
-        # quark
-        url_map = {}
+        tb = soup.select_one("#textbox")
+        to_mmss_func = lambda t: (lambda s: f"{s//60:02d}:{s%60:02d}")(int(float(t.split(":",1)[0])*60+float(t.split(":",1)[1])) if ":" in t else int(float(t)))
+        lyrics = "" if not tb else "\n".join((f"[{to_mmss_func(m.group(1))}] {m.group(2).strip()}" if (m:=re.match(r"^\[(\d+(?:\.\d+)?|\d{1,2}:\d{2}(?:\.\d+)?)\]\s*(.*)$", line)) else f"{line}") for line in (l.strip() for l in tb.get_text("\n").splitlines()) if line)
+        url_map, rank = {}, KKWSMusicClient.MUSIC_QUALITY_RANK
         for a in soup.select("div.downbox a[onclick]"):
-            onclick = a.get("onclick", "").strip()
+            onclick = (a.get("onclick") or "").strip()
             if not onclick: continue
             args = re.findall(r"'([^']*)'", onclick)
-            if not args: continue
-            url, fmt, name = None, None, None
-            if onclick.startswith("openModel"):
-                if len(args) >= 4:
-                    name_fmt, url, fmt = args[1], args[2], args[3] or None
-                    if "|" in name_fmt:
-                        name, fmt2 = name_fmt.split("|", 1)
-                        name = name.strip()
-                        fmt = fmt or fmt2.strip()
-                    else:
-                        name = name_fmt.strip()
-            elif onclick.startswith("mbgotourl"):
-                if len(args) >= 3:
-                    name_fmt, url = args[1], args[2]
-                    if "|" in name_fmt:
-                        name, fmt = name_fmt.split("|", 1)
-                        name, fmt = name.strip(), fmt.strip()
-                    else:
-                        name = name_fmt.strip()
-            if not url or "pan.quark.cn" not in url: continue
-            entry = url_map.setdefault(url, {"url": url, "formats": set(), "names": set()})
-            for k in FORMAT_RANK.keys(): fmt = k if k.lower() in fmt.lower() else fmt
-            if fmt: entry["formats"].add(fmt)
-            if name: entry["names"].add(name)
-        quark_links = []
-        for url, entry in url_map.items():
-            quark_links.append({"url": entry["url"], "formats": sorted(entry["formats"]), "names": sorted(entry["names"])})
-        quark_links = sorted(quark_links, key=lambda x: FORMAT_RANK.get(x['formats'][0], 0), reverse=True)
-        # return
+            name = fmt = url = None
+            if onclick.startswith("openModel") and len(args) >= 4: name_fmt, url, fmt = args[1], args[2], (args[3] or None)
+            elif onclick.startswith("mbgotourl") and len(args) >= 3: name_fmt, url, fmt = args[1], args[2], None
+            else: continue
+            if "|" in name_fmt: name, fmt2 = map(str.strip, name_fmt.split("|", 1)); fmt = fmt or fmt2
+            else: name = name_fmt.strip()
+            if not (url and "pan.quark.cn" in url): continue
+            e = url_map.setdefault(url, {"url": url, "formats": set(), "names": set()})
+            if fmt:
+                for k in rank: fmt = k if k.lower() in fmt.lower() else fmt
+                e["formats"].add(fmt)
+            if name: e["names"].add(name)
+        quark_links = sorted(({"url": e["url"], "formats": sorted(e["formats"]), "names": sorted(e["names"])} for e in url_map.values()), key=lambda x: rank.get(x["formats"][0] if x["formats"] else "UNKNOWN", 0), reverse=True)
+        quark_links = [q for q in quark_links if isinstance(q, dict) and q.get('url')]
         return {"lyrics": lyrics, "quark_links": quark_links}
     '''_search'''
     @usesearchheaderscookies
@@ -132,38 +105,28 @@ class KKWSMusicClient(BaseMusicClient):
             search_results = self._parsesearchresultsfromhtml(resp.text)
             for search_result in search_results:
                 # --download results
-                if not isinstance(search_result, dict) or ('detail_url' not in search_result):
-                    continue
+                if not isinstance(search_result, dict) or ('detail_url' not in search_result) or ('id' not in search_result): continue
                 song_info = SongInfo(source=self.source)
-                try:
-                    resp = self.get(search_result['detail_url'], **request_overrides)
-                    resp.raise_for_status()
-                    download_result = self._extractlyricsandquark(resp.text)
-                except:
-                    continue
+                try: resp = self.get(search_result['detail_url'], **request_overrides); resp.raise_for_status(); download_result = self._extractlyricsandquark(resp.text)
+                except: continue
                 for quark_info in download_result['quark_links']:
                     quark_download_url = quark_info['url']
-                    try:
-                        download_result['quark_parse_result'], download_url = QuarkParser.parsefromurl(quark_download_url, **self.quark_parser_config)
-                        duration = searchdictbykey(download_result['quark_parse_result'], 'duration')
-                        duration = [int(float(d)) for d in duration if int(float(d)) > 0]
-                        if duration: duration = duration[0]
-                        else: duration = 0
-                        if not download_url: continue
-                        download_url_status = self.quark_audio_link_tester.test(download_url, request_overrides)
-                        download_url_status['probe_status'] = self.quark_audio_link_tester.probe(download_url, request_overrides)
-                        ext = download_url_status['probe_status']['ext']
-                        if ext == 'NULL': ext = 'mp3'
-                        song_info = SongInfo(
-                            source=self.source, download_url=download_url, download_url_status=download_url_status, default_download_headers=self.quark_default_download_headers,
-                            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, ext=ext, file_size=download_url_status['probe_status']['file_size'],
-                            duration_s=duration, duration=seconds2hms(duration), lyric=download_result['lyrics'], album='NULL', identifier=search_result.get('id'),
-                            song_name=legalizestring(search_result.get('name', 'NULL'), replace_null_string='NULL'), 
-                            singers=legalizestring(search_result.get('singer', 'NULL'), replace_null_string='NULL'), 
-                        )
-                        if song_info.with_valid_download_url: break
-                    except:
-                        continue
+                    download_result['quark_parse_result'], download_url = QuarkParser.parsefromurl(quark_download_url, **self.quark_parser_config)
+                    if not download_url or not str(download_url).startswith('http'): continue
+                    duration = [int(float(d)) for d in searchdictbykey(download_result, 'duration') if int(float(d)) > 0]
+                    duration_s = duration[0] if duration else 0
+                    song_info = SongInfo(
+                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
+                        singers=legalizestring(safeextractfromdict(search_result, ['singer'], None)), album='NULL', ext='mp3', file_size='NULL', identifier=search_result['id'], duration_s=duration_s,
+                        duration=seconds2hms(duration_s), lyric=cleanlrc(safeextractfromdict(download_result, ['lyrics'], '')), cover_url=None, download_url=download_url,
+                        download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers,
+                    )
+                    song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
+                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
+                    if song_info.with_valid_download_url: break
+                if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
+                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
                 if not song_info.with_valid_download_url: continue
                 # --append to song_infos
                 song_infos.append(song_info)

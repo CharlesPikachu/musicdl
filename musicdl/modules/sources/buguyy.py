@@ -104,7 +104,7 @@ class BuguyyMusicClient(BaseMusicClient):
             file_size='NULL', identifier=search_result['id'], duration=None, lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], '')), cover_url=safeextractfromdict(search_result, ['picurl'], None), 
             download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
-        song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
         song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
         if not song_info.duration or song_info.duration == '-:-:-':

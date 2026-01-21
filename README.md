@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
+- 2026-01-21: Released musicdl v2.8.6 — refactor the currently supported unofficial download sites to return more standardized song information.
 - 2026-01-19: Released musicdl v2.8.5 — refactored four cross-platform search sources to speed up song cover and metadata extraction via the musicdl API, revamped the terminal UI, and fixed several potential bugs.
 - 2026-01-16: Released musicdl v2.8.4 — partial code optimizations, added support for Qishui Music, refactored the Bilibili and 5sing music APIs.
-- 2026-01-14: Released musicdl v2.8.3 — refactor and optimize the code for Migu Music, QQ Music, NetEase Cloud Music, Qianqian Music, Kuwo Music, and Kugou Music, standardize the lyrics output format, extract song cover image URLs into a unified location in the returned song information, and integrate more high-quality third-party APIs for retrieving lossless music.
 
 
 # 🎵 Introduction
