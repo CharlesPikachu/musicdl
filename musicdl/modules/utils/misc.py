@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of common utils
+    Implementation of Common Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -9,7 +9,6 @@ WeChat Official Account (微信公众号):
 import re
 import os
 import html
-import copy
 import emoji
 import errno
 import pickle
@@ -23,6 +22,7 @@ import unicodedata
 from io import BytesIO
 from pathlib import Path
 from bs4 import BeautifulSoup
+from .importutils import optionalimport
 from mutagen import File as MutagenFile
 from pathvalidate import sanitize_filepath, sanitize_filename
 
@@ -80,9 +80,9 @@ def replacefile(src: str, dest: str):
     try:
         os.replace(src, dest)
     except OSError as exc:
-        if exc.errno != errno.EXDEV: raise
+        if exc.errno != errno.EXDEV: raise Exception
         if os.path.exists(dest):
-            if os.path.isdir(dest): raise
+            if os.path.isdir(dest): raise Exception
             os.remove(dest)
         shutil.move(src, dest)
 
@@ -169,20 +169,21 @@ def byte2mb(size: int):
 
 '''resp2json'''
 def resp2json(resp: requests.Response):
-    if not isinstance(resp, requests.Response): return {}
-    try:
-        result = resp.json()
-    except:
-        result = json_repair.loads(resp.text)
+    curl_cffi = optionalimport('curl_cffi')
+    valid_resp_object = (requests.Response, curl_cffi.requests.Response) if curl_cffi else requests.Response
+    if not isinstance(resp, valid_resp_object): return {}
+    try: result = resp.json()
+    except: result = json_repair.loads(resp.text)
     if not result: result = dict()
     return result
 
 
 '''isvalidresp'''
-def isvalidresp(resp: requests.Response, valid_status_codes: list = [200]):
-    if not isinstance(resp, requests.Response): return False
-    if resp is None or resp.status_code not in valid_status_codes:
-        return False
+def isvalidresp(resp: requests.Response, valid_status_codes: list | tuple | set = {200, 206}):
+    curl_cffi = optionalimport('curl_cffi')
+    valid_resp_object = (requests.Response, curl_cffi.requests.Response) if curl_cffi else requests.Response
+    if not isinstance(resp, valid_resp_object): return False
+    if resp is None or resp.status_code not in valid_status_codes: return False
     return True
 
 
@@ -199,8 +200,7 @@ def safeextractfromdict(data, progressive_keys, default_value):
 '''cachecookies'''
 def cachecookies(client_name: str = '', cache_cookie_path: str = '', client_cookies: dict = None):
     if os.path.exists(cache_cookie_path):
-        with open(cache_cookie_path, 'rb') as fp:
-            cookies = pickle.load(fp)
+        with open(cache_cookie_path, 'rb') as fp: cookies = pickle.load(fp)
     else:
         cookies = dict()
     with open(cache_cookie_path, 'wb') as fp:
@@ -213,7 +213,8 @@ def usedownloadheaderscookies(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         self.default_headers = self.default_download_headers
-        self.default_cookies = self.default_download_cookies
+        if hasattr(self, 'default_download_cookies'): self.default_cookies = self.default_download_cookies
+        if hasattr(self, 'enable_download_curl_cffi'): self.enable_curl_cffi = self.enable_download_curl_cffi
         if hasattr(self, '_initsession'): self._initsession()
         return func(self, *args, **kwargs)
     return wrapper
@@ -224,7 +225,8 @@ def useparseheaderscookies(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         self.default_headers = self.default_parse_headers
-        self.default_cookies = self.default_parse_cookies
+        if hasattr(self, 'default_parse_cookies'): self.default_cookies = self.default_parse_cookies
+        if hasattr(self, 'enable_parse_curl_cffi'): self.enable_curl_cffi = self.enable_parse_curl_cffi
         if hasattr(self, '_initsession'): self._initsession()
         return func(self, *args, **kwargs)
     return wrapper
@@ -235,7 +237,8 @@ def usesearchheaderscookies(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         self.default_headers = self.default_search_headers
-        self.default_cookies = self.default_search_cookies
+        if hasattr(self, 'default_search_cookies'): self.default_cookies = self.default_search_cookies
+        if hasattr(self, 'enable_search_curl_cffi'): self.enable_curl_cffi = self.enable_search_curl_cffi
         if hasattr(self, '_initsession'): self._initsession()
         return func(self, *args, **kwargs)
     return wrapper

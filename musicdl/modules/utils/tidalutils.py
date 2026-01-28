@@ -24,13 +24,13 @@ from Crypto.Util import Counter
 from urllib.parse import urljoin
 from typing import List, Optional, Any
 from cryptography.fernet import Fernet
+from .importutils import optionalimport
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
 
 
-'''AV'''
-try: import av
-except: av = None
+'''settings'''
+av = optionalimport('av')
 
 
 '''MediaMetadata'''

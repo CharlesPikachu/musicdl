@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of JSInterpreter, refer to https://pytubefix.readthedocs.io/en/latest/index.html
+    Implementation of JSInterpreter (Refer To https://pytubefix.readthedocs.io/en/latest/index.html)
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -20,7 +20,7 @@ from functools import update_wrapper
 from contextlib import suppress as compat_contextlib_suppress
 
 
-'''constants'''
+'''settings'''
 DATE_FORMATS = (
     '%d %B %Y', '%d %b %Y', '%B %d %Y', '%B %dst %Y', '%B %dnd %Y', '%B %drd %Y', '%B %dth %Y', '%b %d %Y', '%b %dst %Y', '%b %dnd %Y', '%b %drd %Y', '%b %dth %Y',
     '%b %dst %Y %I:%M', '%b %dnd %Y %I:%M', '%b %drd %Y %I:%M', '%b %dth %Y %I:%M', '%Y %m %d', '%Y-%m-%d', '%Y.%m.%d.', '%Y/%m/%d', '%Y/%m/%d %H:%M', '%Y/%m/%d %H:%M:%S',
@@ -722,8 +722,7 @@ class JSInterpreter:
                         try:
                             self._objects[variable] = self.extractobject(variable, local_vars)
                         except self.Exception:
-                            if not nullish:
-                                raise
+                            if not nullish: raise Exception
                     obj = self._objects.get(variable, JSUndefined)
                 if nullish and obj is JSUndefined: return JSUndefined
                 if arg_str is None: return self._index(obj, member, nullish)

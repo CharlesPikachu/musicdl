@@ -38,6 +38,8 @@ class SongInfo:
     lyric: Optional[str] = None
     # cover
     cover_url: Optional[str] = None
+    # episodes, each item in episodes is SongInfo object, used by FM site like MissEvanMusicClient
+    episodes: Optional[list[SongInfo]] = None
     # download url related variables
     download_url: Optional[Any] = None
     download_url_status: Optional[Any] = None
@@ -46,10 +48,9 @@ class SongInfo:
     chunk_size: Optional[int] = 1024 * 1024
     @property
     def with_valid_download_url(self) -> bool:
-        if isinstance(self.download_url, str):
-            is_valid_format = self.download_url and self.download_url.startswith('http')
-        else:
-            is_valid_format = self.download_url
+        if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
+        if isinstance(self.download_url, str): is_valid_format = self.download_url and self.download_url.startswith('http')
+        else: is_valid_format = self.download_url
         is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
         return bool(is_valid_format and is_downloadable)
     # save info

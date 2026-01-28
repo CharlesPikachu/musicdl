@@ -10,11 +10,10 @@ import copy
 import base64
 import hashlib
 import json_repair
-from curl_cffi import requests
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, cleanlrc, SongInfo
+from ..utils import legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, optionalimport, cleanlrc, SongInfo
 
 
 '''KugouMusicClient'''
@@ -33,6 +32,7 @@ class KugouMusicClient(BaseMusicClient):
     '''_parsewithcggapi'''
     def _parsewithcggapi(self, hash_list: list, search_result: dict, request_overrides: dict = None):
         # init
+        curl_cffi = optionalimport('curl_cffi')
         request_overrides = request_overrides or {}
         MUSIC_QUALITIES = ['lossless', 'exhigh', 'hires', 'standard', 'ogg']
         # safe fetch filesize func
@@ -40,7 +40,7 @@ class KugouMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = requests.get(f"https://music-api2.cenguigui.cn/?kg=&id={hash_list[0]}&type=song&format=json&level={quality}", timeout=10, impersonate="chrome131", **request_overrides)
+                resp = curl_cffi.requests.get(f"https://music-api2.cenguigui.cn/?kg=&id={hash_list[0]}&type=song&format=json&level={quality}", timeout=10, impersonate="chrome131", **request_overrides)
                 resp.raise_for_status()
                 download_result = json_repair.loads(resp.text)
                 if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
@@ -58,6 +58,7 @@ class KugouMusicClient(BaseMusicClient):
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
             if song_info.with_valid_download_url: break
+        # return
         return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, hash_list: list, search_result: dict, request_overrides: dict = None):

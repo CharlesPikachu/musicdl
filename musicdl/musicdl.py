@@ -25,7 +25,7 @@ else:
         from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
 
 
-'''BASIC_INFO'''
+'''settings'''
 BASIC_INFO = '''Function: Music Downloader v%s
 Author: Zhenchao Jin
 WeChat Official Account (微信公众号): Charles_pikachu (Charles的皮卡丘)
@@ -40,11 +40,9 @@ Instructions:
         Press Esc or q to cancel selection
 Music Files Save Path:
     %s (root dir is the current directory if using relative path).'''
-'''DEFAULT_MUSIC_SOURCES'''
-DEFAULT_MUSIC_SOURCES = ['NeteaseMusicClient', 'QQMusicClient', 'TuneHubMusicClient']
+DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient']
 '''SUPPORTED_MUSIC_SOURCES'''
 SUPPORTED_MUSIC_SOURCES = list(MusicClientBuilder.REGISTERED_MODULES.keys())
-
 
 
 '''MusicClient'''
@@ -73,6 +71,7 @@ class MusicClient():
                 'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {'cookies': 'your_cookies_with_str_or_dict_format'}
             }
             if music_source in {'GDStudioMusicClient'}: init_music_client_cfg['search_size_per_source'] = 3
+            if music_source in {'MissEvanMusicClient'}: init_music_client_cfg['search_size_per_source'] = 1
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))
             self.music_clients[music_source] = BuildMusicClient(module_cfg=init_music_client_cfg)
             self.work_dirs[music_source] = init_music_client_cfg['work_dir']
@@ -84,8 +83,8 @@ class MusicClient():
         printfullline(ch='-')
         print(BASIC_INFO % (__version__, ', '.join([f'"{v} for {k}"' for k, v in self.work_dirs.items()])))
         printfullline(ch='-')
-    '''printsearchresults'''
-    def printsearchresults(self, search_results: dict):
+    '''printandselectsearchresults'''
+    def printandselectsearchresults(self, search_results: dict):
         print_titles, print_items, song_infos, row_ids, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, [], 0
         for _, per_search_results in search_results.items():
             for search_result in per_search_results:
@@ -98,21 +97,24 @@ class MusicClient():
                     search_result['duration'], search_result['album'], colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
                 ])
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
-        return song_infos, print_titles, print_items, row_ids
+        picked_ids = cursorpickintable(print_titles, print_items, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
+        id2row = dict(zip(row_ids, print_items))
+        selected_rows = [id2row[i] for i in picked_ids if i in id2row]
+        if selected_rows: print("\nSelected songs:\n"); print(smarttrunctable(headers=print_titles, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6]))
+        else: print("\nNo songs selected.\n")
+        selected_song_infos = [song_infos[i] for i in picked_ids if i in song_infos]
+        return selected_song_infos
     '''startcmdui'''
     def startcmdui(self):
         while True:
             self.printbasicinfo()
             user_input_keyword = self.processinputs('Please enter keywords to search for songs: ')
             search_results = self.search(keyword=user_input_keyword)
-            song_infos, headers, rows, row_ids = self.printsearchresults(search_results=search_results)
-            picked_ids = cursorpickintable(headers, rows, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
-            id2row = dict(zip(row_ids, rows))
-            selected_rows = [id2row[i] for i in picked_ids if i in id2row]
-            if selected_rows: print("\nSelected songs:\n"); print(smarttrunctable(headers=headers, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6]))
-            else: print("\nNo songs selected.\n")
-            selected_song_infos = [song_infos[i] for i in picked_ids if i in song_infos]
-            self.download(selected_song_infos)
+            selected_song_infos, final_selected_song_infos = self.printandselectsearchresults(search_results=search_results), []
+            for song_info in selected_song_infos:
+                if song_info.episodes: final_selected_song_infos.extend(self.printandselectsearchresults({song_info.source: song_info.episodes}))
+                else: final_selected_song_infos.append(song_info)
+            self.download(final_selected_song_infos)
     '''search'''
     def search(self, keyword):
         self.logger_handle.info(f'Searching {colorize(keyword, "highlight")} From {colorize("|".join(self.music_sources), "highlight")}')
@@ -202,14 +204,11 @@ def MusicClientCMD(keyword: str, music_sources: str, init_music_clients_cfg: str
     else:
         print(music_client)
         search_results = music_client.search(keyword=keyword)
-        song_infos, headers, rows, row_ids = music_client.printsearchresults(search_results=search_results)
-        picked_ids = cursorpickintable(headers, rows, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
-        id2row = dict(zip(row_ids, rows))
-        selected_rows = [id2row[i] for i in picked_ids if i in id2row]
-        if selected_rows: print("\nSelected songs:\n"); print(smarttrunctable(headers=headers, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6]))
-        else: print("\nNo songs selected.\n")
-        selected_song_infos = [song_infos[i] for i in picked_ids if i in song_infos]
-        music_client.download(song_infos=selected_song_infos)
+        selected_song_infos, final_selected_song_infos = music_client.printandselectsearchresults(search_results=search_results), []
+        for song_info in selected_song_infos:
+            if song_info.episodes: final_selected_song_infos.extend(music_client.printandselectsearchresults({song_info.source: song_info.episodes}))
+            else: final_selected_song_infos.append(song_info)
+        music_client.download(song_infos=final_selected_song_infos)
 
 
 '''tests'''

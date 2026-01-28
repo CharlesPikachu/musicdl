@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of logging related utils
+    Implementation of Logging Related Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):

@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of NeteaseMusicClient utils
+    Implementation of NeteaseMusicClient Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):

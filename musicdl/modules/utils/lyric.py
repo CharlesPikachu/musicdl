@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of WhisperLRC
+    Implementation of Lyric Related Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -10,13 +10,11 @@ import os
 import re
 import tempfile
 import requests
+from .importutils import optionalimportfrom
 from typing import Optional, Union, Dict, Any, List
 
 
-'''settings'''
-_LINE_RE = re.compile(r"^\[(\d+),(\d+)\]")
-_TOKEN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
-_TIME_RE = re.compile(r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
+'''cleanlrc'''
 cleanlrc = lambda text: "\n".join(line for raw in re.sub(r"\r\n?", "\n", str(text)).split("\n") if (line := raw.strip("\ufeff\u200b\u200c\u200d\u2060\u00a0 \t").strip()) and not re.fullmatch(r"\[(\d{2}:)?\d{2}:\d{2}(?:\.\d{1,3})?\]", line))
 
 
@@ -29,8 +27,8 @@ def fractoseconds(frac: str | None) -> float:
 
 '''extractdurationsecondsfromlrc'''
 def extractdurationsecondsfromlrc(lrc: str) -> Optional[float]:
-    max_t = None
-    for h, m, s, frac in _TIME_RE.findall(lrc):
+    max_t, time_pattern_re = None, re.compile(r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
+    for h, m, s, frac in time_pattern_re.findall(lrc):
         hh = int(h) if h else 0
         mm = int(m)
         ss = int(s)
@@ -71,6 +69,8 @@ def lyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyri
 
 '''TimedLyricsParser'''
 class TimedLyricsParser:
+    LINE_PATTERN_RE = re.compile(r"^\[(\d+),(\d+)\]")
+    TOKEN_PATTERN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
     '''parsetimedlyrics'''
     @staticmethod
     def parsetimedlyrics(text: str) -> List[Dict[str, Any]]:
@@ -80,11 +80,11 @@ class TimedLyricsParser:
         for raw_line in text.splitlines():
             raw_line = raw_line.rstrip("\n")
             if not raw_line.strip(): continue
-            m = _LINE_RE.match(raw_line.strip())
+            m = TimedLyricsParser.LINE_PATTERN_RE.match(raw_line.strip())
             if not m: continue
             line_start, line_dur = int(m.group(1)), int(m.group(2))
             line_end, rest, tokens, pieces = line_start + line_dur, raw_line[m.end():], [], []
-            matches = list(_TOKEN_RE.finditer(rest))
+            matches = list(TimedLyricsParser.TOKEN_PATTERN_RE.finditer(rest))
             for i, tm in enumerate(matches):
                 offset, dur, flag, seg_start = int(tm.group(1)), int(tm.group(2)), int(tm.group(3)), tm.end()
                 seg_end = matches[i + 1].start() if i + 1 < len(matches) else len(rest)
@@ -113,11 +113,8 @@ class TimedLyricsParser:
 '''WhisperLRC'''
 class WhisperLRC:
     def __init__(self, model_size_or_path="small", device="auto", compute_type="int8", cpu_threads=4, num_workers=1, **kwargs):
-        try:
-            from faster_whisper import WhisperModel
-            self.whisper_model = WhisperModel(model_size_or_path, device=device, compute_type=compute_type, cpu_threads=cpu_threads, num_workers=num_workers, **kwargs)
-        except:
-            self.whisper_model = None
+        WhisperModel = optionalimportfrom('faster_whisper', 'WhisperModel')
+        self.whisper_model = WhisperModel(model_size_or_path, device=device, compute_type=compute_type, cpu_threads=cpu_threads, num_workers=num_workers, **kwargs) if WhisperModel else None
     '''downloadtotmpdir'''
     @staticmethod
     def downloadtotmpdir(url: str, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):

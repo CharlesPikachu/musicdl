@@ -8,8 +8,8 @@ WeChat Official Account (微信公众号):
 '''
 import time
 import requests
-from .misc import resp2json
 from urllib.parse import urlparse
+from .misc import resp2json, cookies2dict
 
 
 '''QuarkParser'''
@@ -31,7 +31,7 @@ class QuarkParser():
         session, download_result = requests.Session(), {}
         parsed_url = urlparse(url)
         pwd_id = parsed_url.path.strip('/').split('/')[-1]
-        if cookies and isinstance(cookies, str): cookies = dict(item.split("=", 1) for item in cookies.split("; "))
+        cookies = cookies2dict(cookies)
         headers = {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400',
             'origin': 'https://pan.quark.cn', 'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9',
@@ -136,7 +136,7 @@ class QuarkParser():
         session, download_result = requests.Session(), {}
         parsed_url = urlparse(url)
         pwd_id = parsed_url.path.strip('/').split('/')[-1]
-        if cookies and isinstance(cookies, str): cookies = dict(item.split("=", 1) for item in cookies.split("; "))
+        cookies = cookies2dict(cookies)
         headers = {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400',
             'origin': 'https://pan.quark.cn', 'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9',

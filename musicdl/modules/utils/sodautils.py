@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of SodaMusicClient utils
+    Implementation of SodaMusicClient Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):

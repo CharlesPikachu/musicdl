@@ -9,19 +9,19 @@ If you want the quickest way to run musicdl to verify that your environment meet
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KugouMusicClient', 'KuwoMusicClient', 'QianqianMusicClient'])
+music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient'])
 music_client.startcmdui()
 ```
 
-The above code runs musicdl using `MiguMusicClient`, `NeteaseMusicClient`, `QQMusicClient`, `KugouMusicClient`, `KuwoMusicClient` and `QianqianMusicClient` as both the search sources and download sources.
+The above code runs musicdl using `MiguMusicClient`, `NeteaseMusicClient`, `QQMusicClient`, `KuwoMusicClient` and `QianqianMusicClient` as both the search sources and download sources.
 
 Of course, you can also run musicdl by entering the following equivalent command directly in the command line,
 
 ```bash
-musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient,KugouMusicClient,KuwoMusicClient,QianqianMusicClient
+musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient,KuwoMusicClient,QianqianMusicClient
 ```
 
-Please note that musicdl uses six Mainland China music sources by default for searching. 
+Please note that musicdl uses five Mainland China music sources by default for searching. 
 If you need to use overseas music sources, you must manually specify the music platform each time you run the program. 
 For example:
 
@@ -30,7 +30,7 @@ musicdl -m GDStudioMusicClient,JamendoMusicClient
 ```
 
 In addition, searching and downloading from many music sources simultaneously may be relatively slow. 
-Each run may take about 30–60 seconds. 
+Each run may take about 10–30 seconds. 
 If you are confident that your song can be found on a specific platform or a few platforms, for example, `NeteaseMusicClient`, `QQMusicClient` or `KuwoMusicClient`,
 it is recommended to directly specify those platforms:
 
@@ -63,8 +63,7 @@ Options:
   -m, --music-sources, --music_sources TEXT
                                   The music search and download sources.
                                   [default: MiguMusicClient,NeteaseMusicClient
-                                  ,QQMusicClient,KugouMusicClient,KuwoMusicCli
-                                  ent,QianqianMusicClient]
+                                  ,QQMusicClient,KuwoMusicClient,QianqianMusicClient]
   -i, --init-music-clients-cfg, --init_music_clients_cfg TEXT
                                   Config such as `work_dir` for each music
                                   client as a JSON string.
