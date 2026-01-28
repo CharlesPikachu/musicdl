@@ -23,3 +23,4 @@ curl_cffi
 platformdirs
 lxml
 prompt_toolkit
+nodejs-wheel

@@ -24,6 +24,7 @@ from .gequbao import GequbaoMusicClient
 from .jamendo import JamendoMusicClient
 from .gequhai import GequhaiMusicClient
 from .livepoo import LivePOOMusicClient
+from .zhuolin import ZhuolinMusicClient
 from .fivesong import FiveSongMusicClient
 from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
@@ -45,7 +46,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'JamendoMusicClient': JamendoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GequhaiMusicClient': GequhaiMusicClient,
         'MissEvanMusicClient': MissEvanMusicClient, 'HTQYYMusicClient': HTQYYMusicClient, 'FiveSongMusicClient': FiveSongMusicClient, 'FLMP3MusicClient': FLMP3MusicClient,
         'JCPOOMusicClient': JCPOOMusicClient, 'KKWSMusicClient': KKWSMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient, 'LivePOOMusicClient': LivePOOMusicClient,
-        'TwoT58MusicClient': TwoT58MusicClient, 'SodaMusicClient': SodaMusicClient,
+        'TwoT58MusicClient': TwoT58MusicClient, 'SodaMusicClient': SodaMusicClient, 'ZhuolinMusicClient': ZhuolinMusicClient,
     }
 
 

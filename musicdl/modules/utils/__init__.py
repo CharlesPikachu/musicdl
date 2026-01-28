@@ -2,8 +2,10 @@
 from .data import SongInfo
 from .ip import RandomIPGenerator
 from .quarkparser import QuarkParser
+from .lanzouyparser import LanZouYParser
 from .songinfoutils import SongInfoUtils
 from .modulebuilder import BaseModuleBuilder
+from .importutils import optionalimport, optionalimportfrom
 from .logger import LoggerHandle, colorize, printtable, printfullline, smarttrunctable, cursorpickintable
 from .lyric import WhisperLRC, TimedLyricsParser, extractdurationsecondsfromlrc, lyricslisttolrc, cleanlrc
 from .misc import (

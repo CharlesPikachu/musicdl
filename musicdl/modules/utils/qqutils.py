@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of QQMusicClient utils
+    Implementation of QQMusicClient Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):

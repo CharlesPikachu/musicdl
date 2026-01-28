@@ -7,9 +7,12 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import os
+import re
 import copy
+import random
 import pickle
 import requests
+from pathlib import Path
 from threading import Lock
 from rich.text import Text
 from itertools import chain
@@ -21,12 +24,8 @@ from rich.progress import Task
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from rich.progress import (
-    Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn,
-)
-from ..utils import (
-    LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos
-)
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
 
 
 '''AudioAwareColumn'''
@@ -48,9 +47,9 @@ class AudioAwareColumn(ProgressColumn):
 '''BaseMusicClient'''
 class BaseMusicClient():
     source = 'BaseMusicClient'
-    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 3, maintain_session: bool = False, 
-                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', freeproxy_settings: dict = None, default_search_cookies: dict | str = None,
-                 default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
+    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_download_curl_cffi: bool = False, 
+                 max_retries: int = 3, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', freeproxy_settings: dict = None, 
+                 default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -69,6 +68,10 @@ class BaseMusicClient():
         self.search_size_per_page = min(search_size_per_source, search_size_per_page)
         self.strict_limit_search_size_per_page = strict_limit_search_size_per_page
         self.quark_parser_config = quark_parser_config or {}
+        self.enable_search_curl_cffi = enable_search_curl_cffi
+        self.enable_download_curl_cffi = enable_download_curl_cffi
+        self.enable_curl_cffi = self.enable_search_curl_cffi
+        self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
         self.default_download_headers = {'User-Agent': UserAgent().random}
@@ -86,9 +89,17 @@ class BaseMusicClient():
             default_freeproxy_settings = dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_tries=20, init_proxied_session_cfg={})
             default_freeproxy_settings.update(self.freeproxy_settings)
             self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings)
+    '''_listccimpersonates'''
+    def _listccimpersonates(self):
+        curl_cffi = optionalimport('curl_cffi')
+        root = Path(curl_cffi.__file__).resolve().parent
+        exts = {".py", ".so", ".pyd", ".dll", ".dylib"}
+        pat = re.compile(rb"\b(?:chrome|edge|safari|firefox|tor)(?:\d+[a-z_]*|_android|_ios)?\b")
+        return sorted({m.decode("utf-8", "ignore") for p in root.rglob("*") if p.suffix in exts for m in pat.findall(p.read_bytes())})
     '''_initsession'''
     def _initsession(self):
-        self.session = requests.Session()
+        curl_cffi = optionalimport('curl_cffi')
+        self.session = requests.Session() if not self.enable_curl_cffi else curl_cffi.requests.Session()
         self.session.headers = self.default_headers
         self.audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.default_download_headers), cookies=copy.deepcopy(self.default_download_cookies))
         self.quark_audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.quark_default_download_headers), cookies=copy.deepcopy(self.quark_default_download_cookies))
@@ -96,9 +107,9 @@ class BaseMusicClient():
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         raise NotImplementedError('not to be implemented')
     '''_constructuniqueworkdir'''
-    def _constructuniqueworkdir(self, keyword: str):
+    def _constructuniqueworkdir(self, keyword: str, sort_by_search_kwd_and_time: bool = True):
         time_stamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        work_dir = sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword.replace(" ", "")}'))
+        work_dir = sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword}') if sort_by_search_kwd_and_time else os.path.join(self.work_dir, self.source))
         touchdir(work_dir)
         return work_dir
     '''_removeduplicates'''
@@ -170,30 +181,41 @@ class BaseMusicClient():
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
         request_overrides = request_overrides or {}
-        try:
-            touchdir(song_info.work_dir)
-            if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
-            with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
-                resp.raise_for_status()
-                total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
+        if song_info.downloaded_contents:
+            try:
+                touchdir(song_info.work_dir)
+                total_size = song_info.downloaded_contents.__sizeof__()
                 progress.update(song_progress_id, total=total_size)
-                with open(song_info.save_path, "wb") as fp:
-                    for chunk in resp.iter_content(chunk_size=chunk_size):
-                        if not chunk: continue
-                        fp.write(chunk)
-                        downloaded_size = downloaded_size + len(chunk)
-                        if total_size > 0:
-                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
-                        else:
-                            progress.update(song_progress_id, total=downloaded_size)
-                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
-                        progress.advance(song_progress_id, len(chunk))
-                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Downloading: {downloading_text})")
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Success)")
+                with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
+                progress.advance(song_progress_id, total_size)
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
                 downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
-                self._embed_lyrics(downloaded_song_infos[-1])
-        except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Error: {err})")
+            except Exception as err:
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
+        else:
+            try:
+                touchdir(song_info.work_dir)
+                if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
+                with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
+                    resp.raise_for_status()
+                    total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
+                    progress.update(song_progress_id, total=total_size)
+                    with open(song_info.save_path, "wb") as fp:
+                        for chunk in resp.iter_content(chunk_size=chunk_size):
+                            if not chunk: continue
+                            fp.write(chunk)
+                            downloaded_size = downloaded_size + len(chunk)
+                            if total_size > 0:
+                                downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
+                            else:
+                                progress.update(song_progress_id, total=downloaded_size)
+                                downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
+                            progress.advance(song_progress_id, len(chunk))
+                            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
+                    progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
+                    downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+            except Exception as err:
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         return downloaded_song_infos
     '''_embed_lyrics'''
     def _embed_lyrics(self, song_info: SongInfo):
@@ -241,7 +263,7 @@ class BaseMusicClient():
             songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall')
             song_progress_ids, downloaded_song_infos, submitted_tasks = [], [], []
             for _, song_info in enumerate(song_infos):
-                desc = f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:10]} (Preparing)"
+                desc = f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Preparing)"
                 song_progress_ids.append(progress.add_task(desc, total=None, kind='download'))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos):
@@ -264,6 +286,7 @@ class BaseMusicClient():
     '''get'''
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
+        if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:
@@ -289,6 +312,7 @@ class BaseMusicClient():
     '''post'''
     def post(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
+        if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:

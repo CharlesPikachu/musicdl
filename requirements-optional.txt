@@ -1,3 +1,2 @@
 faster-whisper
 pyfreeproxy
-nodejs-wheel

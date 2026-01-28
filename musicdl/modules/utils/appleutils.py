@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of AppleMusicClient utils, refer to 
+    Implementation of AppleMusicClient Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -27,7 +27,7 @@ from pywidevine import PSSH, Cdm, Device
 from pywidevine.license_protocol_pb2 import WidevinePsshData
 
 
-'''CONSTANTS'''
+'''settings'''
 MEDIA_TYPE_STR_MAP = {1: "Song", 6: "Music Video"}
 MEDIA_RATING_STR_MAP = {0: "None", 1: "Explicit", 2: "Clean"}
 LEGACY_SONG_CODECS = {"aac-legacy", "aac-he-legacy"}

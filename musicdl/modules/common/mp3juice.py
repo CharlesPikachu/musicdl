@@ -35,21 +35,6 @@ class MP3JuiceMusicClient(BaseMusicClient):
         }
         self.default_headers = self.default_search_headers
         self._initsession()
-    '''_download'''
-    @usedownloadheaderscookies
-    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
-        request_overrides = request_overrides or {}
-        try:
-            touchdir(song_info.work_dir)
-            total_size = song_info.downloaded_contents.__sizeof__()
-            progress.update(song_progress_id, total=total_size)
-            with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
-            progress.advance(song_progress_id, total_size)
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
-            downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
-        except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
-        return downloaded_song_infos
     '''_getdynamicconfig'''
     def _getdynamicconfig(self, request_overrides: dict = None):
         request_overrides = request_overrides or {}
