@@ -85,6 +85,18 @@ except ImportError:
         from modules.utils import LoggerHandle
         from modules.sources import MusicClientBuilder
 
+# Helper for resources
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # In dev mode, use the parent of the current file (musicdl directory)
+        # Actually, icon.ico is in the root (one level up from this file)
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
 # Fallback if SUPPORTED_MUSIC_SOURCES is not in musicdl (e.g. older version)
 try:
     SUPPORTED_MUSIC_SOURCES
@@ -476,8 +488,14 @@ class ThemeConfigDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MusicDL GUI - 音乐下载器")
+        self.setWindowTitle("MusicDL")
         self.resize(1000, 700)
+        
+        # Set Icon
+        icon_path = resource_path("icon.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+            
         self.settings = QSettings("MusicDL", "GUI")
         
         # Setup Global Signal
@@ -992,16 +1010,16 @@ class MainWindow(QMainWindow):
 
 
         # 4. Clean Cache
-        try:
-            # Dynamically import script to avoid path issues at top level
-            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-            import clean_pkg_cache
-            clean_pkg_cache.removepycache(os.path.join(os.path.dirname(__file__), '..'))
-            if LOG_SIGNAL:
-                LOG_SIGNAL.log.emit("INFO", "System cache cleaned successfully.")
-        except Exception as e:
-             if LOG_SIGNAL:
-                 LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
+        # try:
+        #     # Dynamically import script to avoid path issues at top level
+        #     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+        #     import clean_pkg_cache
+        #     clean_pkg_cache.removepycache(os.path.join(os.path.dirname(__file__), '..'))
+        #     if LOG_SIGNAL:
+        #         LOG_SIGNAL.log.emit("INFO", "System cache cleaned successfully.")
+        # except Exception as e:
+        #      if LOG_SIGNAL:
+        #          LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
 
         return downloaded_infos
 

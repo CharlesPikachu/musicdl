@@ -3,9 +3,10 @@ echo Installing requirements...
 python -m pip install PyQt6 pyinstaller -r ..\requirements.txt
 
 echo Building Executable...
-pyinstaller --noconfirm --noconsole --onefile --windowed ^
-    --name "MusicDL_GUI" ^
+pyinstaller --noconfirm --noconsole --onefile --windowed --icon="../icon.ico" ^
+    --name "MusicDL_v2.8.6" ^
     --add-data "../musicdl;musicdl" ^
+    --add-data "../icon.ico;." ^
     --hidden-import "PyQt6" ^
     --hidden-import "requests" ^
     --hidden-import "rich" ^
@@ -47,5 +48,5 @@ pyinstaller --noconfirm --noconsole --onefile --windowed ^
     --collect-all "fake_useragent" ^
     ../musicdl/musicdl_gui.py
 
-echo Build Complete. Executable is in dist/MusicDL_GUI.exe
+echo Build Complete. Executable is in dist folder.
 pause
