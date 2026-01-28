@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <defs>
+  <!-- 引入圆体字以匹配原图风格 -->
+  <style>@import url(&#x27;https://fonts.googleapis.com/css2?family=Varela+Round&amp;display=swap&#x27;);</style>
+  <!-- 定义图标的基本形状 -->
+  <!-- 播放按钮三角形 -->
+  <path d="m215,165l70,40q10,6 0,12l-70,40q-10,6 -10,-6l0,-80q0,-12 10,-6z" id="play-triangle"/>
+  <!-- 下载箭头 -->
+  <path d="m232,260l40,0q3,0 3,3l0,42l20,0q5,0 1,5l-40,45q-4,5 -8,0l-40,-45q-4,-5 1,-5l20,0l0,-42q0,-3 3,-3z" id="dl-arrow"/>
+  <!-- 整个六边形轮廓 -->
+  <path d="m256,100l89,45q11,5 11,17l0,98q0,12 -11,17l-89,45q-11,5 -21,0l-89,-45q-11,-5 -11,-17l0,-98q0,-12 11,-17l89,-45q10,-5 21,0z" id="hexagon-base"/>
+  <!-- 遮罩层：用于创建透明缝隙 -->
+  <mask id="gap-mask">
+   <rect fill="white" height="512" id="svg_1" width="512" x="0" y="0"/>
+   <!-- 黑色代表遮挡（变透明），描边加粗以形成缝隙 -->
+   <use fill="black" href="#play-triangle" id="svg_2" stroke="black" stroke-linejoin="round" stroke-width="16"/>
+   <use fill="black" href="#dl-arrow" id="svg_3" stroke="black" stroke-linejoin="round" stroke-width="16"/>
+  </mask>
+ </defs>
+ <!-- 图标主体组 -->
+ <!-- 修正背景分割逻辑：直接定义裁切路径更简单 -->
+ <defs>
+  <clipPath id="hex-clip">
+   <use href="#hexagon-base" id="svg_4"/>
+  </clipPath>
+ </defs>
+ <!-- 图层重绘：为了精确控制颜色分割 -->
+ <!-- 图标元素 (位于顶层) -->
+ <!-- 文字部分 -->
+ <g class="layer">
+  <title>Layer 1</title>
+  <g id="svg_11" mask="url(#gap-mask)" transform="matrix(1 0 0 1 0 0) matrix(1 0 0 1 0 0) matrix(1 0 0 1 0 0) matrix(1 0 0 1 0 0) matrix(1 0 0 1 0 0)">
+   <!-- 1. 整个六边形填充满桃红色 -->
+   <use fill="#F5C7B4" href="#hexagon-base" id="svg_12"/>
+   <!-- 2. 覆盖右侧的绿色部分 -->
+   <path clip-path="url(#hex-clip)" d="m300,100l80,40l0,160l-130,40l0,-80q10,0 20,-10q20,-20 20,-50q0,-30 -20,-50q-10,-10 30,-50z" fill="#A6DDBD" id="svg_13" transform="matrix(1 0 0 1 0 0)"/>
+   <!-- 修正绿色路径形状以匹配原图 -->
+   <path clip-path="url(#hex-clip)" d="m280,80l120,60l0,210l-160,0l0,-30q40,-30 40,-70l0,-10q0,-60 40,-80l0,-40l-40,-40z" fill="#A6DDBD" id="svg_14" transform="matrix(1 0 0 1 0 0)"/>
+  </g>
+  <use fill="#F9E0A3" href="#play-triangle" id="svg_15"/>
+  <use fill="#9CC4E4" href="#dl-arrow" id="svg_16"/>
+ </g>
+</svg>
