@@ -14,7 +14,7 @@ from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.kuwoutils import KuwoMusicClientUtils
 from urllib.parse import urlencode, urlparse, parse_qs
-from ..utils import legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, lyricslisttolrc, cleanlrc, SongInfo
+from ..utils import legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, kuwolyricslisttolrc, cleanlrc, SongInfo
 
 
 '''KuwoMusicClient'''
@@ -166,7 +166,7 @@ class KuwoMusicClient(BaseMusicClient):
                     resp = self.get('http://m.kuwo.cn/newh5/singles/songinfoandlrc', params=params, **request_overrides)
                     resp.raise_for_status()
                     lyric_result: dict = resp2json(resp)
-                    lyric = cleanlrc(lyricslisttolrc(safeextractfromdict(lyric_result, ['data', 'lrclist'], [])))
+                    lyric = cleanlrc(kuwolyricslisttolrc(safeextractfromdict(lyric_result, ['data', 'lrclist'], [])))
                 except:
                     lyric_result, lyric = {}, 'NULL'
                 song_info.raw_data['lyric'] = lyric_result

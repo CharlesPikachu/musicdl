@@ -46,8 +46,8 @@ def sectolrcts(t: Union[str, float, int], centis: int = 2) -> str:
     else: return f"{(cs:=int(round(sec*100)))//6000:02d}:{(cs//100)%60:02d}.{cs%100:02d}"
 
 
-'''lyricslisttolrc'''
-def lyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyric_key: str = "lineLyric", centis: int = 2, offset: float = 0.0, skip_empty: bool = True, dedup_same_time: bool = False, join_sep: str = " / ") -> str:
+'''kuwolyricslisttolrc'''
+def kuwolyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyric_key: str = "lineLyric", centis: int = 2, offset: float = 0.0, skip_empty: bool = True, dedup_same_time: bool = False, join_sep: str = " / ") -> str:
     norm = []
     for x in items:
         lyric = str(x.get(lyric_key, "")).strip()
@@ -67,8 +67,8 @@ def lyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyri
     return "\n".join(lines)
 
 
-'''TimedLyricsParser'''
-class TimedLyricsParser:
+'''SodaTimedLyricsParser'''
+class SodaTimedLyricsParser:
     LINE_PATTERN_RE = re.compile(r"^\[(\d+),(\d+)\]")
     TOKEN_PATTERN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
     '''parsetimedlyrics'''
@@ -80,11 +80,11 @@ class TimedLyricsParser:
         for raw_line in text.splitlines():
             raw_line = raw_line.rstrip("\n")
             if not raw_line.strip(): continue
-            m = TimedLyricsParser.LINE_PATTERN_RE.match(raw_line.strip())
+            m = SodaTimedLyricsParser.LINE_PATTERN_RE.match(raw_line.strip())
             if not m: continue
             line_start, line_dur = int(m.group(1)), int(m.group(2))
             line_end, rest, tokens, pieces = line_start + line_dur, raw_line[m.end():], [], []
-            matches = list(TimedLyricsParser.TOKEN_PATTERN_RE.finditer(rest))
+            matches = list(SodaTimedLyricsParser.TOKEN_PATTERN_RE.finditer(rest))
             for i, tm in enumerate(matches):
                 offset, dur, flag, seg_start = int(tm.group(1)), int(tm.group(2)), int(tm.group(3)), tm.end()
                 seg_end = matches[i + 1].start() if i + 1 < len(matches) else len(rest)

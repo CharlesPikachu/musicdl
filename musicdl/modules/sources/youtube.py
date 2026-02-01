@@ -109,6 +109,42 @@ class YouTubeMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewithacethinker'''
+    def _parsewithacethinker(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        resp = self.get('https://www.acethinker.ai/downloader/api/get_csrf_token.php', **request_overrides)
+        resp.raise_for_status()
+        token = resp2json(resp=resp)['token']
+        # parse
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+            "accept": "application/json, text/plain, */*", "referer": "https://www.acethinker.ai/freemp3finder", "x-csrf-token": token,
+        }
+        resp = self.get(f'https://www.acethinker.ai/downloader/api/dlapinewv2.php?url=https://www.youtube.com/watch?v={song_id}', headers=headers, **request_overrides)
+        download_result: dict = resp2json(resp=resp)['res_data']
+        medias = [a for a in download_result['formats'] if isinstance(a, dict) and str(a.get('vcodec')).lower() in {"", "none"}]
+        medias = sorted(medias, key=lambda x: int(float(x.get('filesize', 0) or 0)), reverse=True)
+        for media in medias:
+            download_url: str = media.get('url')
+            if not download_url or not str(download_url).startswith('http'): continue
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
+                singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))),
+                album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext=media.get('ext', 'm4a') or 'm4a', file_size_bytes=int(float(media.get('filesize', 0) or 0)),
+                file_size=byte2mb(int(float(media.get('filesize', 0) or 0))), identifier=song_id, duration_s=download_result.get('duration'), duration=seconds2hms(download_result.get('duration')),
+                lyric='NULL', cover_url=safeextractfromdict(search_result, ['thumbnail'], "") or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], ""), download_url=download_url,
+                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            )
+            if song_info.with_valid_download_url: break
+            try: resp = self.get(f'https://www.acethinker.ai/downloader/api/newytdlapi/youtube_mp3_audio_video_downloader.php?url=https://www.youtube.com/watch?v={song_id}', headers=headers, **request_overrides); resp.raise_for_status()
+            except: continue
+            parsed_in_no_us_area = resp2json(resp=resp)
+            if not parsed_in_no_us_area.get('download_url'): continue
+            song_info.update(dict(download_url=parsed_in_no_us_area.get('download_url'), download_url_status=self.audio_link_tester.test(parsed_in_no_us_area.get('download_url'), request_overrides)))
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info
     '''_parsewithofficialapi'''
     def _parsewithofficialapi(self, search_result: dict, request_overrides: dict = None):
         request_overrides, song_id = request_overrides or {}, search_result['videoId']
@@ -169,7 +205,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or 'videoId' not in search_result: continue
                 song_info = SongInfo(source=self.source)
-                for parser in [self._parsvidewithmp3youtube, self._parsewithclipto, self._parsewithofficialapi]:
+                for parser in [self._parsvidewithmp3youtube, self._parsewithacethinker, self._parsewithclipto, self._parsewithofficialapi]:
                     try: song_info = parser(search_result, request_overrides); assert song_info.with_valid_download_url; break
                     except: continue
                 if not song_info.with_valid_download_url: continue

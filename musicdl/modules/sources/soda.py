@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+import os
 import copy
 import json_repair
 from pathlib import Path
@@ -14,7 +15,7 @@ from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..utils.sodautils import AudioDecryptor
-from ..utils import legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, cleanlrc, SongInfo, TimedLyricsParser
+from ..utils import legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, cleanlrc, SongInfo, SodaTimedLyricsParser
 
 
 '''SodaMusicClient'''
@@ -38,6 +39,7 @@ class SodaMusicClient(BaseMusicClient):
         output_filepath = Path(song_info.save_path)
         output_filepath = output_filepath.parent / f'{output_filepath.stem}.m4a'
         AudioDecryptor.decrypt(file_data=file_data, play_auth=song_info.raw_data['play_auth'], output_filepath=str(output_filepath))
+        if not os.path.samefile(song_info.save_path, str(output_filepath)): os.remove(song_info.save_path)
         return downloaded_song_infos
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
@@ -100,7 +102,7 @@ class SodaMusicClient(BaseMusicClient):
                         singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
                         album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=safeextractfromdict(audio_sorted, ['Format'], 'm4a'), file_size_bytes=safeextractfromdict(audio_sorted, ['Size'], 0), 
                         file_size=byte2mb(safeextractfromdict(audio_sorted, ['Size'], 0)), identifier=song_id, duration_s=safeextractfromdict(audio_sorted, ['Duration'], 0), duration=seconds2hms(safeextractfromdict(audio_sorted, ['Duration'], 0)), 
-                        lyric=cleanlrc(TimedLyricsParser.tolrclinelevel(TimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], "")))) or 'NULL', 
+                        lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], "")))) or 'NULL', 
                         cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', 
                         download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
