@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/pypi/v/musicdl" alt="PyPI" />
   </a>
   <a href="https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/CharlesPikachu/musicdl.svg" alt="license" />
+    <img src="https://img.shields.io/badge/license-PolyForm--Noncommercial--1.0.0-blue" alt="license" />
   </a>
   <a href="https://pypi.org/project/musicdl/">
     <img src="https://static.pepy.tech/badge/musicdl" alt="PyPI - Downloads">
@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
-- 2026-01-28: Released musicdl v2.8.9 — add an automatic song tag autofill feature, introduce shared membership APIs for additional platforms, and deploy a TuneHub hotfix.
-- 2026-01-26: Released musicdl v2.8.8 — added a new lossless music search and download site, implemented a Lanzou Cloud direct-download link parser, and performed partial code optimizations.
-- 2026-01-22: Released musicdl v2.8.7 — refactor the code for three music platforms (*i.e.*, YouTube, Joox, and Jamendo) to retrieve higher-quality audio from each platform.
+- 2026-01-31: Released musicdl v2.8.12 — refactored the terminal table rendering algorithm to better accommodate support for giant table; fixed kugou lossless api; added a new YouTube parsing endpoint.
+- 2026-01-30: Released musicdl v2.8.11 — added or enhanced search and download support for Ximalaya, Lizhi FM, and Qingting FM; fixed several known bugs.
+- 2026-01-29: Released musicdl v2.8.10 — Support batch downloading audiobooks from the same album on the Ximalaya platform; update the API interfaces for Ximalaya, Kuwo, and TuneHub; and fix some minor bugs.
 
 
 # 🎵 Introduction
@@ -71,9 +71,11 @@ A lightweight music downloader written in pure Python. Like it? ⭐ Star the rep
 
 # ⚠️ Disclaimer
 
-This project is for educational use only and is not intended for commercial purposes. It interacts with publicly available web endpoints and does not host or distribute copyrighted content.
-To access paid tracks, please purchase or subscribe to the relevant music service—do not use this project to bypass paywalls or DRM.
-If you are a rights holder and believe this repository infringes your rights, please contact me and I will promptly address it.
+This repository is provided solely for educational and research purposes. Commercial use is prohibited. 
+The software only interacts with publicly accessible web endpoints and does not host, store, mirror, or distribute any copyrighted or proprietary content. 
+No executables are distributed with this repository. Redistribution, resale, or bundling of this software (or any derivative packaged distribution) without explicit permission is strictly prohibited. 
+Access to paid, subscription, or otherwise restricted content must be obtained through authorized channels (*e.g.*, purchase or subscription via the relevant service). Use of this software to circumvent paywalls, DRM, licensing restrictions, or other access controls is strictly prohibited. 
+If you are a copyright or rights holder and believe that this repository infringes your rights, please contact me with sufficient detail (*e.g.*, relevant URLs and proof of ownership), and I will promptly investigate and take appropriate action, which may include removal of the referenced material.
 
 
 # 🎧 Supported Music Client
@@ -94,13 +96,14 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |                                          | [JooxMusicClient](https://www.joox.com/intl)                       | [JOOX (QQ音乐海外版)](https://www.joox.com/intl)                             | ✅        | ✅         | [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)            |
 |                                          | [TIDALMusicClient](https://tidal.com/)                             | [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)                       | ✅        | ✅         | [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)          |
 |                                          | [YouTubeMusicClient](https://music.youtube.com/)                   | [油管音乐](https://music.youtube.com/)                                       | ✅        | ✅         | [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)      |
-| **Audio / Radio**                        | [LizhiMusicClient](https://www.lizhi.fm/)                          | [荔枝FM](https://www.lizhi.fm/)                                              | ✅        | ✅         | [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/lizhi.py)          |
-|                                          | [MissEvanMusicClient](https://www.missevan.com/)                   | [猫耳FM](https://www.missevan.com/)                                          | ✅        | ✅         | [missevan.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/missevan.py)    |
-|                                          | [XimalayaMusicClient](https://www.ximalaya.com/)                   | [喜马拉雅](https://www.ximalaya.com/)                                        | ✅        | ✅         | [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)    |
+| **Audio / Radio**                        | [LizhiMusicClient](https://www.lizhi.fm/)                          | [荔枝FM](https://www.lizhi.fm/)                                              | ✅        | ✅         | [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/lizhi.py)       |
+|                                          | [QingtingMusicClient](https://www.qtfm.cn/)                        | [蜻蜓FM](https://www.qtfm.cn/)                                               | ✅        | ✅         | [qingting.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/qingting.py) |
+|                                          | [XimalayaMusicClient](https://www.ximalaya.com/)                   | [喜马拉雅](https://www.ximalaya.com/)                                        | ✅        | ✅         | [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/ximalaya.py) |
 | **Aggregators / Multi-Source Gateways**  | [GDStudioMusicClient](https://music.gdstudio.xyz/)                 | [GD音乐台 (Spotify, Qobuz等10个音乐源)](https://music.gdstudio.xyz/)         | ✅        | ✅         | [gdstudio.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/gdstudio.py)     |
+|                                          | [JBSouMusicClient](https://www.jbsou.cn/)                          | [煎饼搜 (QQ网易云酷我酷狗音乐源)](https://www.jbsou.cn/)                     | ✅        | ✅         | [jbsou.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/jbsou.py)           |
 |                                          | [MP3JuiceMusicClient](https://mp3juice.co/)                        | [MP3 Juice (SoundCloud+YouTube音乐源)](https://mp3juice.co/)                 | ✅        | ✅         | [mp3juice.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/mp3juice.py)     |
 |                                          | [MyFreeMP3MusicClient](https://www.myfreemp3.com.cn/)              | [MyFreeMP3 (网易云+夸克音乐源)](https://www.myfreemp3.com.cn/)               | ✅        | ✅         | [myfreemp3.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/myfreemp3.py)   |
-|                                          | [TuneHubMusicClient](https://music-dl.sayqz.com/)                  | [TuneHub音乐 (QQ网易云酷我音乐源)](https://music-dl.sayqz.com/)              | ✅        | ✅         | [tunehub.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/tunehub.py)       |
+|                                          | [TuneHubMusicClient](https://tunehub.sayqz.com/docs)               | [TuneHub音乐 (QQ网易云酷我音乐源)](https://tunehub.sayqz.com/docs)           | ✅        | ✅         | [tunehub.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/tunehub.py)       |
 | **Unofficial Download Sites / Scrapers** | [BuguyyMusicClient](https://buguyy.top/)                           | [布谷音乐](https://buguyy.top/)                                              | ✅        | ✅         | [buguyy.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/buguyy.py)        |
 |                                          | [FangpiMusicClient](https://www.fangpi.net/)                       | [放屁音乐](https://www.fangpi.net/)                                          | ✅        | ✅         | [fangpi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fangpi.py)        |
 |                                          | [FiveSongMusicClient](https://www.5song.xyz/index.html)            | [5Song无损音乐](https://www.5song.xyz/index.html)                            | ✅        | ✅         | [fivesong.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fivesong.py)    |
@@ -241,10 +244,10 @@ The demonstration is as follows,
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/screenshot.png" width="600"/>
   </div>
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.gif" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/screenshot.gif" width="600"/>
   </div>
 </div>
 <br />
@@ -464,6 +467,101 @@ If the cookies you supply belong to a non-VIP Quark account, the download speed 
 Also note that Quark Drive will first save the music file to your own Quark account (usually in the "From: Shares (来自: 分享)" folder) and then start the download.
 Therefore, if your Quark storage is insufficient, the download may fail.
 
+#### XimalayaFM and LizhiFM Audio/Radio Download
+
+Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
+By default, both modes start simultaneously, and the top few search results for each mode are shown based on the input keyword.
+
+A simple usage example is shown below,
+
+```python
+from musicdl import musicdl
+
+init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2}}
+music_client = musicdl.MusicClient(music_sources=['XimalayaMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+The result of running the code above looks like this,
+
+<div align="center">
+  <div>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/ximalayascreenshot.gif" width="600"/>
+  </div>
+</div>
+<br />
+
+You can also choose the search type yourself by setting `allowed_search_types`, for example:
+
+```python
+from musicdl import musicdl
+
+# only search by track
+init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track']}}
+# only search by album
+init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
+# instance music_client
+music_client = musicdl.MusicClient(music_sources=['XimalayaMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+# start
+music_client.startcmdui()
+```
+
+Please note that the code above only supports downloading free albums and audio. 
+If you need to download paid audio, please configure cookies in `init_music_clients_cfg`, just as you would with other music clients.
+
+#### QingtingFM Audio/Radio Download
+
+The usage for searching and downloading on the QingTing FM website is similar to Ximalaya and Lizhi FM. 
+The only thing to watch out for is how cookies are set, it differs from typical music client objects.
+
+Specifically, without logging in (*i.e.*, when you don’t need to download paid audio), you can invoke it by running `musicdl -m QingtingMusicClient` in the command line, or by calling it via the following code:
+
+```python
+from musicdl import musicdl
+
+# only search by track
+init_music_clients_cfg = {'QingtingMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track']}}
+# only search by album
+init_music_clients_cfg = {'QingtingMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
+# search by album and track
+init_music_clients_cfg = {'QingtingMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album', 'track']}}
+# instance music_client
+music_client = musicdl.MusicClient(music_sources=['QingtingMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+# start
+music_client.startcmdui()
+```
+
+When you need to download paid audio, you’ll have to capture the network traffic yourself on the [QingTing FM web client](https://www.qtfm.cn/).
+Look for an AJAX request with the keyword `auth`, its response data will look like:
+
+```python
+{
+  "errorno": 0,
+  "errormsg": "",
+  "data": {
+    "qingting_id": "xxxx",
+    "access_token": "xxx",
+    "refresh_token": "xxx",
+    "expires_in": 7200
+  }
+}
+```
+
+Or, use the script [build_cookies_for_qingtingfm.py](https://github.com/CharlesPikachu/musicdl/tree/master/scripts/build_cookies_for_qingtingfm) in this repository to retrieve it.
+
+Once you’ve obtained this data, you can configure cookies for `QingtingMusicClient` as follows:
+
+```python
+from musicdl import musicdl
+
+cookies = {"qingting_id": "xxxx", "access_token": "xxx", "refresh_token": "xxx"}
+init_music_clients_cfg = {'QingtingMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 3}}
+music_client = musicdl.MusicClient(music_sources=['QingtingMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+Of course, it’s worth noting that another prerequisite for downloading paid audio is that your account must already have permission to access (listen to) that audio.
+
 #### TIDAL High-Quality Music Download
 
 If you want to download lossless-quality music from [TIDAL](https://tidal.com/), you need to make sure that [PyAV](https://github.com/PyAV-Org/PyAV) is available or that [FFmpeg](https://www.ffmpeg.org/) is in your environment variables, 
@@ -610,7 +708,7 @@ The screenshot of the running result is as follows:
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/gdstudioscreenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/gdstudioscreenshot.png" width="600"/>
   </div>
 </div>
 <br />
@@ -639,7 +737,7 @@ from musicdl import musicdl
 
 # allowed_music_sources can be set to any subset (i.e., any combination) of ['spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic']
 init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}
-music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings)
+music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
 
@@ -680,7 +778,40 @@ The screenshot of the running result is as follows:
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/tunehubscreenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/tunehubscreenshot.png" width="600"/>
+  </div>
+</div>
+<br />
+
+#### JBSou Music Download
+
+`JBSouMusicClient`’s functionality is similar to `TuneHubMusicClient`’s. 
+Both are third-party APIs that consolidate music search and download functions from multiple platforms into a single interface.
+The key difference is that `JBSouMusicClient` focuses on searching and downloading 320 kbps MP3 audio files. 
+The list of music platforms it currently supports is as follows:
+
+| Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
+| -----------------       | -------------------                | -----------------------------------   | -------------------          |
+| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `qq`                         |
+| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
+| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`                       |
+| Kugou                   | 酷狗音乐                           | https://www.kugou.com/                | `kugou`                      |
+
+More specifically, its invocation is as follows,
+
+```python
+from musicdl import musicdl
+
+init_music_clients_cfg = {'JBSouMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['qq', 'netease', 'kuwo', 'kugou']}}
+music_client = musicdl.MusicClient(music_sources=['JBSouMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+The screenshot of the running result is as follows:
+
+<div align="center">
+  <div>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/jbsouscreenshot.png" width="600"/>
   </div>
 </div>
 <br />

@@ -7,7 +7,7 @@ from .songinfoutils import SongInfoUtils
 from .modulebuilder import BaseModuleBuilder
 from .importutils import optionalimport, optionalimportfrom
 from .logger import LoggerHandle, colorize, printtable, printfullline, smarttrunctable, cursorpickintable
-from .lyric import WhisperLRC, TimedLyricsParser, extractdurationsecondsfromlrc, lyricslisttolrc, cleanlrc
+from .lyric import WhisperLRC, SodaTimedLyricsParser, extractdurationsecondsfromlrc, kuwolyricslisttolrc, cleanlrc
 from .misc import (
     AudioLinkTester, legalizestring, touchdir, seconds2hms, byte2mb, cachecookies, resp2json, isvalidresp, safeextractfromdict, replacefile,
     usedownloadheaderscookies, useparseheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, estimatedurationwithfilesizebr,

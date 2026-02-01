@@ -38,7 +38,7 @@ class SongInfo:
     lyric: Optional[str] = None
     # cover
     cover_url: Optional[str] = None
-    # episodes, each item in episodes is SongInfo object, used by FM site like MissEvanMusicClient
+    # episodes, each item in episodes is SongInfo object, used by FM site like XimalayaMusicClient
     episodes: Optional[list[SongInfo]] = None
     # download url related variables
     download_url: Optional[Any] = None
@@ -77,10 +77,15 @@ class SongInfo:
     def fromdict(cls, data: Dict[str, Any]) -> "SongInfo":
         field_names = cls.fieldnames()
         filtered = {k: v for k, v in data.items() if k in field_names}
+        if "episodes" in filtered and filtered["episodes"] and isinstance(filtered["episodes"], list):
+            episodes = [cls.fromdict(e) if isinstance(e, dict) else e for e in filtered["episodes"]]
+            filtered["episodes"] = episodes
         return cls(**filtered)
     '''todict'''
     def todict(self) -> Dict[str, Any]:
-        return {f.name: getattr(self, f.name) for f in fields(self)}
+        converted_dict = {f.name: getattr(self, f.name) for f in fields(self)}
+        if self.episodes and isinstance(self.episodes, list): converted_dict['episodes'] = [e.todict() for e in self.episodes]
+        return converted_dict
     '''update'''
     def update(self, data: Dict[str, Any] = None, **kwargs: Any) -> "SongInfo":
         if data is None: data = {}

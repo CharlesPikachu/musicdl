@@ -124,10 +124,8 @@ Thread settings and request overrides are automatically taken from `MusicClient.
 - `musicdl.modules.sources.KugouMusicClient`
 - `musicdl.modules.sources.KuwoMusicClient`
 - `musicdl.modules.sources.KKWSMusicClient`
-- `musicdl.modules.sources.LizhiMusicClient`
 - `musicdl.modules.sources.LivePOOMusicClient`
 - `musicdl.modules.sources.MiguMusicClient`
-- `musicdl.modules.sources.MissEvanMusicClient`
 - `musicdl.modules.sources.MituMusicClient`
 - `musicdl.modules.sources.NeteaseMusicClient`
 - `musicdl.modules.sources.QianqianMusicClient`
@@ -135,14 +133,16 @@ Thread settings and request overrides are automatically taken from `MusicClient.
 - `musicdl.modules.sources.SodaMusicClient`
 - `musicdl.modules.sources.TIDALMusicClient`
 - `musicdl.modules.sources.TwoT58MusicClient`
-- `musicdl.modules.sources.XimalayaMusicClient`
 - `musicdl.modules.sources.YinyuedaoMusicClient`
 - `musicdl.modules.sources.YouTubeMusicClient`
 - `musicdl.modules.sources.ZhuolinMusicClient`
 - `musicdl.modules.common.GDStudioMusicClient`
+- `musicdl.modules.common.JBSouMusicClient`
 - `musicdl.modules.common.MP3JuiceMusicClient`
 - `musicdl.modules.common.MyFreeMP3MusicClient`
 - `musicdl.modules.common.TuneHubMusicClient`
+- `musicdl.modules.audiobooks.LizhiMusicClient`
+- `musicdl.modules.audiobooks.XimalayaMusicClient`
 
 End users usually **do not** instantiate `BaseMusicClient` directly, but instead use one of the specific clients above.
 The methods documented here describe the common behavior of all these clients.
