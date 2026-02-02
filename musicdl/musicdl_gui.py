@@ -885,11 +885,25 @@ class MainWindow(QMainWindow):
         target_dir = self.settings.value("download_path", os.path.join(os.getcwd(), 'musicdl_outputs'))
         processed_count = 0
         
+        if LOG_SIGNAL:
+            LOG_SIGNAL.log.emit("INFO", f"Processing {len(downloaded_infos)} downloaded files...")
+        
         for song_info in downloaded_infos:
             try:
-                # Original file path
-                org_path = getattr(song_info, 'save_path', None)
-                if not org_path or not os.path.exists(org_path):
+                # Original file path - use property access for SongInfo objects
+                org_path = song_info.save_path if hasattr(song_info, 'save_path') else song_info.get('save_path') if hasattr(song_info, 'get') else None
+                
+                if LOG_SIGNAL:
+                    LOG_SIGNAL.log.emit("DEBUG", f"Processing: song_name={getattr(song_info, 'song_name', 'Unknown')}, save_path={org_path}")
+                
+                if not org_path:
+                    if LOG_SIGNAL:
+                        LOG_SIGNAL.log.emit("WARNING", f"Skipping song - save_path is None or empty: {getattr(song_info, 'song_name', 'Unknown')}")
+                    continue
+                    
+                if not os.path.exists(org_path):
+                    if LOG_SIGNAL:
+                        LOG_SIGNAL.log.emit("WARNING", f"Skipping song - file does not exist at: {org_path}")
                     continue
                 
                 # Construct new name: [SongName]-[Singer]-[Source]-[Bitrate].[Ext]
@@ -922,6 +936,8 @@ class MainWindow(QMainWindow):
                 # Move/Rename
                 shutil.move(org_path, new_path)
                 processed_count += 1
+                if LOG_SIGNAL:
+                    LOG_SIGNAL.log.emit("INFO", f"Moved file to: {new_path}")
                 
                 # --- Embed Cover Art ---
                 try:

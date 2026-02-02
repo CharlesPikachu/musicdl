@@ -36,6 +36,18 @@ class TuneHubMusicClient(BaseMusicClient):
         }
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''_parseextfromurl: parse audio file extension from a URL with validation'''
+    def _parseextfromurl(self, url: str, default_ext: str = 'flac') -> str:
+        VALID_AUDIO_EXTS = {'mp3', 'flac', 'wav', 'm4a', 'aac', 'ogg', 'wma', 'ape', 'alac', 'opus'}
+        try:
+            # Remove query parameters and get the last part after '.'
+            ext = url.split('?')[0].split('.')[-1].lower()
+            # Validate: no path separators and must be a known audio extension
+            if '/' in ext or '\\' in ext or ext not in VALID_AUDIO_EXTS:
+                return default_ext
+            return ext
+        except Exception:
+            return default_ext
     '''_tunehubkuwosearch: https://tunehub.sayqz.com/api/v1/methods/kuwo/search'''
     def _tunehubkuwosearch(self, keyword: str, page: int = 1, limit: int = 20, timeout: float = 10.0):
         url = "http://search.kuwo.cn/r.s"
@@ -105,7 +117,7 @@ class TuneHubMusicClient(BaseMusicClient):
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
                             singers=legalizestring(safeextractfromdict(search_result, ['artist'], None)), album=legalizestring(safeextractfromdict(search_result, ['album'], None)),
-                            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration='-:-:-', lyric=None, cover_url=cover_url, 
+                            ext=self._parseextfromurl(str(download_url)), file_size='NULL', identifier=search_result['id'], duration='-:-:-', lyric=None, cover_url=cover_url, 
                             download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), root_source=search_result['source'],
                         )
                         if song_info.root_source in ['tencent']: song_info.root_source = 'qq'
@@ -122,7 +134,7 @@ class TuneHubMusicClient(BaseMusicClient):
                         if not download_url or not download_url.startswith('http'): continue
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['artist'], None)), 
-                            album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=safeextractfromdict(download_result, ['data', 'data', 0, 'info', 'duration'], 0),
+                            album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext=self._parseextfromurl(str(download_url)), file_size='NULL', identifier=search_result['id'], duration_s=safeextractfromdict(download_result, ['data', 'data', 0, 'info', 'duration'], 0),
                             duration=seconds2hms(safeextractfromdict(download_result, ['data', 'data', 0, 'info', 'duration'], 0)), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'data', 0, 'lyrics'], 0)), cover_url=safeextractfromdict(download_result, ['data', 'data', 0, 'cover'], 0),
                             download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), root_source=search_result['source'],
                         )
