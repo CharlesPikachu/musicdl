@@ -4,7 +4,7 @@ python -m pip install PyQt6 pyinstaller -r ..\requirements.txt
 
 echo Building Executable...
 pyinstaller --noconfirm --noconsole --onefile --windowed --icon="../icon.ico" ^
-    --name "MusicDL_v2.8.12" ^
+    --name "MusicDL_v2.9.0" ^
     --add-data "../musicdl;musicdl" ^
     --add-data "../icon.ico;." ^
     --hidden-import "PyQt6" ^
@@ -47,6 +47,7 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="../icon.ico" ^
     --hidden-import "musicdl.modules.common.mp3juice" ^
     --hidden-import "musicdl.modules.common.myfreemp3" ^
     --hidden-import "musicdl.modules.common.tunehub" ^
+    --hidden-import "musicdl.modules.sources.soundcloud" ^
     --collect-all "fake_useragent" ^
     ../musicdl/musicdl_gui.py
 
