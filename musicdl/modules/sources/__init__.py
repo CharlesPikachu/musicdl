@@ -29,6 +29,7 @@ from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .bilibili import BilibiliMusicClient
 from .yinyuedao import YinyuedaoMusicClient
+from .soundclound import SoundCloudMusicClient
 from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 
@@ -41,6 +42,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'SodaMusicClient': SodaMusicClient,
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'TIDALMusicClient': TIDALMusicClient,
+        'SoundCloudMusicClient': SoundCloudMusicClient,
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'QingtingMusicClient': QingtingMusicClient,
         # Aggregators / Multi-Source Gateways
