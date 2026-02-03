@@ -1,16 +1,92 @@
 @echo off
-echo Installing requirements...
-python -m pip install PyQt6 pyinstaller -r ..\requirements.txt
+setlocal enabledelayedexpansion
 
+:: ============================================
+:: MusicDL Windows Build Script
+:: Automatically extracts version from source
+:: ============================================
+
+echo ========================================
+echo     MusicDL Windows Build Script
+echo ========================================
+echo.
+
+:: Change to project root directory
+cd /d "%~dp0\.."
+
+:: ============================================
+:: Extract version from musicdl_gui.py
+:: ============================================
+echo Extracting version from source...
+
+:: Use dedicated Python script to extract version (avoids batch escaping issues)
+for /f "delims=" %%v in ('python "%~dp0get_version.py"') do set "VERSION=%%v"
+
+:: Fallback if extraction failed
+if "%VERSION%"=="" (
+    echo Warning: Could not extract version, using default v1.0.0
+    set "VERSION=1.0.0"
+)
+
+set "APP_NAME=MusicDL_v%VERSION%"
+echo Building: %APP_NAME%
+echo.
+
+:: ============================================
+:: Install dependencies
+:: ============================================
+echo Installing requirements...
+python -m pip install PyQt6 pyinstaller mutagen tinytag requests -q
+python -m pip install -r requirements.txt -q
+echo Done.
+echo.
+
+:: ============================================
+:: Clean previous build
+:: ============================================
+echo Cleaning previous build...
+if exist "dist\%APP_NAME%.exe" del /q "dist\%APP_NAME%.exe"
+if exist "build\%APP_NAME%" rmdir /s /q "build\%APP_NAME%"
+echo Done.
+echo.
+
+:: ============================================
+:: Build executable
+:: ============================================
 echo Building Executable...
-pyinstaller --noconfirm --noconsole --onefile --windowed --icon="../icon.ico" ^
-    --name "MusicDL_v2.9.1" ^
-    --add-data "../musicdl;musicdl" ^
-    --add-data "../icon.ico;." ^
+echo.
+
+pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
+    --name "%APP_NAME%" ^
+    --add-data "musicdl;musicdl" ^
+    --add-data "musicdl/gui;musicdl/gui" ^
+    --add-data "icon.ico;." ^
     --hidden-import "PyQt6" ^
+    --hidden-import "PyQt6.QtWidgets" ^
+    --hidden-import "PyQt6.QtCore" ^
+    --hidden-import "PyQt6.QtGui" ^
     --hidden-import "requests" ^
     --hidden-import "rich" ^
     --hidden-import "click" ^
+    --hidden-import "mutagen" ^
+    --hidden-import "mutagen.mp3" ^
+    --hidden-import "mutagen.flac" ^
+    --hidden-import "mutagen.id3" ^
+    --hidden-import "tinytag" ^
+    --hidden-import "musicdl.gui" ^
+    --hidden-import "musicdl.gui.main_window" ^
+    --hidden-import "musicdl.gui.themes" ^
+    --hidden-import "musicdl.gui.themes.manager" ^
+    --hidden-import "musicdl.gui.themes.presets" ^
+    --hidden-import "musicdl.gui.themes.stylesheet" ^
+    --hidden-import "musicdl.gui.themes.system_theme" ^
+    --hidden-import "musicdl.gui.dialogs" ^
+    --hidden-import "musicdl.gui.dialogs.source_dialog" ^
+    --hidden-import "musicdl.gui.dialogs.theme_dialog" ^
+    --hidden-import "musicdl.gui.widgets" ^
+    --hidden-import "musicdl.gui.widgets.table" ^
+    --hidden-import "musicdl.gui.workers" ^
+    --hidden-import "musicdl.gui.workers.tasks" ^
     --hidden-import "musicdl.modules.audiobooks.lizhi" ^
     --hidden-import "musicdl.modules.audiobooks.qingting" ^
     --hidden-import "musicdl.modules.audiobooks.ximalaya" ^
@@ -49,7 +125,33 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="../icon.ico" ^
     --hidden-import "musicdl.modules.common.tunehub" ^
     --hidden-import "musicdl.modules.sources.soundcloud" ^
     --collect-all "fake_useragent" ^
-    ../musicdl/musicdl_gui.py
+    musicdl/musicdl_gui.py
 
-echo Build Complete. Executable is in dist folder.
+:: ============================================
+:: Check result
+:: ============================================
+echo.
+if exist "dist\%APP_NAME%.exe" (
+    echo ========================================
+    echo     Build Successful!
+    echo ========================================
+    echo.
+    echo Output: dist\%APP_NAME%.exe
+    echo.
+    
+    :: Show file size
+    for %%A in ("dist\%APP_NAME%.exe") do (
+        set /a "size_mb=%%~zA / 1048576"
+        echo Size: !size_mb! MB
+    )
+) else (
+    echo ========================================
+    echo     Build Failed!
+    echo ========================================
+    echo Check the error messages above.
+)
+
+echo.
+echo ========================================
+endlocal
 pause
