@@ -602,6 +602,22 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(control_group)
 
+        # Playlist Panel
+        playlist_group = QGroupBox("歌单下载 (NetEase)")
+        playlist_layout = QHBoxLayout(playlist_group)
+        
+        playlist_layout.addWidget(QLabel("歌单URL:"))
+        self.playlist_url_input = QLineEdit()
+        self.playlist_url_input.setPlaceholderText("https://music.163.com/#/playlist?id=xxxxx")
+        self.playlist_url_input.returnPressed.connect(self.start_parse_playlist)
+        playlist_layout.addWidget(self.playlist_url_input, stretch=2)
+        
+        self.parse_playlist_btn = QPushButton("解析歌单")
+        self.parse_playlist_btn.clicked.connect(self.start_parse_playlist)
+        playlist_layout.addWidget(self.parse_playlist_btn)
+        
+        main_layout.addWidget(playlist_group)
+
         # Filter Panel
         filter_group = QGroupBox("筛选结果")
         filter_layout = QHBoxLayout(filter_group)
@@ -661,6 +677,7 @@ class MainWindow(QMainWindow):
 
         self.current_song_infos = {}
         self.is_searching = False
+        self.is_parsing_playlist = False
 
     def browse_path(self):
         directory = QFileDialog.getExistingDirectory(self, "选择保存目录", self.path_input.text())
@@ -690,6 +707,7 @@ class MainWindow(QMainWindow):
         if self.is_searching:
             self.is_searching = False
             self.search_btn.setText("搜索")
+            self.parse_playlist_btn.setEnabled(True)
             self.status_bar.showMessage("搜索已停止")
             return
 
@@ -701,8 +719,7 @@ class MainWindow(QMainWindow):
         
         self.is_searching = True
         self.search_btn.setText("停止")
-        # Keep enabled to allow stopping
-        # self.search_btn.setEnabled(False)
+        self.parse_playlist_btn.setEnabled(False)
         
         self.status_bar.showMessage(f"正在搜索: {keyword} ...")
         self.results_table.setSortingEnabled(False) # Disable sorting while updating
@@ -719,11 +736,49 @@ class MainWindow(QMainWindow):
             return
         self.is_searching = False
         self.search_btn.setText("搜索")
+        self.parse_playlist_btn.setEnabled(True)
         
         search_results = result['data']
-        # self.search_btn.setEnabled(True) # Always enabled now
         self.status_bar.showMessage("搜索完成")
+        self._display_song_list(search_results)
+
+    def start_parse_playlist(self):
+        """解析歌单URL并显示歌曲列表"""
+        playlist_url = self.playlist_url_input.text().strip()
+        if not playlist_url:
+            QMessageBox.warning(self, "提示", "请输入歌单URL")
+            return
         
+        self.is_parsing_playlist = True
+        self.parse_playlist_btn.setEnabled(False)
+        self.search_btn.setEnabled(False)
+        self.status_bar.showMessage(f"正在解析歌单...")
+        self.results_table.setSortingEnabled(False)
+        self.results_table.setRowCount(0)
+        self.current_song_infos = {}
+        
+        self.playlist_worker = Worker(self.music_client.parseplaylist, playlist_url)
+        self.playlist_worker.finished.connect(self.on_playlist_parsed)
+        self.playlist_worker.error.connect(self.on_worker_error)
+        self.playlist_worker.start()
+
+    def on_playlist_parsed(self, result):
+        """处理歌单解析完成"""
+        self.is_parsing_playlist = False
+        self.parse_playlist_btn.setEnabled(True)
+        self.search_btn.setEnabled(True)
+        
+        song_infos = result['data']
+        if not song_infos:
+            self.status_bar.showMessage("歌单解析失败或为空")
+            QMessageBox.warning(self, "提示", "未能解析到任何歌曲，请检查URL是否正确")
+            return
+        
+        self.status_bar.showMessage(f"解析完成，共 {len(song_infos)} 首歌曲")
+        self._display_song_list({'NeteaseMusicClient': song_infos})
+
+    def _display_song_list(self, search_results: dict):
+        """显示歌曲列表到表格中"""
         row = 0
         self.current_song_infos = {}
         id_counter = 1
@@ -878,17 +933,17 @@ class MainWindow(QMainWindow):
         self.download_worker.start()
 
     def download_and_process(self, songs_to_download):
-        # 1. Download
-        downloaded_infos = self.music_client.download(songs_to_download)
+        # 1. Download - note: download() modifies song_info objects in-place (sets save_path)
+        self.music_client.download(songs_to_download)
         
         # 2. Process Files (Rename & Move)
         target_dir = self.settings.value("download_path", os.path.join(os.getcwd(), 'musicdl_outputs'))
         processed_count = 0
         
         if LOG_SIGNAL:
-            LOG_SIGNAL.log.emit("INFO", f"Processing {len(downloaded_infos)} downloaded files...")
+            LOG_SIGNAL.log.emit("INFO", f"Processing {len(songs_to_download)} downloaded files...")
         
-        for song_info in downloaded_infos:
+        for song_info in songs_to_download:
             try:
                 # Original file path - use property access for SongInfo objects
                 org_path = song_info.save_path if hasattr(song_info, 'save_path') else song_info.get('save_path') if hasattr(song_info, 'get') else None
@@ -912,11 +967,24 @@ class MainWindow(QMainWindow):
                 source = getattr(song_info, 'source', 'Unknown').replace('MusicClient', '')
                 ext = getattr(song_info, 'ext', 'mp3')
                 
-                bitrate = getattr(song_info, 'bitrate', '')
+                bitrate = getattr(song_info, 'bitrate', None)
                 if not bitrate:
-                     bitrate = 'Unknown'
+                    # Parse bitrate from local file using TinyTag
+                    try:
+                        from tinytag import TinyTag
+                        tag = TinyTag.get(org_path)
+                        if tag.bitrate:
+                            bitrate = int(round(tag.bitrate))
+                            if LOG_SIGNAL:
+                                LOG_SIGNAL.log.emit("DEBUG", f"Parsed bitrate from file: {bitrate}kbps")
+                    except Exception as e:
+                        if LOG_SIGNAL:
+                            LOG_SIGNAL.log.emit("DEBUG", f"Failed to parse bitrate: {e}")
+                
+                if not bitrate:
+                    bitrate = 'Unknown'
                 else:
-                    bitrate = str(bitrate)
+                    bitrate = f"{bitrate}kbps"
 
                 # Sanitize filename components to avoid invalid chars
                 def sanitize(s):
@@ -938,6 +1006,10 @@ class MainWindow(QMainWindow):
                 processed_count += 1
                 if LOG_SIGNAL:
                     LOG_SIGNAL.log.emit("INFO", f"Moved file to: {new_path}")
+                
+                # Small delay to ensure file is fully released
+                import time
+                time.sleep(0.5)
                 
                 # --- Embed Cover Art ---
                 try:
@@ -1037,7 +1109,7 @@ class MainWindow(QMainWindow):
         #      if LOG_SIGNAL:
         #          LOG_SIGNAL.log.emit("ERROR", f"Cache cleanup failed: {str(e)}")
 
-        return downloaded_infos
+        return songs_to_download
 
     def on_download_finished(self, result):
         self.download_btn.setEnabled(True)
@@ -1045,12 +1117,13 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "完成", "选中的歌曲已处理完毕。\n(已自动重命名并整理到根目录)\n(已自动清理缓存)")
 
     def on_worker_error(self, error_msg):
-        if not self.is_searching:
+        if not self.is_searching and not self.is_parsing_playlist:
             return
         self.is_searching = False
+        self.is_parsing_playlist = False
         self.search_btn.setText("搜索")
-        
-        # self.search_btn.setEnabled(True)
+        self.search_btn.setEnabled(True)
+        self.parse_playlist_btn.setEnabled(True)
         self.download_btn.setEnabled(True)
         self.status_bar.showMessage("发生错误")
         QMessageBox.critical(self, "错误", f"发生意外错误: {error_msg}")
