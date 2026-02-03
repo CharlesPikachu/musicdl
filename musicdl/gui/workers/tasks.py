@@ -28,7 +28,11 @@ class GUIProgress:
     """
     
     def __init__(self, *args, **kwargs):
-        self.tasks = {}
+        self._tasks = {}
+
+    @property
+    def tasks(self):
+        return self._tasks
     
     def __enter__(self):
         return self
@@ -37,13 +41,13 @@ class GUIProgress:
         pass
     
     def add_task(self, description, total=None, **kwargs):
-        task_id = float(len(self.tasks))
-        self.tasks[task_id] = _TaskMock(description=description, total=total)
+        task_id = float(len(self._tasks))
+        self._tasks[task_id] = _TaskMock(description=description, total=total)
         return task_id
     
     def update(self, task_id, **kwargs):
-        if task_id in self.tasks:
-            t = self.tasks[task_id]
+        if task_id in self._tasks:
+            t = self._tasks[task_id]
             if 'total' in kwargs:
                 t.total = kwargs['total']
             if 'completed' in kwargs:
@@ -52,11 +56,11 @@ class GUIProgress:
                 t.description = kwargs['description']
     
     def advance(self, task_id, advance=1):
-        if task_id in self.tasks:
-            self.tasks[task_id].completed += advance
+        if task_id in self._tasks:
+            self._tasks[task_id].completed += advance
     
     def __getitem__(self, item):
-        return self.tasks.get(item, _TaskMock())
+        return self._tasks.get(item, _TaskMock())
 
 
 class _TaskMock:
