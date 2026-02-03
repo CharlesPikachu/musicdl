@@ -21,14 +21,24 @@ except ImportError:
             def __init__(self): pass
 
 
+
+class GUIProgressSignal(QObject):
+    """Signal for progress updates."""
+    # task_id, completed, total, speed, eta, description
+    progress = pyqtSignal(float, float, float, str, str, str)
+
+
 class GUIProgress:
     """
-    A dummy replacement for rich.progress.Progress.
-    Used to suppress console output in GUI mode.
+    A replacement for rich.progress.Progress that emits signals for GUI.
+    Calculates speed and ETA.
     """
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, signal: Optional[GUIProgressSignal] = None):
         self._tasks = {}
+        self.signal = signal
+        self._start_times = {}
+        self._last_update_time = {}
 
     @property
     def tasks(self):
@@ -41,23 +51,68 @@ class GUIProgress:
         pass
     
     def add_task(self, description, total=None, **kwargs):
+        import time
         task_id = float(len(self._tasks))
         self._tasks[task_id] = _TaskMock(description=description, total=total)
+        self._start_times[task_id] = time.time()
+        self._last_update_time[task_id] = time.time()
         return task_id
     
     def update(self, task_id, **kwargs):
-        if task_id in self._tasks:
-            t = self._tasks[task_id]
-            if 'total' in kwargs:
-                t.total = kwargs['total']
-            if 'completed' in kwargs:
-                t.completed = kwargs['completed']
-            if 'description' in kwargs:
-                t.description = kwargs['description']
+        if task_id not in self._tasks:
+            return
+            
+        t = self._tasks[task_id]
+        import time
+        now = time.time()
+        
+        if 'total' in kwargs:
+            t.total = kwargs['total']
+        if 'completed' in kwargs:
+            t.completed = kwargs['completed']
+        if 'description' in kwargs:
+            t.description = kwargs['description']
+        
+        # Calculate Speed and ETA
+        elapsed = now - self._start_times.get(task_id, now)
+        speed_str = "--"
+        eta_str = "--"
+        
+        if elapsed > 0 and t.completed > 0:
+            speed = t.completed / elapsed
+            # Format speed
+            if speed < 1024:
+                speed_str = f"{speed:.1f} B/s"
+            elif speed < 1024 * 1024:
+                speed_str = f"{speed/1024:.1f} KB/s"
+            else:
+                speed_str = f"{speed/1024/1024:.1f} MB/s"
+                
+            # Calc ETA
+            if t.total > 0 and speed > 0:
+                remaining_bytes = t.total - t.completed
+                eta_seconds = remaining_bytes / speed
+                if eta_seconds < 60:
+                    eta_str = f"{int(eta_seconds)}s"
+                elif eta_seconds < 3600:
+                    eta_str = f"{int(eta_seconds//60)}m {int(eta_seconds%60)}s"
+                else:
+                    eta_str = f"{int(eta_seconds//3600)}h {int((eta_seconds%3600)//60)}m"
+
+        if self.signal:
+            self.signal.progress.emit(
+                float(task_id), 
+                float(t.completed), 
+                float(t.total), 
+                speed_str, 
+                eta_str, 
+                t.description
+            )
     
     def advance(self, task_id, advance=1):
         if task_id in self._tasks:
             self._tasks[task_id].completed += advance
+            self.update(task_id) # Trigger signal update
     
     def __getitem__(self, item):
         return self._tasks.get(item, _TaskMock())
@@ -70,6 +125,7 @@ class _TaskMock:
         self.description = description
         self.total = total or 0
         self.completed = completed or 0
+        self.fields = {} # Support for .fields access if needed
 
 
 class GlobalLogSignal(QObject):

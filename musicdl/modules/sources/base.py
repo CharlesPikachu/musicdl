@@ -308,7 +308,7 @@ class BaseMusicClient():
              self.logger_handle.warning(f'BaseMusicClient._embed_lyrics >>> {song_info.song_name} (Global Error: {err})', disable_print=self.disable_print)
     '''download'''
     @usedownloadheaderscookies
-    def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None):
+    def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None, progress_handler: Progress = None):
         # init
         request_overrides = request_overrides or {}
         shortenpathsinsonginfos(song_infos=song_infos)
@@ -316,7 +316,17 @@ class BaseMusicClient():
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
         columns = [SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(), AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn()]
-        with Progress(*columns, refresh_per_second=20, expand=True) as progress:
+        
+        # Use provided progress_handler or create a new rich Progress
+        owns_progress = False
+        if progress_handler:
+            progress = progress_handler
+        else:
+            progress = Progress(*columns, refresh_per_second=20, expand=True)
+            owns_progress = True
+            progress.__enter__()
+            
+        try:
             songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall')
             song_progress_ids, downloaded_song_infos, submitted_tasks = [], [], []
             for _, song_info in enumerate(song_infos):
@@ -329,6 +339,10 @@ class BaseMusicClient():
                     progress.advance(songs_progress_id, 1)
                     num_downloaded_songs = int(progress.tasks[songs_progress_id].completed)
                     progress.update(songs_progress_id, description=f"{self.source}.download >>> completed ({num_downloaded_songs}/{len(song_infos)})")
+        
+        finally:
+            if owns_progress:
+                progress.__exit__(None, None, None)
         # logging
         if len(downloaded_song_infos) > 0:
             work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in downloaded_song_infos])))

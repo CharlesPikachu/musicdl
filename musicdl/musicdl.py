@@ -132,7 +132,7 @@ class MusicClient():
             with ThreadPoolExecutor(max_workers=max_workers) as ex:
                 return dict(ex.map(_search, self.music_sources))
     '''download'''
-    def download(self, song_infos: list[dict]):
+    def download(self, song_infos: list[dict], progress_handler=None):
         classified_song_infos = {}
         for song_info in song_infos:
             if song_info['source'] in classified_song_infos:
@@ -141,7 +141,12 @@ class MusicClient():
                 classified_song_infos[song_info['source']] = [song_info]
         all_downloaded_infos = []
         for source, source_song_infos in classified_song_infos.items():
-            self.music_clients[source].download(song_infos=source_song_infos, num_threadings=self.clients_threadings[source], request_overrides=self.requests_overrides[source])
+            self.music_clients[source].download(
+                song_infos=source_song_infos, 
+                num_threadings=self.clients_threadings[source], 
+                request_overrides=self.requests_overrides[source],
+                progress_handler=progress_handler
+            )
     '''parseplaylist'''
     def parseplaylist(self, playlist_url):
         song_infos = []
