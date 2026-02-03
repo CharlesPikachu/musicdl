@@ -27,7 +27,7 @@ from .utils import resource_path
 from .themes import ThemeManager
 from .dialogs import SourceSelectionDialog, ThemeConfigDialog
 from .widgets import SortableTableWidgetItem
-from .workers import Worker, GUILoggerHandle, GlobalLogSignal
+from .workers import Worker, GUILoggerHandle, GlobalLogSignal, GUIProgress, GUIProgressSignal
 
 # Import MusicClient
 try:
@@ -253,6 +253,30 @@ class MainWindow(QMainWindow):
         # Status Bar
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("就绪")
+        
+        # Add Progress Indicators to Status Bar
+        self.progress_label = QLabel("")
+        self.status_bar.addPermanentWidget(self.progress_label)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setFixedWidth(200)
+        self.progress_bar.setVisible(False)
+        self.status_bar.addPermanentWidget(self.progress_bar)
+    
+    def _on_progress_updated(self, task_id, completed, total, speed, eta, description):
+        """Update progress UI."""
+        if total > 0:
+            percentage = int(completed / total * 100)
+            self.progress_bar.setValue(percentage)
+            self.progress_bar.setVisible(True)
+            
+            # If it's the "overall" task (usually id 0 or large, but heuristic check)
+            if "overall" in str(task_id): # The id comes as float, might be harder to check string
+                # Our GUIProgress just uses floats. 
+                pass
+        
+        # We rely on description to know what we are updating
+        self.progress_label.setText(f"{speed} | ETA: {eta} | {description}")
     
     def _browse_path(self):
         """Open directory browser for download path."""
@@ -501,14 +525,19 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"准备下载 {len(songs_to_download)} 首歌曲...")
         self.download_btn.setEnabled(False)
         
-        self.download_worker = Worker(self._download_and_process, songs_to_download)
+        # Initialize Progress Signal
+        self.progress_signal = GUIProgressSignal()
+        self.progress_signal.progress.connect(self._on_progress_updated)
+        
+        self.download_worker = Worker(self._download_and_process, songs_to_download, self.progress_signal)
         self.download_worker.finished.connect(self._on_download_finished)
         self.download_worker.error.connect(self._on_worker_error)
         self.download_worker.start()
     
-    def _download_and_process(self, songs_to_download):
+    def _download_and_process(self, songs_to_download, progress_signal):
         """Download and process songs (runs in worker thread)."""
-        self.music_client.download(songs_to_download)
+        gui_progress = GUIProgress(signal=progress_signal)
+        self.music_client.download(songs_to_download, progress_handler=gui_progress)
         
         target_dir = self.settings.value(
             "download_path", 
@@ -652,6 +681,8 @@ class MainWindow(QMainWindow):
     def _on_download_finished(self, result):
         """Handle download completion."""
         self.download_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
+        self.progress_label.setText("")
         self.status_bar.showMessage("所有任务处理完毕")
         QMessageBox.information(
             self, "完成", 
