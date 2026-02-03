@@ -46,6 +46,7 @@ class SongInfo:
     default_download_headers: Dict[str, Any] = field(default_factory=dict)
     downloaded_contents: Optional[Any] = None
     chunk_size: Optional[int] = 1024 * 1024
+    protocol: Optional[str] = 'HTTP' # should be in {'HTTP', 'HLS'}
     @property
     def with_valid_download_url(self) -> bool:
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])

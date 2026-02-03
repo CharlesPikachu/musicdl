@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
+- 2026-02-03: Released musicdl v2.9.0 — added support for native SoundCloud search and download APIs, session cookie authentication, and batch lossless music downloads from NetEase Cloud Music playlists.
 - 2026-01-31: Released musicdl v2.8.12 — refactored the terminal table rendering algorithm to better accommodate support for giant table; fixed kugou lossless api; added a new YouTube parsing endpoint.
 - 2026-01-30: Released musicdl v2.8.11 — added or enhanced search and download support for Ximalaya, Lizhi FM, and Qingting FM; fixed several known bugs.
-- 2026-01-29: Released musicdl v2.8.10 — Support batch downloading audiobooks from the same album on the Ximalaya platform; update the API interfaces for Ximalaya, Kuwo, and TuneHub; and fix some minor bugs.
 
 
 # 🎵 Introduction
@@ -93,7 +93,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [SodaMusicClient](https://www.douyin.com/qishui/)                  | [汽水音乐](https://www.douyin.com/qishui/)                                   | ✅        | ✅         | [soda.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soda.py)                   |
 | **Global Streaming / Indie**             | [AppleMusicClient](https://music.apple.com/)                       | [苹果音乐](https://music.apple.com/)                                         | ✅        | ✅         | [apple.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/apple.py)                 |
 |                                          | [JamendoMusicClient](https://www.jamendo.com/)                     | [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                            | ✅        | ✅         | [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)             |
-|                                          | [SoundCloudMusicClient](https://soundcloud.com/discover)           | [SoundCloud (声云)](https://soundcloud.com/discover)                         | ✅        | ✅         | [soundclound.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soundclound.py)     |
+|                                          | [SoundCloudMusicClient](https://soundcloud.com/discover)           | [SoundCloud (声云)](https://soundcloud.com/discover)                         | ✅        | ✅         | [soundcloud.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soundcloud.py)       |
 |                                          | [JooxMusicClient](https://www.joox.com/intl)                       | [JOOX (QQ音乐海外版)](https://www.joox.com/intl)                             | ✅        | ✅         | [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                   |
 |                                          | [TIDALMusicClient](https://tidal.com/)                             | [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)                       | ✅        | ✅         | [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)                 |
 |                                          | [YouTubeMusicClient](https://music.youtube.com/)                   | [油管音乐](https://music.youtube.com/)                                       | ✅        | ✅         | [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)             |
@@ -263,6 +263,11 @@ Options:
   -k, --keyword TEXT              The keywords for the music search. If left
                                   empty, an interactive terminal will open
                                   automatically.
+  -p, --playlist-url, --playlist_url TEXT
+                                  Given a playlist URL, e.g., "https://music.1
+                                  63.com/#/playlist?id=7583298906", musicdl
+                                  automatically parses the playlist and
+                                  downloads all tracks in it.
   -m, --music-sources, --music_sources TEXT
                                   The music search and download sources.
                                   [default: MiguMusicClient,NeteaseMusicClient
@@ -404,6 +409,28 @@ All supported classes can be obtained by printing `MusicClientBuilder.REGISTERED
 from musicdl.modules import MusicClientBuilder
 
 print(MusicClientBuilder.REGISTERED_MODULES)
+```
+
+#### Download Playlist Items
+
+From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
+
+- [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
+
+Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
+
+```sh
+musicdl -p "https://music.163.com/#/playlist?id=7583298906" -m NeteaseMusicClient
+```
+
+Alternatively, use the following code to invoke it,
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'])
+song_infos = music_client.parseplaylist("https://music.163.com/#/playlist?id=7583298906")
+music_client.download(song_infos=song_infos)
 ```
 
 #### WhisperLRC
@@ -646,6 +673,35 @@ A simple example of searching for and downloading music from `YouTubeMusicClient
 from musicdl import musicdl
 
 music_client = musicdl.MusicClient(music_sources=['YouTubeMusicClient'])
+music_client.startcmdui()
+```
+
+#### SoundCloud Music Download
+
+musicdl lets you search for and download your favorite songs from SoundCloud. Specifically, you only need to run the following command:
+
+```
+musicdl -m SoundCloudMusicClient
+```
+
+Or you can invoke it with the following code:
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'])
+music_client.startcmdui()
+```
+
+The only thing to note is that `SoundCloudMusicClient` handles login cookies for downloading subscriber-only tracks slightly differently from the other music clients. 
+You need to capture packets (*i.e.*, sniff the network requests) from [SoundCloud’s official website](https://soundcloud.com/) yourself to obtain the *Authorization* field in the request headers, then fill it in as follows:
+
+```python
+from musicdl import musicdl
+
+cookies = {'oauth_token': 'OAuth x-xxxxxx-xxxxxxxxx-xxxxxxx'}
+init_music_clients_cfg = {'SoundCloudMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 5}}
+music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
 
