@@ -297,7 +297,7 @@ class AudioLinkTester(object):
         outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
         # HEAD probe
         try:
-            resp = self.session.head(url, allow_redirects=True, **request_overrides)
+            resp = self.session.head(url, allow_redirects=True, verify=False, **request_overrides)
             resp.raise_for_status()
             resp_headers, final_url = resp.headers, resp.url
             resp.close()
@@ -311,7 +311,7 @@ class AudioLinkTester(object):
         if outputs['file_size'] and outputs['file_size'] not in ('NULL',): return outputs
         # GETSTREAM probe
         try:
-            resp = self.session.get(url, allow_redirects=True, stream=True, **request_overrides)
+            resp = self.session.get(url, allow_redirects=True, stream=True, verify=False, **request_overrides)
             resp.raise_for_status()
             resp_headers, final_url = resp.headers, resp.url
             resp.close()
@@ -332,7 +332,7 @@ class AudioLinkTester(object):
         outputs = dict(ok=False, status=0, method="", final_url=None, ctype=None, clen=None, range=None, fmt=None, reason="")
         # HEAD test
         try:
-            resp = self.session.head(url, allow_redirects=True, **request_overrides)
+            resp = self.session.head(url, allow_redirects=True, verify=False, **request_overrides)
             clen = resp.headers.get("Content-Length")
             clen = int(clen) if clen and clen.isdigit() else None
             outputs.update(dict(status=resp.status_code, method="HEAD", final_url=str(resp.url), ctype=resp.headers.get("Content-Type"), clen=clen, range=(resp.headers.get("Accept-Ranges") or "").lower() == "bytes"))
@@ -344,7 +344,7 @@ class AudioLinkTester(object):
             outputs["reason"] = f"HEAD error: {err}"
         # RANGEGET test
         try:
-            resp = self.session.get(url, stream=True, allow_redirects=True, **request_overrides)
+            resp = self.session.get(url, stream=True, allow_redirects=True, verify=False, **request_overrides)
             outputs.update(dict(status=resp.status_code, method="RANGEGET", final_url=str(resp.url)))
             if resp.status_code not in (200, 206): outputs["reason"] = f"RANGEGET error: response status {resp.status_code}"; return outputs
             chunk = b""

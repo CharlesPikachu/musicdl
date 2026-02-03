@@ -124,6 +124,19 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.common.myfreemp3" ^
     --hidden-import "musicdl.modules.common.tunehub" ^
     --hidden-import "musicdl.modules.sources.soundcloud" ^
+    --hidden-import "urllib3" ^
+    --hidden-import "urllib3.util" ^
+    --hidden-import "urllib3.util.retry" ^
+    --hidden-import "urllib3.util.timeout" ^
+    --hidden-import "urllib3.util.ssl_" ^
+    --hidden-import "urllib3.contrib" ^
+    --hidden-import "urllib3.contrib.pyopenssl" ^
+    --hidden-import "certifi" ^
+    --hidden-import "charset_normalizer" ^
+    --hidden-import "idna" ^
+    --hidden-import "ssl" ^
+    --collect-all "rich" ^
+    --collect-all "certifi" ^
     --collect-all "fake_useragent" ^
     musicdl/musicdl_gui.py
 

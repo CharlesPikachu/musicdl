@@ -32,6 +32,28 @@ try:
 except ImportError:
     UserAgent = None
 
+# Suppress urllib3 warnings for frozen mode compatibility
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Configure requests adapters with extended timeout for frozen mode
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+def create_robust_session():
+    """Create a requests session with retry and timeout configuration for frozen mode."""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "POST", "OPTIONS"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=10, pool_maxsize=20)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
 
 '''AudioAwareColumn'''
 class AudioAwareColumn(ProgressColumn):
@@ -116,7 +138,10 @@ class BaseMusicClient():
     '''_initsession'''
     def _initsession(self):
         curl_cffi = optionalimport('curl_cffi')
-        self.session = requests.Session() if not self.enable_curl_cffi else curl_cffi.requests.Session()
+        if not self.enable_curl_cffi:
+            self.session = create_robust_session()
+        else:
+            self.session = curl_cffi.requests.Session()
         self.session.headers = self.default_headers
         self.audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.default_download_headers), cookies=copy.deepcopy(self.default_download_cookies))
         self.quark_audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.quark_default_download_headers), cookies=copy.deepcopy(self.quark_default_download_cookies))
@@ -329,6 +354,9 @@ class BaseMusicClient():
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
+        # Default timeout and verify settings for frozen mode compatibility
+        if 'timeout' not in kwargs: kwargs['timeout'] = (10, 30)
+        if 'verify' not in kwargs: kwargs['verify'] = False
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:
@@ -347,6 +375,9 @@ class BaseMusicClient():
     def post(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
+        # Default timeout and verify settings for frozen mode compatibility
+        if 'timeout' not in kwargs: kwargs['timeout'] = (10, 30)
+        if 'verify' not in kwargs: kwargs['verify'] = False
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:

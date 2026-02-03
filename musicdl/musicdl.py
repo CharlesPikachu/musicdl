@@ -146,8 +146,18 @@ class MusicClient():
     def parseplaylist(self, playlist_url):
         song_infos = []
         for source in list(self.music_clients.keys()):
-            try: song_infos = self.music_clients[source].parseplaylist(playlist_url); assert song_infos and len(song_infos) > 0
-            except: continue
+            try:
+                self.logger_handle.info(f'MusicClient.parseplaylist >>> Trying source: {source}')
+                result = self.music_clients[source].parseplaylist(playlist_url)
+                self.logger_handle.info(f'MusicClient.parseplaylist >>> {source} returned {len(result) if result else 0} songs')
+                if result and len(result) > 0:
+                    song_infos = result
+                    self.logger_handle.info(f'MusicClient.parseplaylist >>> Successfully parsed {len(song_infos)} songs from {source}')
+                    break  # CRITICAL: Break after first successful parse
+            except Exception as e:
+                self.logger_handle.error(f'MusicClient.parseplaylist >>> {source} failed: {e}')
+                continue
+        self.logger_handle.info(f'MusicClient.parseplaylist >>> Final result: {len(song_infos)} songs')
         return (song_infos or [])
     '''processinputs'''
     def processinputs(self, input_tip='', prefix: str = '\n'):
