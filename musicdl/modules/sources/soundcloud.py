@@ -28,8 +28,8 @@ class SoundCloudMusicClient(BaseMusicClient):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
         }
         self.default_headers = self.default_search_headers
-        if self.default_search_cookies: self.default_search_headers.update({'Authorization': f'OAuth {self.default_cookies["oauth_token"]}'})
-        if self.default_download_cookies: self.default_download_headers.update({'Authorization': f'OAuth {self.default_cookies["oauth_token"]}'})
+        if self.default_search_cookies: self.default_search_headers.update({'Authorization': self.default_cookies["oauth_token"]})
+        if self.default_download_cookies: self.default_download_headers.update({'Authorization': self.default_cookies["oauth_token"]})
         self._initsession()
     '''_updateclientid'''
     def _updateclientid(self, request_overrides: dict = None):
@@ -107,17 +107,26 @@ class SoundCloudMusicClient(BaseMusicClient):
                         download_result = resp2json(resp=resp)
                         download_url = download_result.get('url')
                         if not download_url or not str(download_url).startswith('http'): continue
+                    if str(protocol).lower() in {'hls'}:
+                        try: resp = self.session.head(download_url, **request_overrides); resp.raise_for_status()
+                        except Exception: continue
+                        download_url_status = {'ok': True}
+                    else:
+                        download_url_status = self.audio_link_tester.test(download_url, request_overrides)
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
                         singers=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'artist'], None) or safeextractfromdict(search_result, ['user', 'username'], None)),
                         album=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'album_title'], None)), ext=ext, file_size='NULL', identifier=search_result['id'],
-                        duration_s=safeextractfromdict(search_result, ['duration'], 0), duration=seconds2hms(safeextractfromdict(search_result, ['duration'], 0)), lyric='NULL',
-                        cover_url=search_result.get('artwork_url'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                        duration_s=int(float(safeextractfromdict(search_result, ['duration'], 0)) / 1000), duration=seconds2hms(int(float(safeextractfromdict(search_result, ['duration'], 0)) / 1000)), 
+                        lyric='NULL', cover_url=search_result.get('artwork_url'), download_url=download_url, download_url_status=download_url_status
                     )
                     if not song_info.with_valid_download_url: continue
-                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
+                    if str(protocol).lower() in {'hls'}:
+                        song_info.protocol, song_info.file_size = 'HLS', 'HLS'
+                    else:
+                        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+                        song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
                     if song_info.with_valid_download_url: break
                 if not song_info.with_valid_download_url: continue
                 # --append to song_infos

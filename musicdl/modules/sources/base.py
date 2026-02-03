@@ -26,7 +26,7 @@ from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
-from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
 
 
 '''AudioAwareColumn'''
@@ -41,6 +41,10 @@ class AudioAwareColumn(ProgressColumn):
             completed = int(task.completed)
             total = int(task.total) if task.total is not None else 0
             return Text(f"{completed}/{total} audios")
+        elif kind == "hls":
+            completed = int(task.completed)
+            total = int(task.total) if task.total is not None else 0
+            return Text(f"{completed}/{total} segments")
         else:
             return self._download_col.render(task)
 
@@ -184,7 +188,19 @@ class BaseMusicClient():
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list[SongInfo] = [], progress: Progress = None, song_progress_id: int = 0):
         request_overrides = request_overrides or {}
-        if song_info.downloaded_contents:
+        if song_info.protocol.upper() in {'HLS'}:
+            try:
+                self._autosetproxies()
+                hls_downloader = HLSDownloader(
+                    output_dir=song_info.work_dir, proxies=request_overrides.pop('proxies', None) or self.session.proxies, headers=song_info.default_download_headers or request_overrides.pop('headers', {}) or self.default_headers,
+                    cookies=request_overrides.pop('cookies', {}) or self.default_cookies, logger_handle=self.logger_handle, verify_tls=request_overrides.pop('verify', True), timeout=request_overrides.pop('timeout', (10, 30)),
+                    disable_print=self.disable_print, request_overrides=request_overrides
+                )
+                hls_downloader.download(song_info.download_url, song_info.save_path, quality='best', keep_segments=False, temp_subdir=str(song_info.identifier), progress=progress, progress_id=song_progress_id)
+                downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+            except Exception as err:
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
+        elif song_info.protocol.upper() in {'HTTP'} and song_info.downloaded_contents:
             try:
                 touchdir(song_info.work_dir)
                 total_size = song_info.downloaded_contents.__sizeof__()
@@ -195,7 +211,7 @@ class BaseMusicClient():
                 downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
             except Exception as err:
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
-        else:
+        elif song_info.protocol.upper() in {'HTTP'}:
             try:
                 touchdir(song_info.work_dir)
                 if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
@@ -259,9 +275,7 @@ class BaseMusicClient():
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
-        columns = [
-            SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(), AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
-        ]
+        columns = [SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(), AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn()]
         with Progress(*columns, refresh_per_second=20, expand=True) as progress:
             songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall')
             song_progress_ids, downloaded_song_infos, submitted_tasks = [], [], []
@@ -286,6 +300,16 @@ class BaseMusicClient():
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
         # return
         return downloaded_song_infos
+    '''parseplaylist'''
+    def parseplaylist(self, playlist_url: str):
+        raise NotImplementedError(f'Not supported now to parse playlist from {self.source}')
+    '''_autosetproxies'''
+    def _autosetproxies(self):
+        if self.auto_set_proxies:
+            try: self.session.proxies = self.proxied_session_client.getrandomproxy()
+            except Exception as err: self.logger_handle.error(f'{self.source}._autosetproxies >>> freeproxy lib failed to auto fetch proxies (Error: {err})', disable_print=self.disable_print); self.session.proxies = {}
+        else:
+            self.session.proxies = {}
     '''get'''
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
@@ -295,21 +319,10 @@ class BaseMusicClient():
             if not self.maintain_session:
                 self._initsession()
                 if self.random_update_ua: self.session.headers.update({'User-Agent': UserAgent().random})
-            if self.auto_set_proxies:
-                try:
-                    self.session.proxies = self.proxied_session_client.getrandomproxy()
-                except Exception as err:
-                    self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err})', disable_print=self.disable_print)
-                    self.session.proxies = {}
-            else:
-                self.session.proxies = {}
+            self._autosetproxies()
             proxies = kwargs.pop('proxies', None) or self.session.proxies
-            try:
-                resp = self.session.get(url, proxies=proxies, **kwargs)
-                resp.raise_for_status()
-            except Exception as err:
-                self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err})', disable_print=self.disable_print)
-                continue
+            try: (resp := self.session.get(url, proxies=proxies, **kwargs)).raise_for_status()
+            except Exception as err: self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err}; status={getattr(locals().get("resp"), "status_code", None)})', disable_print=self.disable_print); continue
             return resp
         return resp
     '''post'''
@@ -321,21 +334,10 @@ class BaseMusicClient():
             if not self.maintain_session:
                 self._initsession()
                 if self.random_update_ua: self.session.headers.update({'User-Agent': UserAgent().random})
-            if self.auto_set_proxies:
-                try:
-                    self.session.proxies = self.proxied_session_client.getrandomproxy()
-                except Exception as err:
-                    self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err})', disable_print=self.disable_print)
-                    self.session.proxies = {}
-            else:
-                self.session.proxies = {}
+            self._autosetproxies()
             proxies = kwargs.pop('proxies', None) or self.session.proxies
-            try:
-                resp = self.session.post(url, proxies=proxies, **kwargs)
-                resp.raise_for_status()
-            except Exception as err:
-                self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err})', disable_print=self.disable_print)
-                continue
+            try: (resp := self.session.post(url, proxies=proxies, **kwargs)).raise_for_status()
+            except Exception as err: self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err}; status={getattr(locals().get("resp"), "status_code", None)})', disable_print=self.disable_print); continue
             return resp
         return resp
     '''_savetopkl'''

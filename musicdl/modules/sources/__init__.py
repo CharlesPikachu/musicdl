@@ -29,7 +29,7 @@ from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .bilibili import BilibiliMusicClient
 from .yinyuedao import YinyuedaoMusicClient
-from .soundclound import SoundCloudMusicClient
+from .soundcloud import SoundCloudMusicClient
 from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 

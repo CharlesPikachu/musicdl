@@ -6,6 +6,7 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import re
 import json
 import copy
@@ -13,9 +14,12 @@ import base64
 import random
 import warnings
 from .base import BaseMusicClient
-from rich.progress import Progress
+from pathvalidate import sanitize_filepath
+from urllib.parse import urlparse, parse_qs
+from ..utils.hosts import NETEASE_MUSIC_HOSTS, hostmatchessuffix, obtainhostname
 from ..utils.neteaseutils import EapiCryptoUtils, MUSIC_QUALITIES, DEFAULT_COOKIES
-from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
+from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, touchdir, cleanlrc, SongInfo
 warnings.filterwarnings('ignore')
 
 
@@ -246,4 +250,31 @@ class NeteaseMusicClient(BaseMusicClient):
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
+        return song_infos
+    '''parseplaylist'''
+    @usesearchheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        hostname = obtainhostname(url=playlist_url)
+        if not hostname or not hostmatchessuffix(hostname, NETEASE_MUSIC_HOSTS): return []
+        playlist_id = parse_qs(urlparse(urlparse(playlist_url).fragment).query, keep_blank_values=True).get('id')[0]
+        resp = self.post('https://music.163.com/api/v6/playlist/detail', data={'id': playlist_id}, **request_overrides)
+        resp.raise_for_status()
+        playlist_results = resp2json(resp=resp)
+        track_ids, song_infos = [str(t['id']) for t in (safeextractfromdict(playlist_results, ['playlist', 'trackIds'], []) or [])], []
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
+            for idx, track_id in enumerate(track_ids):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
+                try: song_info = self._parsewithcggapi({'id': track_id}, request_overrides=request_overrides)
+                except: continue
+                song_infos.append(song_info)
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(track_ids)})")
+        song_infos = self._removeduplicates(song_infos=song_infos)
+        work_dir = self._constructuniqueworkdir(keyword=playlist_id)
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
         return song_infos

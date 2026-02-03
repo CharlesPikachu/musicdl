@@ -141,26 +141,24 @@ class MusicClient():
                 classified_song_infos[song_info['source']] = [song_info]
         all_downloaded_infos = []
         for source, source_song_infos in classified_song_infos.items():
-            res = self.music_clients[source].download(
-                song_infos=source_song_infos, num_threadings=self.clients_threadings[source], request_overrides=self.requests_overrides[source]
-            )
-            if res:
-                all_downloaded_infos.extend(res)
-        return all_downloaded_infos
+            self.music_clients[source].download(song_infos=source_song_infos, num_threadings=self.clients_threadings[source], request_overrides=self.requests_overrides[source])
+    '''parseplaylist'''
+    def parseplaylist(self, playlist_url):
+        song_infos = []
+        for source in list(self.music_clients.keys()):
+            try: song_infos = self.music_clients[source].parseplaylist(playlist_url); assert song_infos and len(song_infos) > 0
+            except: continue
+        return (song_infos or [])
     '''processinputs'''
     def processinputs(self, input_tip='', prefix: str = '\n'):
         # accept user inputs
         user_input = input(prefix + input_tip)
         # quit
-        if user_input.lower() == 'q':
-            self.logger_handle.info('Goodbye — thanks for using musicdl; come back anytime!')
-            sys.exit()
+        if user_input.lower() == 'q': self.logger_handle.info('Goodbye — thanks for using musicdl; come back anytime!'); sys.exit()
         # restart
-        elif user_input.lower() == 'r':
-            self.startcmdui()
+        elif user_input.lower() == 'r': self.startcmdui()
         # common inputs
-        else:
-            return user_input
+        else: return user_input
     '''str'''
     def __str__(self):
         return 'Welcome to use musicdl!\nYou can visit https://github.com/CharlesPikachu/musicdl for more details.'
@@ -171,6 +169,9 @@ class MusicClient():
 @click.version_option()
 @click.option(
     '-k', '--keyword', default=None, help='The keywords for the music search. If left empty, an interactive terminal will open automatically.', type=str, show_default=True,
+)
+@click.option(
+    '-p', '--playlist-url', '--playlist_url', default=None, help='Given a playlist URL, e.g., "https://music.163.com/#/playlist?id=7583298906", musicdl automatically parses the playlist and downloads all tracks in it.', type=str, show_default=True,
 )
 @click.option(
     '-m', '--music-sources', '--music_sources', default=','.join(DEFAULT_MUSIC_SOURCES), help='The music search and download sources.', type=str, show_default=True, 
@@ -187,7 +188,9 @@ class MusicClient():
 @click.option(
     '-s', '--search-rules', '--search_rules', default=None, help='Search rules for each music client as a JSON string.', type=str, show_default=True,
 )
-def MusicClientCMD(keyword: str, music_sources: str, init_music_clients_cfg: str, requests_overrides: str, clients_threadings: str, search_rules: str):
+def MusicClientCMD(keyword: str, playlist_url: str, music_sources: str, init_music_clients_cfg: str, requests_overrides: str, clients_threadings: str, search_rules: str):
+    # parse playlist url
+    assert keyword is None or playlist_url is None, '"playlist_url" and "keyword" could be set simultaneously'
     # load json string
     safe_load_func = lambda s: (json_repair.loads(s) or {}) if s else {}
     init_music_clients_cfg = safe_load_func(init_music_clients_cfg)
@@ -197,9 +200,13 @@ def MusicClientCMD(keyword: str, music_sources: str, init_music_clients_cfg: str
     # instance music client
     music_sources = music_sources.replace(' ', '').split(',')
     music_client = MusicClient(music_sources=music_sources, init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings, requests_overrides=requests_overrides, search_rules=search_rules)
-    # switch according to keyword
-    if keyword is None:
+    # switch according to keyword and playlist_url
+    if (keyword is None) and (playlist_url is None):
         music_client.startcmdui()
+    elif playlist_url is not None:
+        print(music_client)
+        song_infos = music_client.parseplaylist(playlist_url)
+        music_client.download(song_infos=song_infos)
     else:
         print(music_client)
         search_results = music_client.search(keyword=keyword)
