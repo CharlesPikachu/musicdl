@@ -84,22 +84,36 @@ class GUILoggerHandle(LoggerHandle):
     
     # Class-level signal reference (set by MainWindow)
     _log_signal: Optional[GlobalLogSignal] = None
+    # Class-level log level (shared by all instances)
+    _log_level: int = logging.WARNING
     
     def __init__(self):
         super().__init__()
-        self.log_level = logging.WARNING
+    
+    @property
+    def log_level(self):
+        return GUILoggerHandle._log_level
+    
+    @log_level.setter
+    def log_level(self, value):
+        GUILoggerHandle._log_level = value
     
     @classmethod
     def set_log_signal(cls, signal: GlobalLogSignal):
         """Set the global log signal for all instances."""
         cls._log_signal = signal
     
+    @classmethod
+    def set_log_level(cls, level: int):
+        """Set the global log level for all instances."""
+        cls._log_level = level
+    
     def _emit(self, level: int, message: str):
         if self._log_signal:
             self._log_signal.log.emit(logging.getLevelName(level), str(message))
     
     def log(self, level: int, message: str):
-        if level < self.log_level:
+        if level < self._log_level:
             return
         self._emit(level, message)
     

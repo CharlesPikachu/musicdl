@@ -44,7 +44,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.post('https://wyapi-eo.toubiec.cn/api/getSongUrl', json={'id': song_id, 'level': quality}, timeout=10, verify=False, **request_overrides)
+                resp = self.post('https://wyapi-eo.toubiec.cn/api/getSongUrl', json={'id': song_id, 'level': quality}, timeout=30, verify=False, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if ('data' not in download_result) or (not download_result['data']): continue
@@ -75,7 +75,7 @@ class NeteaseMusicClient(BaseMusicClient):
         for quality in MUSIC_QUALITIES:
             for prefix in ['api-v2', 'api-v1', 'api', 'player']:
                 try:
-                    resp = self.get(url=f'https://{prefix}.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=10, **request_overrides)
+                    resp = self.get(url=f'https://{prefix}.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=30, **request_overrides)
                     resp.raise_for_status()
                     download_result = resp2json(resp=resp)
                     if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
@@ -106,7 +106,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(f'https://api.bugpk.com/api/163_music?ids={song_id}&level={quality}&type=json', timeout=10, **request_overrides)
+                resp = self.get(f'https://api.bugpk.com/api/163_music?ids={song_id}&level={quality}&type=json', timeout=30, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if 'url' not in download_result or (safe_fetch_filesize_func(download_result) < 1): continue
@@ -134,10 +134,13 @@ class NeteaseMusicClient(BaseMusicClient):
         request_overrides, song_id, song_info = request_overrides or {}, search_result['id'], SongInfo(source=self.source)
         REQUEST_KEYS = ['c2stOTUwZTc4MTNjMzhjMmUzMWQzOWQ4NzlkMzIwNDg4OTU=', 'c2stNjJjZGIwM2UyMjcwZWIzOTY4Y2NhNzg4MTM5OWY0MTI=']
         # parse
-        resp = self.get(f'https://apii.xianyuw.cn/api/v1/163-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', **request_overrides)
-        resp.raise_for_status()
-        download_result = resp2json(resp=resp)
-        download_url: str = download_result['data']['url']
+        try:
+            resp = self.get(f'https://apii.xianyuw.cn/api/v1/163-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', timeout=30, **request_overrides)
+            resp.raise_for_status()
+            download_result = resp2json(resp=resp)
+            download_url: str = download_result['data']['url']
+        except:
+            return song_info
         if not download_url or not download_url.startswith('http'): return song_info
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': 'hires'}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)),
@@ -157,7 +160,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(url=f'https://www.tmetu.cn/api/music/api.php?miss=songAll&id={song_id}&level={quality}&withLyric=true', timeout=10, **request_overrides)
+                resp = self.get(url=f'https://www.tmetu.cn/api/music/api.php?miss=songAll&id={song_id}&level={quality}&withLyric=true', timeout=30, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
             except:
@@ -181,13 +184,16 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewithcyruiapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id = request_overrides or {}, search_result['id']
-        resp = self.get(f'https://blog.cyrui.cn/netease/api/getSongDetail.php?id={song_id}', **request_overrides)
-        resp.raise_for_status()
-        download_result = resp2json(resp=resp)
+        try:
+            resp = self.get(f'https://blog.cyrui.cn/netease/api/getSongDetail.php?id={song_id}', timeout=30, **request_overrides)
+            resp.raise_for_status()
+            download_result = resp2json(resp=resp)
+        except:
+            return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(url=f'https://blog.cyrui.cn/netease/api/getMusicUrl.php?id={song_id}&level={quality}', timeout=10, **request_overrides)
+                resp = self.get(url=f'https://blog.cyrui.cn/netease/api/getMusicUrl.php?id={song_id}&level={quality}', timeout=30, **request_overrides)
                 resp.raise_for_status()
                 download_result['getMusicUrl'] = resp2json(resp=resp)
             except:
@@ -211,7 +217,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcggapi, self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithxianyuwapi, self._parsewithbugpkapi]:
+        for imp_func in [self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi, self._parsewithxianyuwapi, self._parsewithbugpkapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -311,27 +317,90 @@ class NeteaseMusicClient(BaseMusicClient):
     '''parseplaylist'''
     @usesearchheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        import sys
+        import ssl
+        is_frozen = getattr(sys, 'frozen', False)
+        
         request_overrides = request_overrides or {}
+        
+        # Debug: Log frozen mode status
+        self.logger_handle.info(f'{self.source}.parseplaylist >>> Frozen mode: {is_frozen}', disable_print=self.disable_print)
+        self.logger_handle.info(f'{self.source}.parseplaylist >>> Python version: {sys.version}', disable_print=self.disable_print)
+        self.logger_handle.info(f'{self.source}.parseplaylist >>> SSL version: {ssl.OPENSSL_VERSION}', disable_print=self.disable_print)
+        
         hostname = obtainhostname(url=playlist_url)
-        if not hostname or not hostmatchessuffix(hostname, NETEASE_MUSIC_HOSTS): return []
-        playlist_id = parse_qs(urlparse(urlparse(playlist_url).fragment).query, keep_blank_values=True).get('id')[0]
-        resp = self.post('https://music.163.com/api/v6/playlist/detail', data={'id': playlist_id}, **request_overrides)
-        resp.raise_for_status()
-        playlist_results = resp2json(resp=resp)
-        track_ids, song_infos = [str(t['id']) for t in (safeextractfromdict(playlist_results, ['playlist', 'trackIds'], []) or [])], []
+        if not hostname or not hostmatchessuffix(hostname, NETEASE_MUSIC_HOSTS):
+            self.logger_handle.error(f'{self.source}.parseplaylist >>> Invalid hostname: {hostname}', disable_print=self.disable_print)
+            return []
+        
+        try:
+            playlist_id = parse_qs(urlparse(urlparse(playlist_url).fragment).query, keep_blank_values=True).get('id')[0]
+            self.logger_handle.info(f'{self.source}.parseplaylist >>> Parsed playlist ID: {playlist_id}', disable_print=self.disable_print)
+        except Exception as err:
+            self.logger_handle.error(f'{self.source}.parseplaylist >>> Failed to parse playlist URL (Error: {err})', disable_print=self.disable_print)
+            return []
+        
+        # Debug: Test basic connectivity
+        try:
+            import socket
+            socket.setdefaulttimeout(10)
+            test_sock = socket.create_connection(("music.163.com", 443), timeout=10)
+            test_sock.close()
+            self.logger_handle.info(f'{self.source}.parseplaylist >>> Socket connectivity to music.163.com: OK', disable_print=self.disable_print)
+        except Exception as sock_err:
+            self.logger_handle.error(f'{self.source}.parseplaylist >>> Socket connectivity test failed: {sock_err}', disable_print=self.disable_print)
+        
+        try:
+            self.logger_handle.info(f'{self.source}.parseplaylist >>> Fetching playlist detail from API...', disable_print=self.disable_print)
+            resp = self.post('https://music.163.com/api/v6/playlist/detail', data={'id': playlist_id}, timeout=30, **request_overrides)
+            resp.raise_for_status()
+            playlist_results = resp2json(resp=resp)
+            self.logger_handle.info(f'{self.source}.parseplaylist >>> Playlist detail fetched successfully', disable_print=self.disable_print)
+        except Exception as err:
+            self.logger_handle.error(f'{self.source}.parseplaylist >>> Failed to fetch playlist detail (Error: {err})', disable_print=self.disable_print)
+            return []
+        
+        track_ids = [str(t['id']) for t in (safeextractfromdict(playlist_results, ['playlist', 'trackIds'], []) or [])]
+        song_infos = []
+        
+        if not track_ids:
+            self.logger_handle.error(f'{self.source}.parseplaylist >>> No track IDs found in playlist', disable_print=self.disable_print)
+            return []
+        
+        self.logger_handle.info(f'{self.source}.parseplaylist >>> Found {len(track_ids)} tracks, starting to parse...', disable_print=self.disable_print)
+        
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
+            
+            api_names = ['tmetu', 'cyrui', 'xiaoqin', 'cgg']
             for idx, track_id in enumerate(track_ids):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
-                for third_part_api in [self._parsewithcggapi, self._parsewithtmetuapi, self._parsewithcyruiapi]:
+                
+                song_parsed = False
+                for api_idx, third_part_api in enumerate([self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi]):
                     try:
+                        self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1}/{len(track_ids)} (ID: {track_id}): Trying {api_names[api_idx]} API...', disable_print=self.disable_print)
                         song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)
-                        if song_info.with_valid_download_url: song_infos.append(song_info); break
-                    except:
+                        if song_info.with_valid_download_url:
+                            self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1} parsed successfully via {api_names[api_idx]}', disable_print=self.disable_print)
+                            song_infos.append(song_info)
+                            song_parsed = True
+                            break
+                        else:
+                            self.logger_handle.warning(f'{self.source}.parseplaylist >>> Track {idx+1}: {api_names[api_idx]} returned no valid URL', disable_print=self.disable_print)
+                    except Exception as api_err:
+                        self.logger_handle.error(f'{self.source}.parseplaylist >>> Track {idx+1}: {api_names[api_idx]} failed with error: {api_err}', disable_print=self.disable_print)
                         continue
+                
+                if not song_parsed:
+                    self.logger_handle.warning(f'{self.source}.parseplaylist >>> Track {idx+1} (ID: {track_id}): All APIs failed', disable_print=self.disable_print)
+            
             main_process_context.advance(main_progress_id, 1)
             main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(track_ids)})")
+        
+        self.logger_handle.info(f'{self.source}.parseplaylist >>> Parsing complete. Successfully parsed {len(song_infos)}/{len(track_ids)} tracks', disable_print=self.disable_print)
+        
         song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=playlist_id)
         for song_info in song_infos:
