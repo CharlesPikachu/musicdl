@@ -36,8 +36,8 @@ echo.
 :: Install dependencies
 :: ============================================
 echo Installing requirements...
-python -m pip install PyQt6 pyinstaller mutagen tinytag requests -q
-python -m pip install -r requirements.txt -q
+:: python -m pip install PyQt6 pyinstaller mutagen tinytag requests -q
+:: python -m pip install -r requirements.txt -q
 echo Done.
 echo.
 

@@ -22,11 +22,15 @@ from mutagen.flac import FLAC
 from datetime import datetime
 from rich.progress import Task
 from collections import defaultdict
-from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
 from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
+
+try:
+    from fake_useragent import UserAgent
+except ImportError:
+    UserAgent = None
 
 
 '''AudioAwareColumn'''
@@ -78,8 +82,16 @@ class BaseMusicClient():
         self.enable_curl_cffi = self.enable_search_curl_cffi
         self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
         # init requests.Session
-        self.default_search_headers = {'User-Agent': UserAgent().random}
-        self.default_download_headers = {'User-Agent': UserAgent().random}
+        self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
+        # init requests.Session
+        try:
+            self.default_search_headers = {'User-Agent': UserAgent().random}
+        except:
+            self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        try:
+            self.default_download_headers = {'User-Agent': UserAgent().random}
+        except:
+            self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
         self.quark_default_download_headers = {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400',
             'origin': 'https://pan.quark.cn', 'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9', 'cookie': cookies2string(self.quark_parser_config.get('cookies', '')),
@@ -215,9 +227,12 @@ class BaseMusicClient():
             try:
                 touchdir(song_info.work_dir)
                 if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
+                # Add timeout to prevent hanging downloads
+                if 'timeout' not in request_overrides: request_overrides['timeout'] = (10, 30)
                 with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
                     resp.raise_for_status()
-                    total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
+                    # Increase chunk_size to 64KB for better performance on Windows
+                    total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 65536), 0
                     progress.update(song_progress_id, total=total_size)
                     with open(song_info.save_path, "wb") as fp:
                         for chunk in resp.iter_content(chunk_size=chunk_size):
@@ -318,7 +333,10 @@ class BaseMusicClient():
         for _ in range(self.max_retries):
             if not self.maintain_session:
                 self._initsession()
-                if self.random_update_ua: self.session.headers.update({'User-Agent': UserAgent().random})
+                try:
+                    if self.random_update_ua: self.session.headers.update({'User-Agent': UserAgent().random})
+                except:
+                    pass
             self._autosetproxies()
             proxies = kwargs.pop('proxies', None) or self.session.proxies
             try: (resp := self.session.get(url, proxies=proxies, **kwargs)).raise_for_status()
@@ -333,7 +351,10 @@ class BaseMusicClient():
         for _ in range(self.max_retries):
             if not self.maintain_session:
                 self._initsession()
-                if self.random_update_ua: self.session.headers.update({'User-Agent': UserAgent().random})
+                try:
+                    if self.random_update_ua: self.session.headers.update({'User-Agent': UserAgent().random})
+                except:
+                    pass
             self._autosetproxies()
             proxies = kwargs.pop('proxies', None) or self.session.proxies
             try: (resp := self.session.post(url, proxies=proxies, **kwargs)).raise_for_status()
