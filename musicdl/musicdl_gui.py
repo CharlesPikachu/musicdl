@@ -11,18 +11,12 @@ import os
 # --- Patch rich.progress BEFORE importing musicdl ---
 # This prevents console output in GUI mode
 import rich.progress
-from gui.workers import GUIProgress
+from musicdl.gui.workers import GUIProgress
 rich.progress.Progress = GUIProgress
 # ----------------------------------------------------
 
 from PyQt6.QtWidgets import QApplication
-
-# Handle imports for both development and PyInstaller
-try:
-    from gui import MainWindow
-except ImportError:
-    sys.path.insert(0, os.path.dirname(__file__))
-    from gui import MainWindow
+from musicdl.gui import MainWindow
 
 
 def main():
@@ -32,7 +26,7 @@ def main():
     # Set application metadata
     app.setApplicationName("MusicDL")
     app.setOrganizationName("MusicDL")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion("2.9.2")
     
     # Create and show main window
     window = MainWindow()
