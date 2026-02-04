@@ -173,12 +173,12 @@ These CLI tools include,
   If Node.js is installed correctly, `node -v` will print the Node.js version (*e.g.*, `v22.11.0`), and `npm -v` will print the npm version.
   If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
 
-- [GPAC](https://gpac.io/downloads/gpac-nightly-builds/): GPAC is an open-source multimedia framework for packaging, processing, and streaming formats like MP4, DASH, and HLS.
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): N_m3u8DL-RE is a powerful open-source command-line tool for downloading, decrypting, and muxing HLS/DASH (m3u8/mpd) streaming media into local video files.
   In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
-  After installing GPAC, you need to make sure all of its executables are available in your system `PATH`.
+  After installing N_m3u8DL-RE, you need to make sure all of its executables are available in your system `PATH`.
   A quick way to verify this is that you should be able to run
   ```bash
-  python -c "import shutil; print(shutil.which('MP4Box'))"
+  python -c "import shutil; print(shutil.which('N_m3u8DL-RE'))"
   ```
   in Command Prompt and get the full path without an error. 
 
@@ -191,12 +191,12 @@ These CLI tools include,
   ```
   in Command Prompt and get the full path without an error. 
 
-- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): N_m3u8DL-RE is a powerful open-source command-line tool for downloading, decrypting, and muxing HLS/DASH (m3u8/mpd) streaming media into local video files.
-  In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
-  After installing N_m3u8DL-RE, you need to make sure all of its executables are available in your system `PATH`.
+- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools): amdecrypt is a command-line tool developed by AI that leverages Bento4's mp4decrypt to process Apple Music encrypted files into playable formats. 
+  You can obtain it from the [GitHub Releases](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools) of this repository.
+  After installing amdecrypt, you need to make sure all of its executables are available in your system `PATH`.
   A quick way to verify this is that you should be able to run
   ```bash
-  python -c "import shutil; print(shutil.which('N_m3u8DL-RE'))"
+  python -c "import shutil; print(shutil.which('amdecrypt'))"
   ```
   in Command Prompt and get the full path without an error. 
 
