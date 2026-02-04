@@ -44,7 +44,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.post('https://wyapi-eo.toubiec.cn/api/getSongUrl', json={'id': song_id, 'level': quality}, timeout=30, verify=False, **request_overrides)
+                resp = self.post('https://wyapi-eo.toubiec.cn/api/getSongUrl', json={'id': song_id, 'level': quality}, timeout=20, max_retries=1, verify=False, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if ('data' not in download_result) or (not download_result['data']): continue
@@ -75,7 +75,7 @@ class NeteaseMusicClient(BaseMusicClient):
         for quality in MUSIC_QUALITIES:
             for prefix in ['api-v2', 'api-v1', 'api', 'player']:
                 try:
-                    resp = self.get(url=f'https://{prefix}.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=30, **request_overrides)
+                    resp = self.get(url=f'https://{prefix}.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=20, max_retries=1, **request_overrides)
                     resp.raise_for_status()
                     download_result = resp2json(resp=resp)
                     if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
@@ -106,7 +106,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(f'https://api.bugpk.com/api/163_music?ids={song_id}&level={quality}&type=json', timeout=30, **request_overrides)
+                resp = self.get(f'https://api.bugpk.com/api/163_music?ids={song_id}&level={quality}&type=json', timeout=20, max_retries=1, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if 'url' not in download_result or (safe_fetch_filesize_func(download_result) < 1): continue
@@ -135,7 +135,7 @@ class NeteaseMusicClient(BaseMusicClient):
         REQUEST_KEYS = ['c2stOTUwZTc4MTNjMzhjMmUzMWQzOWQ4NzlkMzIwNDg4OTU=', 'c2stNjJjZGIwM2UyMjcwZWIzOTY4Y2NhNzg4MTM5OWY0MTI=']
         # parse
         try:
-            resp = self.get(f'https://apii.xianyuw.cn/api/v1/163-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', timeout=30, **request_overrides)
+            resp = self.get(f'https://apii.xianyuw.cn/api/v1/163-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', timeout=20, max_retries=1, **request_overrides)
             resp.raise_for_status()
             download_result = resp2json(resp=resp)
             download_url: str = download_result['data']['url']
@@ -160,7 +160,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(url=f'https://www.tmetu.cn/api/music/api.php?miss=songAll&id={song_id}&level={quality}&withLyric=true', timeout=30, **request_overrides)
+                resp = self.get(url=f'https://www.tmetu.cn/api/music/api.php?miss=songAll&id={song_id}&level={quality}&withLyric=true', timeout=20, max_retries=1, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
             except:
@@ -185,7 +185,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id = request_overrides or {}, search_result['id']
         try:
-            resp = self.get(f'https://blog.cyrui.cn/netease/api/getSongDetail.php?id={song_id}', timeout=30, **request_overrides)
+            resp = self.get(f'https://blog.cyrui.cn/netease/api/getSongDetail.php?id={song_id}', timeout=20, max_retries=1, **request_overrides)
             resp.raise_for_status()
             download_result = resp2json(resp=resp)
         except:
@@ -193,7 +193,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(url=f'https://blog.cyrui.cn/netease/api/getMusicUrl.php?id={song_id}&level={quality}', timeout=30, **request_overrides)
+                resp = self.get(url=f'https://blog.cyrui.cn/netease/api/getMusicUrl.php?id={song_id}&level={quality}', timeout=20, max_retries=1, **request_overrides)
                 resp.raise_for_status()
                 download_result['getMusicUrl'] = resp2json(resp=resp)
             except:

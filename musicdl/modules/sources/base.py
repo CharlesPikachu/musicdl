@@ -371,8 +371,9 @@ class BaseMusicClient():
         # Default timeout and verify settings for frozen mode compatibility
         if 'timeout' not in kwargs: kwargs['timeout'] = (10, 30)
         if 'verify' not in kwargs: kwargs['verify'] = False
+        max_retries = kwargs.pop('max_retries', self.max_retries)
         resp = None
-        for _ in range(self.max_retries):
+        for _ in range(max_retries):
             if not self.maintain_session:
                 self._initsession()
                 try:
@@ -392,8 +393,9 @@ class BaseMusicClient():
         # Default timeout and verify settings for frozen mode compatibility
         if 'timeout' not in kwargs: kwargs['timeout'] = (10, 30)
         if 'verify' not in kwargs: kwargs['verify'] = False
+        max_retries = kwargs.pop('max_retries', self.max_retries)
         resp = None
-        for _ in range(self.max_retries):
+        for _ in range(max_retries):
             if not self.maintain_session:
                 self._initsession()
                 try:
