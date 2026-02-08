@@ -42,8 +42,17 @@ except ImportError:
     except ImportError:
         sys.path.append(os.path.dirname(os.path.dirname(__file__)))
         from musicdl import MusicClient, DEFAULT_MUSIC_SOURCES, SUPPORTED_MUSIC_SOURCES
-        from modules.utils import LoggerHandle
-        from modules.sources import MusicClientBuilder
+        from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder
+
+# Import fetch_lyrics_via_lddc with fallback
+try:
+    from modules.utils.lddc_adapter import fetch_lyrics_via_lddc
+except ImportError:
+    try:
+        from musicdl.modules.utils.lddc_adapter import fetch_lyrics_via_lddc
+    except ImportError:
+        def fetch_lyrics_via_lddc(*args, **kwargs):
+            return None
 
 # Fallback
 try:
@@ -672,6 +681,48 @@ class MainWindow(QMainWindow):
                     self.log_signal.log.emit("INFO", f"Saved info to {txt_name}")
                 except Exception as e:
                     self.log_signal.log.emit("ERROR", f"Failed to save txt info: {str(e)}")
+                
+                # Fetch lyrics via LDDC
+                try:
+                    self.log_signal.log.emit("INFO", f"Fetching lyrics via LDDC for {new_name}...")
+                    # We need to construct a song_info compatible object or dict
+                    # The current song_info might be a dict or object, checking and creating a proxy
+                    lddc_info = {
+                        'source': getattr(song_info, 'source', 'Unknown') or song_info.get('source', 'Unknown'),
+                        'song_name': getattr(song_info, 'song_name', 'Unknown') or song_info.get('song_name', 'Unknown'),
+                        'singers': getattr(song_info, 'singers', 'Unknown') or song_info.get('singers', 'Unknown'),
+                        'album': getattr(song_info, 'album', 'Unknown') or song_info.get('album', 'Unknown'),
+                        'duration': getattr(song_info, 'duration', 'Unknown') or song_info.get('duration', 'Unknown'),
+                        'save_path': new_path
+                    }
+                    
+                    lyrics = fetch_lyrics_via_lddc(lddc_info, embed=True)
+                    if lyrics:
+                        self.log_signal.log.emit("INFO", f"LDDC: Fetched lyrics for {new_name}")
+                        # Update txt file
+                        txt_name = os.path.splitext(new_name)[0] + ".txt"
+                        txt_path = os.path.join(target_dir, txt_name)
+                        if os.path.exists(txt_path):
+                             with open(txt_path, 'r', encoding='utf-8') as f:
+                                 lines = f.readlines()
+                             with open(txt_path, 'w', encoding='utf-8') as f:
+                                 in_lyrics = False
+                                 for line in lines:
+                                     if 'Lyrics' in line and '-'*20 in line:
+                                         f.write(line)
+                                         f.write(f'{lyrics}\n')
+                                         in_lyrics = True
+                                     elif in_lyrics and '='*50 in line:
+                                         in_lyrics = False
+                                         f.write(line)
+                                     elif not in_lyrics:
+                                         f.write(line)
+                        self.log_signal.log.emit("INFO", f"LDDC: Updated lyrics in {txt_name}")
+                    else:
+                        self.log_signal.log.emit("INFO", f"LDDC: No lyrics found for {new_name}")
+
+                except Exception as e:
+                    self.log_signal.log.emit("WARNING", f"LDDC fetch failed: {str(e)}")
                 
                 # Cleanup empty folders
                 parent_dir = os.path.dirname(org_path)
