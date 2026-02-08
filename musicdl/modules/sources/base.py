@@ -25,7 +25,7 @@ from collections import defaultdict
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
-from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
 
 try:
     from fake_useragent import UserAgent
@@ -78,9 +78,10 @@ class AudioAwareColumn(ProgressColumn):
 '''BaseMusicClient'''
 class BaseMusicClient():
     source = 'BaseMusicClient'
-    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_download_curl_cffi: bool = False, 
-                 max_retries: int = 3, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', freeproxy_settings: dict = None, 
-                 default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
+    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_parse_curl_cffi: bool = False,
+                 enable_download_curl_cffi: bool = False, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs',
+                 max_retries: int = 3, freeproxy_settings: dict = None, default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, default_parse_cookies: dict | str = None,
+                 strict_limit_search_size_per_page: bool = True, search_size_per_page: int = 10, quark_parser_config: dict = None):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -95,25 +96,20 @@ class BaseMusicClient():
         self.freeproxy_settings = freeproxy_settings or {}
         self.default_search_cookies = cookies2dict(default_search_cookies)
         self.default_download_cookies = cookies2dict(default_download_cookies)
+        self.default_parse_cookies = cookies2dict(default_parse_cookies)
         self.default_cookies = self.default_search_cookies
         self.search_size_per_page = min(search_size_per_source, search_size_per_page)
         self.strict_limit_search_size_per_page = strict_limit_search_size_per_page
         self.quark_parser_config = quark_parser_config or {}
         self.enable_search_curl_cffi = enable_search_curl_cffi
         self.enable_download_curl_cffi = enable_download_curl_cffi
+        self.enable_parse_curl_cffi = enable_parse_curl_cffi
         self.enable_curl_cffi = self.enable_search_curl_cffi
         self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
         # init requests.Session
-        self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
-        # init requests.Session
-        try:
-            self.default_search_headers = {'User-Agent': UserAgent().random}
-        except:
-            self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-        try:
-            self.default_download_headers = {'User-Agent': UserAgent().random}
-        except:
-            self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        self.default_search_headers = {'User-Agent': UserAgent().random}
+        self.default_download_headers = {'User-Agent': UserAgent().random}
+        self.default_parse_headers = {'User-Agent': UserAgent().random}
         self.quark_default_download_headers = {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400',
             'origin': 'https://pan.quark.cn', 'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9', 'cookie': cookies2string(self.quark_parser_config.get('cookies', '')),
@@ -355,6 +351,7 @@ class BaseMusicClient():
         # return
         return downloaded_song_infos
     '''parseplaylist'''
+    @useparseheaderscookies
     def parseplaylist(self, playlist_url: str):
         raise NotImplementedError(f'Not supported now to parse playlist from {self.source}')
     '''_autosetproxies'''

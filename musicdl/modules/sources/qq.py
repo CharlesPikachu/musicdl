@@ -6,6 +6,7 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import re
 import copy
 import json
@@ -13,8 +14,12 @@ import random
 import base64
 from .base import BaseMusicClient
 from rich.progress import Progress
+from ..utils.hosts import QQ_MUSIC_HOSTS
+from pathvalidate import sanitize_filepath
+from urllib.parse import urlparse, parse_qs
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.qqutils import QQMusicClientUtils, SearchType, Credential, ThirdPartVKeysAPISongFileType, SongFileType, EncryptedSongFileType
-from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo
+from ..utils import touchdir, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
 
 
 '''QQMusicClient'''
@@ -237,4 +242,37 @@ class QQMusicClient(BaseMusicClient):
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        hostname = obtainhostname(url=playlist_url)
+        if not hostname or not hostmatchessuffix(hostname, QQ_MUSIC_HOSTS): return []
+        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=True).get('id')[0]
+        except: playlist_id = urlparse(playlist_url).path.strip('/').split('/')[-1]
+        headers = {"Referer": f"https://y.qq.com/n/ryqq/playlist/{playlist_id}"}
+        resp = self.get("https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg", headers=headers, params={"disstid": str(playlist_id), "type": "1", "json": "1", "utf8": "1", "onlysong": "0", "format": "json"}, **request_overrides)
+        resp.raise_for_status()
+        playlist_results = resp2json(resp=resp)
+        track_ids, song_infos = [str(t['songmid']) for t in (safeextractfromdict(playlist_results, ['cdlist', 0, 'songlist'], []) or safeextractfromdict(playlist_results, ['cdlist', 0, 'list'], []) or safeextractfromdict(playlist_results, ['songlist'], []) or [])], []
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
+            for idx, track_id in enumerate(track_ids):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
+                for third_part_api in [self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
+                    try:
+                        song_info = third_part_api({'mid': track_id}, request_overrides=request_overrides)
+                        if song_info.with_valid_download_url: song_infos.append(song_info); break
+                    except:
+                        continue
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(track_ids)})")
+        song_infos = self._removeduplicates(song_infos=song_infos)
+        work_dir = self._constructuniqueworkdir(keyword=playlist_id)
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
         return song_infos

@@ -24,10 +24,9 @@ class QianqianMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(QianqianMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
-            "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "from": "web",
-            "priority": "u=1, i", "referer": "https://music.91q.com/player", "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
-            "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+            "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "from": "web", "priority": "u=1, i", "referer": "https://music.91q.com/player",
+            "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"", "sec-ch-ua-mobile": "?0", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "sec-ch-ua-platform": "\"Windows\"",
         }
         if self.default_search_cookies: self.default_search_headers['authorization'] = f"access_token {self.default_search_cookies.get('access_token', '')}"
         if self.default_search_cookies: self.default_search_headers['cookie'] = cookies2string(self.default_search_cookies)
@@ -93,10 +92,10 @@ class QianqianMusicClient(BaseMusicClient):
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
                         singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['artist'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                        album=legalizestring(safeextractfromdict(search_result, ['albumTitle'], None)), ext=safeextractfromdict(download_result, ['data', 'format'], 'mp3'), 
+                        album=legalizestring(search_result.get('albumTitle')), ext=safeextractfromdict(download_result, ['data', 'format'], 'mp3') or download_url.split('?')[0].split('.')[-1] or 'mp3', 
                         file_size_bytes=safeextractfromdict(download_result, ['data', 'size'], 0), file_size=byte2mb(safeextractfromdict(download_result, ['data', 'size'], 0)), identifier=search_result['TSID'], 
-                        duration_s=safeextractfromdict(download_result, ['data', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'duration'], 0)),
-                        lyric=None, cover_url=safeextractfromdict(search_result, ['pic'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                        duration_s=safeextractfromdict(download_result, ['data', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'duration'], 0)), lyric=None,
+                        cover_url=safeextractfromdict(search_result, ['pic'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
                     song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                     song_info.file_size = song_info.download_url_status['probe_status']['file_size']

@@ -19,7 +19,7 @@ from urllib.parse import urlparse, parse_qs
 from ..utils.hosts import NETEASE_MUSIC_HOSTS, hostmatchessuffix, obtainhostname
 from ..utils.neteaseutils import EapiCryptoUtils, MUSIC_QUALITIES, DEFAULT_COOKIES
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, touchdir, byte2mb, cleanlrc, SongInfo
+from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, touchdir, byte2mb, useparseheaderscookies, cleanlrc, SongInfo
 warnings.filterwarnings('ignore')
 
 
@@ -28,13 +28,12 @@ class NeteaseMusicClient(BaseMusicClient):
     source = 'NeteaseMusicClient'
     def __init__(self, **kwargs):
         super(NeteaseMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-            'Referer': 'https://music.163.com/',
-        }
+        self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', 'Referer': 'https://music.163.com/'}
+        self.default_parse_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', 'Referer': 'https://music.163.com/'}
         self.default_download_headers = {}
         self.default_headers = self.default_search_headers
         self.default_search_cookies = self.default_search_cookies or DEFAULT_COOKIES
+        self.default_parse_cookies = self.default_parse_cookies or DEFAULT_COOKIES
         self.default_download_cookies = self.default_download_cookies or DEFAULT_COOKIES
         self._initsession()
     '''_parsewithxiaoqinapi'''
@@ -315,7 +314,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # return
         return song_infos
     '''parseplaylist'''
-    @usesearchheaderscookies
+    @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         import sys
         import ssl
@@ -328,6 +327,7 @@ class NeteaseMusicClient(BaseMusicClient):
         self.logger_handle.info(f'{self.source}.parseplaylist >>> Python version: {sys.version}', disable_print=self.disable_print)
         self.logger_handle.info(f'{self.source}.parseplaylist >>> SSL version: {ssl.OPENSSL_VERSION}', disable_print=self.disable_print)
         
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         hostname = obtainhostname(url=playlist_url)
         if not hostname or not hostmatchessuffix(hostname, NETEASE_MUSIC_HOSTS):
             self.logger_handle.error(f'{self.source}.parseplaylist >>> Invalid hostname: {hostname}', disable_print=self.disable_print)
@@ -376,9 +376,13 @@ class NeteaseMusicClient(BaseMusicClient):
             for idx, track_id in enumerate(track_ids):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
+<<<<<<< HEAD
                 
                 song_parsed = False
                 for api_idx, third_part_api in enumerate([self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi]):
+=======
+                for third_part_api in [self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithcggapi]:
+>>>>>>> 8fc8dfc5869733b27c8cbe6a15896a369fae7ac8
                     try:
                         self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1}/{len(track_ids)} (ID: {track_id}): Trying {api_names[api_idx]} API...', disable_print=self.disable_print)
                         song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)

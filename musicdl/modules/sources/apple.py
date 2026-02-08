@@ -21,7 +21,7 @@ from ..utils import touchdir, legalizestring, resp2json, seconds2hms, usesearchh
 class AppleMusicClient(BaseMusicClient):
     source = 'AppleMusicClient'
     def __init__(self, **kwargs):
-        use_wrapper, wrapper_account_url, language, codec, wrapper_decrypt_ip = kwargs.pop('use_wrapper', False), kwargs.pop('wrapper_account_url', "127.0.0.1:10020"), kwargs.pop('language', "en-US"), kwargs.pop('codec', None), kwargs.pop('wrapper_decrypt_ip', "127.0.0.1:10020")
+        use_wrapper, wrapper_account_url, language, codec, wrapper_decrypt_ip = kwargs.pop('use_wrapper', False), kwargs.pop('wrapper_account_url', "http://127.0.0.1:30020/"), kwargs.pop('language', "en-US"), kwargs.pop('codec', None), kwargs.pop('wrapper_decrypt_ip', "127.0.0.1:10020")
         super(AppleMusicClient, self).__init__(**kwargs)
         if (not self.default_cookies or 'media-user-token' not in self.default_cookies) and (not use_wrapper): self.logger_handle.warning(f'{self.source}.__init__ >>> both "media-user-token" and "use_wrapper" are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
         self.apple_music_api, self.itunes_api, self.use_wrapper, self.wrapper_account_url, self.language, self.account_info, self.codec, self.wrapper_decrypt_ip = None, None, use_wrapper, wrapper_account_url, language, {}, codec, wrapper_decrypt_ip
@@ -42,7 +42,7 @@ class AppleMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         try:
             touchdir(song_info.work_dir)
-            tmp_dir = os.path.join(song_info.work_dir, str(song_info.identifier))
+            tmp_dir = f'apple_id_{str(song_info.identifier)}'
             touchdir(tmp_dir)
             download_item: DownloadItem = song_info.download_url
             progress.update(song_progress_id, total=1, kind='overall')
@@ -97,8 +97,8 @@ class AppleMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
-    '''_parsewithnonloginofficialapi'''
-    def _parsewithnonloginofficialapi(self, search_result: dict, request_overrides: dict = None):
+    '''_parsewithnonvipofficialapi'''
+    def _parsewithnonvipofficialapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_info = request_overrides or {}, SongInfo(source=self.source)
         # parse
@@ -118,8 +118,8 @@ class AppleMusicClient(BaseMusicClient):
         song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL',)) else song_info.ext
         # return
         return song_info
-    '''_parsewithcookiesvipofficialapi'''
-    def _parsewithcookiesvipofficialapi(self, search_result: dict, request_overrides: dict = None):
+    '''_parsewithvipofficialapi'''
+    def _parsewithvipofficialapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_info, codec = request_overrides or {}, SongInfo(source=self.source), self.codec
         # parse
@@ -129,7 +129,7 @@ class AppleMusicClient(BaseMusicClient):
         resp.raise_for_status()
         download_result = resp2json(resp=resp)
         download_item: DownloadItem = AppleMusicClientDownloadSongUtils.getdownloaditem(
-            song_metadata=download_result['data'][0], playlist_metadata=None, codec=codec, apple_music_api=self.apple_music_api, itunes_api=self.itunes_api, request_overrides=request_overrides
+            song_metadata=download_result['data'][0], playlist_metadata=None, codec=codec, apple_music_api=self.apple_music_api, itunes_api=self.itunes_api, request_overrides=request_overrides, use_wrapper=self.use_wrapper
         )
         try: resp = self.get(download_item.stream_info.audio_track.stream_url, **request_overrides); resp.raise_for_status()
         except Exception: return song_info
@@ -161,14 +161,11 @@ class AppleMusicClient(BaseMusicClient):
                 search_result['song_key'], song_info = song_key, SongInfo(source=self.source)
                 # ----non-vip users
                 if (not self.default_cookies or 'media-user-token' not in self.default_cookies) and (not self.use_wrapper):
-                    try: song_info = self._parsewithnonloginofficialapi(search_result=search_result, request_overrides=request_overrides)
+                    try: song_info = self._parsewithnonvipofficialapi(search_result=search_result, request_overrides=request_overrides)
                     except Exception: continue
-                # ----vip users with wrapper cookies
-                elif self.use_wrapper:
-                    pass
-                # ----vip users with setting cookies
-                elif (self.default_cookies and 'media-user-token' in self.default_cookies):
-                    try: song_info = self._parsewithcookiesvipofficialapi(search_result=search_result, request_overrides=request_overrides)
+                # ----vip users
+                else:
+                    try: song_info = self._parsewithvipofficialapi(search_result=search_result, request_overrides=request_overrides)
                     except Exception: continue
                 if not song_info.with_valid_download_url: continue
                 # --append to song_infos

@@ -14,6 +14,9 @@ from urllib.parse import urlsplit
 NETEASE_MUSIC_HOSTS = {
     "music.163.com", "y.music.163.com", "m.music.163.com", "3g.music.163.com", "163cn.tv",
 }
+QQ_MUSIC_HOSTS = {
+    "y.qq.com", "i.y.qq.com", "m.y.qq.com", "c.y.qq.com", "c6.y.qq.com", "music.qq.com",
+}
 
 
 '''obtainhostname'''

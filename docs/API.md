@@ -19,6 +19,7 @@ A unified interface encapsulated for all supported music platforms. Arguments su
       "random_update_ua": False,
       "enable_search_curl_cffi": False,
       "enable_download_curl_cffi": False,
+      "enable_parse_curl_cffi": False,
       "max_retries": 3,
       "maintain_session": False,
       "logger_handle": LoggerHandle(),
@@ -27,6 +28,7 @@ A unified interface encapsulated for all supported music platforms. Arguments su
       "freeproxy_settings": None,
       "default_search_cookies": {},
       "default_download_cookies": {},
+      "default_parse_cookies": {},
       "type": music_source,
       "search_size_per_page": 10,
       "strict_limit_search_size_per_page": True,
@@ -56,17 +58,17 @@ Start an interactive command-line interface for searching and downloading music.
 
 This method:
 
-1. Prints basic usage information (version, save paths, *etc.*.).
-2. Prompts the user to input keywords for music search.
-3. Calls `MusicClient.search()` to retrieve search results from all configured music sources.
-4. Displays a formatted table of candidate songs with IDs.
-5. Opens a cursor-based selection UI where the user can choose one or multiple songs:
-  - Use ↑/↓ to move the cursor
-  - Press Space to toggle selection
-  - Press a to select all, i to invert selection
-  - Press Enter to confirm and start downloading
-  - Press Esc or q to cancel selection
-6. Collects the corresponding song info entries and calls `MusicClient.download()` to download them.
+- Prints basic usage information (version, save paths, *etc.*.).
+- Prompts the user to input keywords for music search.
+- Calls `MusicClient.search()` to retrieve search results from all configured music sources.
+- Displays a formatted table of candidate songs with IDs.
+- Opens a cursor-based selection UI where the user can choose one or multiple songs:
+  - Use "↑/↓" to move the cursor
+  - Press "Space" to toggle selection
+  - Press "a" to select all, "i" to invert selection
+  - Press "Enter" to confirm and start downloading
+  - Press "Esc" or "q" to cancel selection
+- Collects the corresponding song info entries and calls `MusicClient.download()` to download them.
 
 Special commands (at the main prompt):
 
@@ -131,6 +133,7 @@ Thread settings and request overrides are automatically taken from `MusicClient.
 - `musicdl.modules.sources.QianqianMusicClient`
 - `musicdl.modules.sources.QQMusicClient`
 - `musicdl.modules.sources.SodaMusicClient`
+- `musicdl.modules.sources.StreetVoiceMusicClient`
 - `musicdl.modules.sources.SoundCloudMusicClient`
 - `musicdl.modules.sources.TIDALMusicClient`
 - `musicdl.modules.sources.TwoT58MusicClient`
@@ -143,6 +146,7 @@ Thread settings and request overrides are automatically taken from `MusicClient.
 - `musicdl.modules.common.MyFreeMP3MusicClient`
 - `musicdl.modules.common.TuneHubMusicClient`
 - `musicdl.modules.audiobooks.LizhiMusicClient`
+- `musicdl.modules.audiobooks.QingtingMusicClient`
 - `musicdl.modules.audiobooks.XimalayaMusicClient`
 
 End users usually **do not** instantiate `BaseMusicClient` directly, but instead use one of the specific clients above.
@@ -153,23 +157,26 @@ Arguments supported when initializing this class include:
   Maximum number of search results to fetch per source.
   
 - **auto_set_proxies** (`bool`, default `False`):  
-  If `True`, randomly assign a free proxy fetched by `freeproxy.ProxiedSessionClient` (details refer to [FreeProxy](https://github.com/CharlesPikachu/freeproxy/tree/master)) for each request.
+  If `True`, randomly assign a free proxy fetched by `freeproxy.ProxiedSessionClient` (details refer to [FreeProxy](https://github.com/CharlesPikachu/freeproxy/tree/master)) for each request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
 
 - **random_update_ua** (`bool`, default `False`):  
-  If `True`, randomly refresh the `User-Agent` header on each request.
+  If `True`, randomly refresh the `User-Agent` header on each request (not work for `AppleMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
 
 - **enable_search_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each search request.
+  If `True`, `curl_cffi.requests.Session` is used for each search request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
 
 - **enable_download_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each download request.
+  If `True`, `curl_cffi.requests.Session` is used for each download request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
+
+- **enable_parse_curl_cffi** (`bool`, default `False`):  
+  If `True`, `curl_cffi.requests.Session` is used for each parseplaylist request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
 
 - **max_retries** (`int`, default `3`):  
   Maximum number of retry attempts for each HTTP request in `BaseMusicClient.get()` / `BaseMusicClient.post()`.
 
 - **maintain_session** (`bool`, default `False`):  
   If `False`, a new `requests.Session` is created before each request;  
-  if `True`, the same session is reused across requests.
+  if `True`, the same session is reused across requests (not work for `AppleMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
 
 - **logger_handle** (`LoggerHandle`, optional):  
   Logger instance used for logging.  
@@ -191,6 +198,9 @@ Arguments supported when initializing this class include:
 
 - **default_download_cookies** (`dict` or `None`, default `{}`):  
   Default cookies used for `BaseMusicClient.download` requests.
+
+- **default_parse_cookies** (`dict` or `None`, default `{}`):  
+  Default cookies used for `BaseMusicClient.parseplaylist` requests.
 
 - **search_size_per_page** (`int`, default `10`):  
   When searching for songs, if `search_size_per_source` is greater than `search_size_per_page`, 

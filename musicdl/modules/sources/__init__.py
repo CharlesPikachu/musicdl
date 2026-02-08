@@ -30,6 +30,7 @@ from .qianqian import QianqianMusicClient
 from .bilibili import BilibiliMusicClient
 from .yinyuedao import YinyuedaoMusicClient
 from .soundcloud import SoundCloudMusicClient
+from .streetvoice import StreetVoiceMusicClient
 from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 
@@ -37,9 +38,9 @@ from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClien
 '''MusicClientBuilder'''
 class MusicClientBuilder(BaseModuleBuilder):
     REGISTERED_MODULES = {
-        # Mainland Platforms
+        # Platforms in Greater China
         'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient, 'MiguMusicClient': MiguMusicClient,
-        'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'SodaMusicClient': SodaMusicClient,
+        'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'SodaMusicClient': SodaMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient,
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'TIDALMusicClient': TIDALMusicClient,
         'SoundCloudMusicClient': SoundCloudMusicClient,

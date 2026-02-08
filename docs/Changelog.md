@@ -1,5 +1,9 @@
 # Release Log
 
+- 2026-02-07: Released musicdl v2.9.2 — support parsing and downloading QQ Music playlists; update arguments for some API endpoints; update the KuGou Music track link parsing API to enable downloading music files with Viper audio effects/quality using a KuGou VIP account; and fix several bugs.
+
+- 2026-02-05: Released musicdl v2.9.1 — support ALAC-quality downloads for Apple Music; add song search and download for the StreetVoice platform; add two new shared VIP-account API endpoints for NetEase Cloud Music.
+
 - 2026-02-03: Released musicdl v2.9.0 — added support for native SoundCloud search and download APIs, session cookie authentication, and batch lossless music downloads from NetEase Cloud Music playlists.
 
 - 2026-01-31: Released musicdl v2.8.12 — refactored the terminal table rendering algorithm to better accommodate support for giant table; fixed kugou lossless api; added a new YouTube parsing endpoint.

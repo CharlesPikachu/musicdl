@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of AppleMusicClient Utils, refer to https://github.com/glomatico/gamdl
+    Implementation of AppleMusicClient Utils (Refer To https://github.com/glomatico/gamdl)
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):

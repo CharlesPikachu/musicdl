@@ -19,7 +19,7 @@ class SoundCloudMusicClient(BaseMusicClient):
     source = 'SoundCloudMusicClient'
     def __init__(self, **kwargs):
         super(SoundCloudMusicClient, self).__init__(**kwargs)
-        if self.default_cookies: assert ("oauth_token" in self.default_cookies), '"oauth_token" should be configured, refer to https://developers.soundcloud.com/docs#authentication'
+        if self.default_cookies: assert ("oauth_token" in self.default_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
         self.client_id = None
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
