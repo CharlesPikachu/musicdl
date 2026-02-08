@@ -376,13 +376,9 @@ class NeteaseMusicClient(BaseMusicClient):
             for idx, track_id in enumerate(track_ids):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
-<<<<<<< HEAD
                 
                 song_parsed = False
                 for api_idx, third_part_api in enumerate([self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi]):
-=======
-                for third_part_api in [self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithcggapi]:
->>>>>>> 8fc8dfc5869733b27c8cbe6a15896a369fae7ac8
                     try:
                         self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1}/{len(track_ids)} (ID: {track_id}): Trying {api_names[api_idx]} API...', disable_print=self.disable_print)
                         song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)
