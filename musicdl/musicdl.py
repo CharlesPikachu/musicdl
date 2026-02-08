@@ -16,13 +16,16 @@ from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, 
 if __name__ == '__main__':
     from __init__ import __version__
     from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline, cursorpickintable
+    from modules.utils.lddc_adapter import fetch_lyrics_via_lddc
 else:
     try:
         from .__init__ import __version__
         from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
+        from .modules.utils.lddc_adapter import fetch_lyrics_via_lddc
     except ImportError:
         from __init__ import __version__
         from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
+        from modules.utils.lddc_adapter import fetch_lyrics_via_lddc
 
 
 '''settings'''
@@ -142,12 +145,54 @@ class MusicClient():
                 classified_song_infos[song_info['source']] = [song_info]
         all_downloaded_infos = []
         for source, source_song_infos in classified_song_infos.items():
-            self.music_clients[source].download(
+            downloaded_songs = self.music_clients[source].download(
                 song_infos=source_song_infos, 
                 num_threadings=self.clients_threadings[source], 
                 request_overrides=self.requests_overrides[source],
                 progress_handler=progress_handler
             )
+            
+            # Fetch lyrics via LDDC for downloaded songs
+            for song_info in downloaded_songs:
+                try:
+                   self.logger_handle.info(f'Fetching lyrics via LDDC for {song_info.song_name}...')
+                   lyrics = fetch_lyrics_via_lddc(song_info, embed=True)
+                   if lyrics:
+                       self.logger_handle.info(f'LDDC: Successfully fetched lyrics for {song_info.song_name}')
+                       song_info.lyric = lyrics
+                       # Re-save to txt or update properties if needed by downstream
+                       # Note: download() has already saved txt and embedded lyrics (if available previously)
+                       # We need to update the txt file and maybe re-embed if fetch_lyrics_via_lddc didn't fully handle it or for consistency.
+                       # fetch_lyrics_via_lddc with embed=True handles embedding in the audio file directly via bridge.
+                       # We should update the info file.
+                       try:
+                           import os
+                           txt_path = os.path.splitext(song_info.save_path)[0] + ".txt"
+                           if os.path.exists(txt_path):
+                               # Read existing lines
+                               with open(txt_path, 'r', encoding='utf-8') as f:
+                                   lines = f.readlines()
+                               # Rewrite with new lyrics
+                               with open(txt_path, 'w', encoding='utf-8') as f:
+                                   in_lyrics = False
+                                   for line in lines:
+                                       if 'Lyrics' in line and '-'*20 in line:
+                                           f.write(line)
+                                           f.write(f'{lyrics}\n')
+                                           in_lyrics = True
+                                       elif in_lyrics and '='*50 in line:
+                                           in_lyrics = False
+                                           f.write(line)
+                                       elif not in_lyrics:
+                                           f.write(line)
+                       except Exception as e:
+                           self.logger_handle.warning(f'Failed to update txt info with LDDC lyrics: {e}')
+                   else:
+                       self.logger_handle.info(f'LDDC: No lyrics found for {song_info.song_name}')
+                except Exception as e:
+                    self.logger_handle.error(f'LDDC Lyric Fetch Error for {song_info.song_name}: {e}')
+            
+            all_downloaded_infos.extend(downloaded_songs)
     '''parseplaylist'''
     def parseplaylist(self, playlist_url):
         song_infos = []

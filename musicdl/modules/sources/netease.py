@@ -373,28 +373,42 @@ class NeteaseMusicClient(BaseMusicClient):
             main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
             
             api_names = ['tmetu', 'cyrui', 'xiaoqin', 'cgg']
+            api_fail_counts = {name: 0 for name in api_names}
+            MAX_CONSECUTIVE_FAILURES = 3
+            
             for idx, track_id in enumerate(track_ids):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
-<<<<<<< HEAD
                 
                 song_parsed = False
                 for api_idx, third_part_api in enumerate([self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi]):
-=======
-                for third_part_api in [self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithcggapi]:
->>>>>>> 8fc8dfc5869733b27c8cbe6a15896a369fae7ac8
+                    current_api_name = api_names[api_idx]
+                    
+                    if api_fail_counts[current_api_name] >= MAX_CONSECUTIVE_FAILURES:
+                        continue
+                        
                     try:
-                        self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1}/{len(track_ids)} (ID: {track_id}): Trying {api_names[api_idx]} API...', disable_print=self.disable_print)
+                        self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1}/{len(track_ids)} (ID: {track_id}): Trying {current_api_name} API...', disable_print=self.disable_print)
                         song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)
                         if song_info.with_valid_download_url:
-                            self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1} parsed successfully via {api_names[api_idx]}', disable_print=self.disable_print)
+                            self.logger_handle.info(f'{self.source}.parseplaylist >>> Track {idx+1} parsed successfully via {current_api_name}', disable_print=self.disable_print)
                             song_infos.append(song_info)
                             song_parsed = True
+                            
+                            # Reset fail count on success (Circuit Breaker pattern - Close Circuit)
+                            api_fail_counts[current_api_name] = 0
                             break
                         else:
-                            self.logger_handle.warning(f'{self.source}.parseplaylist >>> Track {idx+1}: {api_names[api_idx]} returned no valid URL', disable_print=self.disable_print)
+                            self.logger_handle.warning(f'{self.source}.parseplaylist >>> Track {idx+1}: {current_api_name} returned no valid URL', disable_print=self.disable_print)
+                            api_fail_counts[current_api_name] += 1
+                            if api_fail_counts[current_api_name] == MAX_CONSECUTIVE_FAILURES:
+                                self.logger_handle.warning(f'{self.source}.parseplaylist >>> {current_api_name} API failed {MAX_CONSECUTIVE_FAILURES} times consecutively. Downgrading completely.', disable_print=self.disable_print)
+
                     except Exception as api_err:
-                        self.logger_handle.error(f'{self.source}.parseplaylist >>> Track {idx+1}: {api_names[api_idx]} failed with error: {api_err}', disable_print=self.disable_print)
+                        self.logger_handle.error(f'{self.source}.parseplaylist >>> Track {idx+1}: {current_api_name} failed with error: {api_err}', disable_print=self.disable_print)
+                        api_fail_counts[current_api_name] += 1
+                        if api_fail_counts[current_api_name] == MAX_CONSECUTIVE_FAILURES:
+                            self.logger_handle.warning(f'{self.source}.parseplaylist >>> {current_api_name} API failed {MAX_CONSECUTIVE_FAILURES} times consecutively. Downgrading completely.', disable_print=self.disable_print)
                         continue
                 
                 if not song_parsed:
