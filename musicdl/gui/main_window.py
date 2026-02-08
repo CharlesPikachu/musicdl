@@ -174,13 +174,13 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(control_group)
         
         # === Playlist Panel ===
-        playlist_group = QGroupBox("歌单下载 (NetEase)")
+        playlist_group = QGroupBox("歌单下载 (QQ/NetEase)")
         playlist_layout = QHBoxLayout(playlist_group)
         playlist_layout.setSpacing(10)
         
         playlist_layout.addWidget(QLabel("歌单URL:"))
         self.playlist_url_input = QLineEdit()
-        self.playlist_url_input.setPlaceholderText("https://music.163.com/#/playlist?id=xxxxx")
+        self.playlist_url_input.setPlaceholderText("请输入网易云或QQ音乐歌单URL...")
         self.playlist_url_input.returnPressed.connect(self._start_parse_playlist)
         playlist_layout.addWidget(self.playlist_url_input, stretch=2)
         
@@ -379,7 +379,21 @@ class MainWindow(QMainWindow):
             return
         
         self.status_bar.showMessage(f"解析完成，共 {len(song_infos)} 首歌曲")
-        self._display_song_list({'NeteaseMusicClient': song_infos})
+        
+        # Group songs by source
+        grouped_results = {}
+        for song in song_infos:
+            # Handle both object (SongInfo) and dict
+            if isinstance(song, dict):
+                source = song.get('source', 'Unknown')
+            else:
+                source = getattr(song, 'source', 'Unknown')
+            
+            if source not in grouped_results:
+                grouped_results[source] = []
+            grouped_results[source].append(song)
+            
+        self._display_song_list(grouped_results)
     
     def _display_song_list(self, search_results: dict):
         """Display song list in the table."""
