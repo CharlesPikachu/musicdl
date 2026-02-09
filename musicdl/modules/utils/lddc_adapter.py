@@ -57,13 +57,21 @@ def fetch_lyrics_via_lddc(song_info, embed=False):
             # or we can pass --save-path from info_dict['save_path']
             cmd.extend(['--save-path', info_dict['save_path']])
             
+        # Configure startupinfo to hide console window on Windows
+        startupinfo = None
+        if sys.platform == 'win32':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+
         # Run subprocess
         result = subprocess.run(
             cmd, 
             capture_output=True, 
             text=True, 
             encoding='utf-8',
-            check=False
+            check=False,
+            startupinfo=startupinfo
         )
         
         if result.returncode != 0:
