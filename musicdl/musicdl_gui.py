@@ -30,7 +30,11 @@ rich.progress.Progress = GUIProgress
 # This is critical because base.py imports Progress at module load time
 # before the above patch takes effect
 from musicdl.modules.sources import base as base_module
+from musicdl.modules.sources import qq as qq_module
+from musicdl.modules.sources import netease as netease_module
 base_module.Progress = GUIProgress
+qq_module.Progress = GUIProgress
+netease_module.Progress = GUIProgress
 # ----------------------------------------------------
 
 from PyQt6.QtWidgets import QApplication
@@ -44,7 +48,7 @@ def main():
     # Set application metadata
     app.setApplicationName("MusicDL")
     app.setOrganizationName("MusicDL")
-    app.setApplicationVersion("2.9.7")
+    app.setApplicationVersion("2.9.8")
     
     # Create and show main window
     window = MainWindow()
