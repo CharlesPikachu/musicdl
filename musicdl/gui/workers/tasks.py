@@ -34,11 +34,19 @@ class GUIProgress:
     Calculates speed and ETA.
     """
     
-    def __init__(self, signal: Optional[GUIProgressSignal] = None):
+    _default_signal: Optional['GUIProgressSignal'] = None
+
+    def __init__(self, *args, signal: Optional[GUIProgressSignal] = None, **kwargs):
         self._tasks = {}
-        self.signal = signal
+        # Use provided signal or fallback to default
+        self.signal = signal if signal is not None else self._default_signal
         self._start_times = {}
         self._last_update_time = {}
+
+    @classmethod
+    def set_default_signal(cls, signal: Optional['GUIProgressSignal']):
+        """Set the default signal to be used when none is provided."""
+        cls._default_signal = signal
 
     @property
     def tasks(self):

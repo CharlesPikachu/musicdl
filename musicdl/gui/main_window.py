@@ -369,6 +369,11 @@ class MainWindow(QMainWindow):
         self.results_table.setSortingEnabled(False)
         self.results_table.setRowCount(0)
         self.current_song_infos = {}
+
+        # Initialize Progress Signal for Playlist Parsing
+        self.playlist_progress_signal = GUIProgressSignal()
+        self.playlist_progress_signal.progress.connect(self._on_progress_updated)
+        GUIProgress.set_default_signal(self.playlist_progress_signal)
         
         self.playlist_worker = Worker(self.music_client.parseplaylist, playlist_url)
         self.playlist_worker.finished.connect(self._on_playlist_parsed)
@@ -378,6 +383,7 @@ class MainWindow(QMainWindow):
     def _on_playlist_parsed(self, result):
         """Handle playlist parsing completion."""
         self.is_parsing_playlist = False
+        GUIProgress.set_default_signal(None)  # Clear signal
         self.parse_playlist_btn.setEnabled(True)
         self.search_btn.setEnabled(True)
         
@@ -760,6 +766,7 @@ class MainWindow(QMainWindow):
             return
         self.is_searching = False
         self.is_parsing_playlist = False
+        GUIProgress.set_default_signal(None)
         self.search_btn.setText("🔍 搜索")
         self.search_btn.setEnabled(True)
         self.parse_playlist_btn.setEnabled(True)
