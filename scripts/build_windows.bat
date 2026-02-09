@@ -114,6 +114,7 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.sources.qq" ^
     --hidden-import "musicdl.modules.sources.soda" ^
     --hidden-import "musicdl.modules.sources.tidal" ^
+    --hidden-import "musicdl.modules.sources.streetvoice" ^
     --hidden-import "musicdl.modules.sources.twot58" ^
     --hidden-import "musicdl.modules.sources.yinyuedao" ^
     --hidden-import "musicdl.modules.sources.youtube" ^
