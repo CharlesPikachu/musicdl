@@ -267,71 +267,93 @@ class NeteaseMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
+    '''_process_search_result'''
+    def _process_search_result(self, search_result, request_overrides):
+        import time
+        # --download results
+        if not isinstance(search_result, dict) or ('id' not in search_result): return None
+        song_info = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
+        song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
+        # ----parse from high to low music quality until successful fetch
+        for quality_idx, quality in enumerate(MUSIC_QUALITIES):
+            if quality_idx >= MUSIC_QUALITIES.index(song_info_flac.raw_data['quality']) and song_info_flac.with_valid_download_url: song_info = song_info_flac; break
+            params = {'ids': [search_result['id']], 'level': quality, 'encodeType': 'flac', 'header': json.dumps({"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!", "requestId": str(random.randrange(20000000, 30000000))})}
+            if quality == 'sky': params['immerseType'] = 'c51'
+            params = EapiCryptoUtils.encryptparams(url='https://interface3.music.163.com/eapi/song/enhance/player/url/v1', payload=params)
+            cookies = {"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!"}
+            cookies.update(copy.deepcopy(self.default_cookies))
+            try:
+                resp = self.post('https://interface3.music.163.com/eapi/song/enhance/player/url/v1', data={"params": params}, cookies=cookies, **request_overrides)
+                resp.raise_for_status()
+                download_result: dict = resp2json(resp)
+                if ('data' not in download_result) or (not download_result['data']): continue
+            except:
+                continue
+            download_url: str = safeextractfromdict(download_result, ['data', 0, 'url'], '')
+            if not download_url: continue
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
+                singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
+                ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0,
+                duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), 
+                download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] != 'NULL') else song_info.ext
+            if song_info.with_valid_download_url: break
+        if not song_info.with_valid_download_url: song_info = song_info_flac
+        if not song_info.with_valid_download_url: return None
+        # --lyric results
+        data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
+        try:
+            resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
+            resp.raise_for_status()
+            lyric_result: dict = resp2json(resp)
+            lyric = safeextractfromdict(lyric_result, ['lrc', 'lyric'], 'NULL')
+            lyric = 'NULL' if not lyric else cleanlrc(lyric)
+        except:
+            lyric_result, lyric = dict(), 'NULL'
+        song_info.raw_data['lyric'] = lyric_result
+        song_info.lyric = lyric
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        return song_info
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
+        import time
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         request_overrides = request_overrides or {}
         search_meta = copy.deepcopy(search_url)
         search_url = search_meta.pop('url')
+        timeout = 60
         # successful
         try:
             # --search results
             resp = self.post(search_url, **search_meta, **request_overrides)
             resp.raise_for_status()
             search_results = resp2json(resp)['result']['songs']
-            for search_result in search_results:
-                # --download results
-                if not isinstance(search_result, dict) or ('id' not in search_result): continue
-                song_info = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-                song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
-                # ----parse from high to low music quality until successful fetch
-                for quality_idx, quality in enumerate(MUSIC_QUALITIES):
-                    if quality_idx >= MUSIC_QUALITIES.index(song_info_flac.raw_data['quality']) and song_info_flac.with_valid_download_url: song_info = song_info_flac; break
-                    params = {'ids': [search_result['id']], 'level': quality, 'encodeType': 'flac', 'header': json.dumps({"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!", "requestId": str(random.randrange(20000000, 30000000))})}
-                    if quality == 'sky': params['immerseType'] = 'c51'
-                    params = EapiCryptoUtils.encryptparams(url='https://interface3.music.163.com/eapi/song/enhance/player/url/v1', payload=params)
-                    cookies = {"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!"}
-                    cookies.update(copy.deepcopy(self.default_cookies))
+            
+            start_time = time.time()
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_song = {executor.submit(self._process_search_result, result, request_overrides): result for result in search_results}
+                
+                for future in as_completed(future_to_song):
+                    if time.time() - start_time > timeout:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        break
+                    
                     try:
-                        resp = self.post('https://interface3.music.163.com/eapi/song/enhance/player/url/v1', data={"params": params}, cookies=cookies, **request_overrides)
-                        resp.raise_for_status()
-                        download_result: dict = resp2json(resp)
-                        if ('data' not in download_result) or (not download_result['data']): continue
-                    except:
+                        song_info = future.result()
+                        if song_info:
+                            song_infos.append(song_info)
+                            if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page:
+                                executor.shutdown(wait=False, cancel_futures=True)
+                                break
+                    except Exception as e:
                         continue
-                    download_url: str = safeextractfromdict(download_result, ['data', 0, 'url'], '')
-                    if not download_url: continue
-                    song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
-                        singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
-                        ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0,
-                        duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), 
-                        download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                    )
-                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] != 'NULL') else song_info.ext
-                    if song_info.with_valid_download_url: break
-                if not song_info.with_valid_download_url: song_info = song_info_flac
-                if not song_info.with_valid_download_url: continue
-                # --lyric results
-                data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
-                try:
-                    resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
-                    resp.raise_for_status()
-                    lyric_result: dict = resp2json(resp)
-                    lyric = safeextractfromdict(lyric_result, ['lrc', 'lyric'], 'NULL')
-                    lyric = 'NULL' if not lyric else cleanlrc(lyric)
-                except:
-                    lyric_result, lyric = dict(), 'NULL'
-                song_info.raw_data['lyric'] = lyric_result
-                song_info.lyric = lyric
-                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
-                # --append to song_infos
-                song_infos.append(song_info)
-                # --judgement for search_size
-                if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
+
             # --update progress
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure
