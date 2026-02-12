@@ -2,3 +2,5 @@ recommonmark
 sphinx==5.0.0
 sphinx_markdown_tables==0.0.12
 sphinx_rtd_theme
+markdown==3.0.1
+setuptools<82

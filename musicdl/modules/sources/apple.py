@@ -51,11 +51,11 @@ class AppleMusicClient(BaseMusicClient):
             shutil.move(download_item.staged_path, song_info.save_path)
             progress.update(song_progress_id, total=os.path.getsize(song_info.save_path), kind='download')
             progress.advance(song_progress_id, os.path.getsize(song_info.save_path))
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
             downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
             shutil.rmtree(tmp_dir, ignore_errors=True)
         except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         return downloaded_song_infos
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):

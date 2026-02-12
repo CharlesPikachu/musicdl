@@ -22,7 +22,7 @@ class TuneHubMusicClient(BaseMusicClient):
     ALLOWED_SITES = ['netease', 'qq', 'kuwo', 'kugou', 'migu'][:3] # it seems kugou and migu are useless, recorded in 2026-01-28
     MUSIC_QUALITIES = ['flac24bit', 'flac', '320k', '128k']
     BAKA_MUSIC_QUALITIES = ['400', '380', '320', '128']
-    REQUEST_API_KEYS = ['dGhfMzA2M2U0YWQyZWY4MDc1Nzc0YWJkNDEzYTQxN2NlMzE5MTRiNjBkODc3NmM1NTQ5', 'dGhfOGYwMGQ4NzA5ZGJhOWQ0NDgwYmExOTE2NjgxNDdlMWI3YjkzNjkyMDkyMGZhNjZm']
+    REQUEST_API_KEYS = ['dGhfMzA2M2U0YWQyZWY4MDc1Nzc0YWJkNDEzYTQxN2NlMzE5MTRiNjBkODc3NmM1NTQ5', 'dGhfOGYwMGQ4NzA5ZGJhOWQ0NDgwYmExOTE2NjgxNDdlMWI3YjkzNjkyMDkyMGZhNjZm', 'dGhfYTI4NzAzZjNlYzU1ZTJmYTcyODc4Yzc0N2U1NDhiNzE1YzgxZTY5ZGQ4MTFiY2Zk']
     def __init__(self, **kwargs):
         self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', TuneHubMusicClient.ALLOWED_SITES)))
         super(TuneHubMusicClient, self).__init__(**kwargs)
@@ -125,11 +125,11 @@ class TuneHubMusicClient(BaseMusicClient):
                         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
                         song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
                         if song_info.with_valid_download_url: break
-                elif search_result['source'] in ['kuwo']:
+                elif search_result['source'] in {'kuwo'}:
                     for quality in TuneHubMusicClient.MUSIC_QUALITIES:
                         data = {'quality': quality, 'ids': search_result['id'], 'platform': search_result['source']}
                         try: (resp := self.post('https://tunehub.sayqz.com/api/v1/parse?', timeout=10, data=data, **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
-                        except Exception: continue
+                        except Exception: break
                         download_url = safeextractfromdict(download_result, ['data', 'data', 0, 'url'], "")
                         if not download_url or not download_url.startswith('http'): continue
                         song_info = SongInfo(

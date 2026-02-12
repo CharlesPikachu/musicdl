@@ -16,7 +16,7 @@ from itertools import zip_longest
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, usesearchheaderscookies, usedownloadheaderscookies, touchdir, resp2json, byte2mb, safeextractfromdict, SongInfo, SongInfoUtils
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, byte2mb, safeextractfromdict, SongInfo
 
 
 '''MP3JuiceMusicClient'''

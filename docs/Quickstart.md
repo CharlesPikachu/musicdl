@@ -214,12 +214,14 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 
 - [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
 - [QQMusicClient | QQ音乐](https://y.qq.com/)
+- [KuwoMusicClient | 酷我音乐](http://www.kuwo.cn/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
 ```sh
 musicdl -p "https://music.163.com/#/playlist?id=7583298906" -m NeteaseMusicClient
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
+musicdl -p "https://www.kuwo.cn/playlist_detail/3387576633" -m KuwoMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
@@ -424,21 +426,43 @@ Of course, it’s worth noting that another prerequisite for downloading paid au
 
 #### TIDAL High-Quality Music Download
 
-If you want to download lossless-quality music from [TIDAL](https://tidal.com/), you need to make sure that [PyAV](https://github.com/PyAV-Org/PyAV) is available or that [FFmpeg](https://www.ffmpeg.org/) is in your environment variables, 
-and then use musicdl as follows:
+Prior to using `TIDALMusicClient`, verify that the following command-line tools are correctly installed and available in your environment,
+
+- [PyAV](https://github.com/PyAV-Org/PyAV)
+- [FFmpeg](https://www.ffmpeg.org/)
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE)
+
+If you plan to use musicdl to download high-quality lossless audio from TIDAL, you must have an active TIDAL subscription. 
+Otherwise, musicdl may fall back to third-party sources, and stable access to the highest-quality lossless files cannot be guaranteed.
+
+After you have a TIDAL membership account, you need to manually capture the cookies of your account from the TIDAL website using network packet capturing. 
+The format is as follows:
+
+```python
+{
+  "access_token": "xxx", 
+  "refresh_token": "xxx", 
+  "expires": "2026-02-10T07:32:18.102233",
+  "user_id": xxx, 
+  "country_code": "SG", 
+  "client_id": "7m7Ap0JC9j1cOM3n", 
+  "client_secret": "vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY="
+}
+```
+
+Of course, musicdl also provides a script [build_cookies_for_tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/scripts/build_cookies_for_tidal.py) to automatically obtain your TIDAL membership cookies. 
+You can simply run the script and follow the prompts to retrieve the cookies mentioned above.
+
+Once you have successfully obtained your membership cookies, you can use musicdl to download lossless music from TIDAL using the following method,
 
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'])
+cookies = "YOUR_VIP_COOKIES"
+init_music_clients_cfg = {'TIDALMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
+music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
-
-Running the above code will automatically open your default browser and prompt you to log in to TIDAL. Once you have successfully logged in, musicdl will automatically capture the tokens from your session to support subsequent music search and download.
-
-If you are running on a remote server where the browser cannot be opened automatically, you can instead copy the URL printed in the terminal and open it in your local browser to complete the login process.
-
-Note that if the account you log in with is not a paid TIDAL subscription, you will still be unable to download the full lossless audio files.
 
 #### YouTube Music Download
 
@@ -539,8 +563,14 @@ music_client.startcmdui()
 
 #### Apple Music Download
 
-Apple Music is like TIDAL, only users with a paid Apple Music subscription can download Apple Music tracks, otherwise, you can only download an approximately 30-90 second preview clip.
+Before using `AppleMusicClient`, please ensure that the following command-line tools are installed and available in your environment,
 
+- [FFmpeg](https://www.ffmpeg.org/)
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE)
+- [Bento4](https://www.bento4.com/downloads/)
+- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools)
+
+Apple Music is like TIDAL, only users with a paid Apple Music subscription can download Apple Music tracks, otherwise, you can only download an approximately 30-90 second preview clip.
 Specifically, for paid Apple Music users, musicdl supports downloading music files in the following formats,
 
 - `aac-legacy`

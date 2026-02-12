@@ -48,12 +48,8 @@ class FLMP3MusicClient(BaseMusicClient):
         for li in soup.select("div.list ul.flex.flex-wrap > li"):
             a = li.select_one("a")
             if not a: continue
-            song_href = a.get("href", "")
-            song_url = urljoin(base_url, song_href) if song_href else None
-            title_el = li.select_one("div.con div.t h3")
-            artist_el = li.select_one("div.con div.t p")
-            date_el = li.select_one("div.con div.date")
-            img_el = li.select_one("div.pic img")
+            song_href = a.get("href", ""); song_url = urljoin(base_url, song_href) if song_href else None; title_el = li.select_one("div.con div.t h3")
+            artist_el = li.select_one("div.con div.t p"); date_el = li.select_one("div.con div.date"); img_el = li.select_one("div.pic img")
             search_results.append({"song_url": song_url, "title": title_el.get_text(strip=True) if title_el else None, "artist": artist_el.get_text(strip=True) if artist_el else None, "date": date_el.get_text(strip=True) if date_el else None, "img_url": img_el.get("src") if img_el else None, "img_alt": img_el.get("alt") if img_el else None})
         return search_results
     '''_parsesongdetailfordownloadpages'''

@@ -17,6 +17,9 @@ NETEASE_MUSIC_HOSTS = {
 QQ_MUSIC_HOSTS = {
     "y.qq.com", "i.y.qq.com", "m.y.qq.com", "c.y.qq.com", "c6.y.qq.com", "music.qq.com",
 }
+KUWO_MUSIC_HOSTS = {
+    "kuwo.cn", "www.kuwo.cn", "m.kuwo.cn", "mobile.kuwo.cn"
+}
 
 
 '''obtainhostname'''

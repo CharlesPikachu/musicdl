@@ -43,13 +43,10 @@ class KugouMusicClient(BaseMusicClient):
         safe_fetch_filesize_func = lambda meta: (lambda s: (lambda: float(s))() if s.replace('.', '', 1).isdigit() else 0)(str(meta.get('size', '0.00MB')).removesuffix('MB').strip()) if isinstance(meta, dict) else 0
         # parse
         for quality in MUSIC_QUALITIES:
-            try:
-                resp = curl_cffi.requests.get(f"https://music-api2.cenguigui.cn/?kg=&id={file_hash}&type=song&format=json&level={quality}", timeout=10, impersonate="chrome131", verify=False, **request_overrides)
-                resp.raise_for_status()
-                download_result = json_repair.loads(resp.text)
-                if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
-            except:
-                continue
+            try: resp = curl_cffi.requests.get(f"https://music-api2.cenguigui.cn/?kg=&id={file_hash}&type=song&format=json&level={quality}", timeout=10, impersonate="chrome131", verify=False, **request_overrides); resp.raise_for_status()
+            except Exception: break
+            download_result = json_repair.loads(resp.text)
+            if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
             download_url = safeextractfromdict(download_result, ['data', 'url'], '')
             if not download_url: continue
             song_info = SongInfo(

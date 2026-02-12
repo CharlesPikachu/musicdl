@@ -157,26 +157,26 @@ Arguments supported when initializing this class include:
   Maximum number of search results to fetch per source.
   
 - **auto_set_proxies** (`bool`, default `False`):  
-  If `True`, randomly assign a free proxy fetched by `freeproxy.ProxiedSessionClient` (details refer to [FreeProxy](https://github.com/CharlesPikachu/freeproxy/tree/master)) for each request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
+  If `True`, randomly assign a free proxy fetched by `freeproxy.ProxiedSessionClient` (details refer to [FreeProxy](https://github.com/CharlesPikachu/freeproxy/tree/master)) for each request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
 
 - **random_update_ua** (`bool`, default `False`):  
-  If `True`, randomly refresh the `User-Agent` header on each request (not work for `AppleMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
+  If `True`, randomly refresh the `User-Agent` header on each request (not work for `AppleMusicClient`, `TIDALMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
 
 - **enable_search_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each search request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
+  If `True`, `curl_cffi.requests.Session` is used for each search request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
 
 - **enable_download_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each download request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
+  If `True`, `curl_cffi.requests.Session` is used for each download request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
 
 - **enable_parse_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each parseplaylist request (not work for `AppleMusicClient` and `YouTubeMusicClient`).
+  If `True`, `curl_cffi.requests.Session` is used for each parseplaylist request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
 
 - **max_retries** (`int`, default `3`):  
   Maximum number of retry attempts for each HTTP request in `BaseMusicClient.get()` / `BaseMusicClient.post()`.
 
 - **maintain_session** (`bool`, default `False`):  
   If `False`, a new `requests.Session` is created before each request;  
-  if `True`, the same session is reused across requests (not work for `AppleMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
+  if `True`, the same session is reused across requests (not work for `AppleMusicClient`, `TIDALMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
 
 - **logger_handle** (`LoggerHandle`, optional):  
   Logger instance used for logging.  

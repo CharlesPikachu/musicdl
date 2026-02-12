@@ -41,7 +41,7 @@ These CLI tools include,
   If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
 
 - [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): N_m3u8DL-RE is a powerful open-source command-line tool for downloading, decrypting, and muxing HLS/DASH (m3u8/mpd) streaming media into local video files.
-  In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
+  In musicdl, this library is mainly used for handling `TIDALMusicClient` and `AppleMusicClient` audio streams, so if you don’t need `TIDALMusicClient` and `AppleMusicClient` support, you don’t need to install it.
   After installing N_m3u8DL-RE, you need to make sure all of its executables are available in your system `PATH`.
   A quick way to verify this is that you should be able to run
   ```bash
