@@ -54,6 +54,9 @@ class QQMusicClient(BaseMusicClient):
             if ('data' not in download_result) or ('url' not in download_result['data']) or (safe_fetch_filesize_func(download_result['data']) < 1): continue
             download_url: str = download_result['data']['url']
             if not download_url: continue
+            album_mid = safeextractfromdict(search_result, ['album', 'mid'], '')
+            cover_url = safeextractfromdict(download_result['data'], ['cover'], "")
+            if (not cover_url) and album_mid: cover_url = f'https://y.gtimg.cn/music/photo_new/T002R800x800M000{album_mid}.jpg'
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result['data'], ['song'], None)),
                 singers=legalizestring(safeextractfromdict(download_result['data'], ['singer'], None)), album=legalizestring(safeextractfromdict(download_result['data'], ['album'], None)), 
@@ -78,6 +81,8 @@ class QQMusicClient(BaseMusicClient):
             download_result = resp2json(resp=resp)
             download_url: str = safeextractfromdict(download_result, ['data', 'audio'], '')
             if not download_url: continue
+            album_mid = safeextractfromdict(search_result, ['album', 'mid'], '')
+            cover_url = f'https://y.gtimg.cn/music/photo_new/T002R800x800M000{album_mid}.jpg' if album_mid else None
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')),
                 singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['singer'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
@@ -203,6 +208,8 @@ class QQMusicClient(BaseMusicClient):
                         ekey = safeextractfromdict(download_result, ['music.vkey.GetEVkey.CgiGetEVkey', 'data', "midurlinfo", 0, "ekey"], "")
                         if not download_url: continue
                         download_url = QQMusicClientUtils.music_domain + download_url
+                        album_mid = safeextractfromdict(search_result, ['album', 'mid'], '')
+                        cover_url = f'https://y.gtimg.cn/music/photo_new/T002R800x800M000{album_mid}.jpg' if album_mid else None
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'ekey': ekey}, source=self.source, song_name=legalizestring(search_result.get('title')),
                             singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])),
@@ -231,6 +238,8 @@ class QQMusicClient(BaseMusicClient):
                         download_url = safeextractfromdict(download_result, ['music.vkey.GetVkey.UrlGetVkey', 'data', "midurlinfo", 0, "purl"], "") or safeextractfromdict(download_result, ['music.vkey.GetVkey.UrlGetVkey', 'data', "midurlinfo", 0, "wifiurl"], "")
                         if not download_url: continue
                         download_url = QQMusicClientUtils.music_domain + download_url
+                        album_mid = safeextractfromdict(search_result, ['album', 'mid'], '')
+                        cover_url = f'https://y.gtimg.cn/music/photo_new/T002R800x800M000{album_mid}.jpg' if album_mid else None
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')),
                             singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])),

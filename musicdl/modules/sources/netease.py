@@ -416,7 +416,7 @@ class NeteaseMusicClient(BaseMusicClient):
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
             
-            api_names = ['cyrui', 'cgg', 'cunyu', 'tmetu', 'xiaoqin']
+            api_names = ['cgg', 'cyrui', 'cunyu', 'tmetu', 'xiaoqin']
             api_fail_counts = {name: 0 for name in api_names}
             MAX_CONSECUTIVE_FAILURES = 1
             
