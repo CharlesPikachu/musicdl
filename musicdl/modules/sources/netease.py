@@ -381,39 +381,6 @@ class NeteaseMusicClient(BaseMusicClient):
                                 break
                     except Exception as e:
                         continue
-                    download_url: str = safeextractfromdict(download_result, ['data', 0, 'url'], '')
-                    if not download_url: continue
-                    duration_in_secs = float(search_result.get('dt', 0)) / 1000 if (isinstance(search_result.get('dt', 0), (int, float)) or str(search_result.get('dt', 0)).isdigit()) else 0
-                    song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('name', None)),
-                        singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])), 
-                        album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], 
-                        duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), download_url=download_url,
-                        download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                    )
-                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] != 'NULL') else song_info.ext
-                    if song_info.with_valid_download_url: break
-                if not song_info.with_valid_download_url: song_info = song_info_flac
-                if not song_info.with_valid_download_url: continue
-                # --lyric results
-                data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
-                try:
-                    resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
-                    resp.raise_for_status()
-                    lyric_result: dict = resp2json(resp)
-                    lyric = safeextractfromdict(lyric_result, ['lrc', 'lyric'], 'NULL')
-                    lyric = 'NULL' if not lyric else cleanlrc(lyric)
-                except:
-                    lyric_result, lyric = dict(), 'NULL'
-                song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
-                song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
-                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
-                # --append to song_infos
-                song_infos.append(song_info)
-                # --judgement for search_size
-                if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure
