@@ -40,6 +40,8 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewithxiaoqinapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id = request_overrides or {}, search_result['id']
+        # to seconds func
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse
         for quality in MUSIC_QUALITIES:
             try:
@@ -51,11 +53,15 @@ class NeteaseMusicClient(BaseMusicClient):
                 continue
             download_url: str = safeextractfromdict(download_result, ['data', 'url'], '')
             if not download_url or not download_url.startswith('http'): continue
+            try: (resp := self.post('https://wyapi-eo.toubiec.cn/api/getSongInfo', json={'id': song_id}, timeout=10, verify=False, **request_overrides)).raise_for_status(); download_result['song_info'] = resp2json(resp=resp)
+            except Exception: pass
+            try: (resp := self.post('https://wyapi-eo.toubiec.cn/api/getSongLyric', json={'id': song_id}, timeout=10, verify=False, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp)
+            except Exception: lyric_result = {}
             ext = download_url.split('?')[0].split('.')[-1]
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])), 
-                album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), ext=ext, file_size='NULL', identifier=search_result['id'], duration_s=search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0, duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0), 
-                lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['song_info', 'data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['song_info', 'data', 'singer'], None) or ""),
+                album=legalizestring(safeextractfromdict(download_result, ['song_info', 'data', 'album'], None)), ext=ext, file_size='NULL', identifier=song_id, duration_s=to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], "")), duration=seconds2hms(to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], ""))), 
+                lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], "")) or "NULL", cover_url=safeextractfromdict(download_result, ['song_info', 'data', 'picimg'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -112,12 +118,39 @@ class NeteaseMusicClient(BaseMusicClient):
                 continue
             download_url: str = safeextractfromdict(download_result, ['url'], '')
             if not download_url or not download_url.startswith('http'): continue
-            lyric = cleanlrc(safeextractfromdict(download_result, ['lyric'], "")) or 'NULL'
+            lyric, download_url_status = cleanlrc(safeextractfromdict(download_result, ['lyric'], "")) or 'NULL', self.audio_link_tester.test(download_url, request_overrides)
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['name'], None)), singers=legalizestring(download_result.get('ar_name')), 
-                album=legalizestring(safeextractfromdict(download_result, ['al_name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size=str(safeextractfromdict(download_result, ['size'], "")).removesuffix('MB').strip() + ' MB', identifier=search_result['id'], 
-                duration_s=search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0, duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0), lyric=lyric,
-                cover_url=safeextractfromdict(download_result, ['pic'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(download_result.get('name', None)), 
+                singers=legalizestring(download_result.get('ar_name')), album=legalizestring(safeextractfromdict(download_result, ['al_name'], None)), ext=download_url.split('?')[0].split('.')[-1],
+                file_size=str(safeextractfromdict(download_result, ['size'], "")).removesuffix('MB').strip() + ' MB', identifier=search_result['id'], duration_s=extractdurationsecondsfromlrc(lyric),
+                duration=seconds2hms(extractdurationsecondsfromlrc(lyric)), lyric=lyric, cover_url=download_result.get('pic'), download_url=download_url, download_url_status=download_url_status,
+            )
+            if song_info.album == 'NULL': song_info.album = legalizestring(safeextractfromdict(search_result, ['al', 'name'], None))
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info
+    '''_parsewithyutangxiaowuapi'''
+    def _parsewithyutangxiaowuapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, search_result['id']
+        # safe fetch filesize func
+        safe_fetch_filesize_func = lambda meta: (lambda s: (lambda: float(s))() if s.replace('.', '', 1).isdigit() else 0)(str(meta.get('size', '0.00MB')).removesuffix('MB').strip()) if isinstance(meta, dict) else 0
+        # parse
+        for quality in MUSIC_QUALITIES:
+            try: (resp := self.get(f'https://yutangxiaowu.cn:4000/Song_V1?url={song_id}&level={quality}&type=json', timeout=10, **request_overrides)).raise_for_status()
+            except Exception: break
+            download_result = resp2json(resp=resp)
+            if 'url' not in download_result or (safe_fetch_filesize_func(download_result) < 1): continue
+            download_url: str = safeextractfromdict(download_result, ['url'], '')
+            if not download_url or not download_url.startswith('http'): continue
+            lyric, download_url_status = cleanlrc(safeextractfromdict(download_result, ['lyric'], "")) or 'NULL', self.audio_link_tester.test(download_url, request_overrides)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(download_result.get('name', None)), 
+                singers=legalizestring(download_result.get('ar_name')), album=legalizestring(safeextractfromdict(download_result, ['al_name'], None)), ext=download_url.split('?')[0].split('.')[-1],
+                file_size=str(safeextractfromdict(download_result, ['size'], "")).removesuffix('MB').strip() + ' MB', identifier=search_result['id'], duration_s=extractdurationsecondsfromlrc(lyric),
+                duration=seconds2hms(extractdurationsecondsfromlrc(lyric)), lyric=lyric, cover_url=download_result.get('pic'), download_url=download_url, download_url_status=download_url_status,
             )
             if song_info.album == 'NULL': song_info.album = legalizestring(safeextractfromdict(search_result, ['al', 'name'], None))
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -140,11 +173,12 @@ class NeteaseMusicClient(BaseMusicClient):
         except:
             return song_info
         if not download_url or not download_url.startswith('http'): return song_info
+        lyric = cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], "")) or 'NULL'
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': 'hires'}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)),
             singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'author'], "")).replace('/', ', ')), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
-            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration='-:-:-', lyric='NULL', cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""), 
-            download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=extractdurationsecondsfromlrc(lyric), duration=seconds2hms(extractdurationsecondsfromlrc(lyric)),
+            lyric=lyric, cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         if song_info.album == 'NULL': song_info.album = legalizestring(safeextractfromdict(search_result, ['al', 'name'], None))
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -169,7 +203,7 @@ class NeteaseMusicClient(BaseMusicClient):
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)),
                 singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'artists'], '') or '').replace('/', ', ')), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
                 ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=safeextractfromdict(download_result, ['data', 'size'], 0), file_size=byte2mb(safeextractfromdict(download_result, ['data', 'size'], 0)),
-                identifier=search_result['id'], duration_s=float(safeextractfromdict(download_result, ['data', 'duration'], 0)) / 1000, duration=seconds2hms(float(safeextractfromdict(download_result, ['data', 'duration'], 0)) / 1000),
+                identifier=song_id, duration_s=float(safeextractfromdict(download_result, ['data', 'duration'], 0)) / 1000, duration=seconds2hms(float(safeextractfromdict(download_result, ['data', 'duration'], 0)) / 1000),
                 lyric=cleanlrc(str(safeextractfromdict(download_result, ['data', 'lyric'], ""))) or 'NULL', cover_url=safeextractfromdict(download_result, ['data', 'picUrl'], None), download_url=download_url,
                 download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
@@ -221,13 +255,11 @@ class NeteaseMusicClient(BaseMusicClient):
                 continue
             download_url: str = safeextractfromdict(download_result, ['getMusicUrl', 'data', 0, 'url'], '')
             if not download_url or not download_url.startswith('http'): continue
+            ext = download_url.split('?')[0].split('.')[-1]
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['songs', 0, 'name'], None)),
-                singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(download_result, ['songs', 0, 'ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                album=legalizestring(safeextractfromdict(download_result, ['songs', 0, 'al', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=safeextractfromdict(download_result, ['getMusicUrl', 'data', 0, 'size'], 0),
-                file_size=byte2mb(safeextractfromdict(download_result, ['getMusicUrl', 'data', 0, 'size'], 0)), identifier=search_result['id'], duration_s=float(safeextractfromdict(download_result, ['songs', 0, 'dt'], 0)) / 1000,
-                duration=seconds2hms(float(safeextractfromdict(download_result, ['songs', 0, 'dt'], 0)) / 1000), lyric='NULL', cover_url=safeextractfromdict(download_result, ['songs', 0, 'al', 'picUrl'], ""), download_url=download_url,
-                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['songs', 0, 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(download_result, ['songs', 0, 'ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
+                album=legalizestring(safeextractfromdict(download_result, ['songs', 0, 'al', 'name'], None)), ext=ext, file_size_bytes=safeextractfromdict(download_result, ['getMusicUrl', 'data', 0, 'size'], 0), file_size=byte2mb(safeextractfromdict(download_result, ['getMusicUrl', 'data', 0, 'size'], 0)), identifier=song_id, duration_s=float(safeextractfromdict(download_result, ['songs', 0, 'dt'], 0)) / 1000,
+                duration=seconds2hms(float(safeextractfromdict(download_result, ['songs', 0, 'dt'], 0)) / 1000), lyric='NULL', cover_url=safeextractfromdict(download_result, ['songs', 0, 'al', 'picUrl'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -238,7 +270,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithbugpkapi, self._parsewithcggapi, self._parsewithcunyuapi, self._parsewithxianyuwapi, self._parsewithtmetuapi]:
+        for imp_func in [self._parsewithcggapi, self._parsewithcyruiapi, self._parsewithtmetuapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithbugpkapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -349,7 +381,39 @@ class NeteaseMusicClient(BaseMusicClient):
                                 break
                     except Exception as e:
                         continue
-
+                    download_url: str = safeextractfromdict(download_result, ['data', 0, 'url'], '')
+                    if not download_url: continue
+                    duration_in_secs = float(search_result.get('dt', 0)) / 1000 if (isinstance(search_result.get('dt', 0), (int, float)) or str(search_result.get('dt', 0)).isdigit()) else 0
+                    song_info = SongInfo(
+                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('name', None)),
+                        singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])), 
+                        album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], 
+                        duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), download_url=download_url,
+                        download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    )
+                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] != 'NULL') else song_info.ext
+                    if song_info.with_valid_download_url: break
+                if not song_info.with_valid_download_url: song_info = song_info_flac
+                if not song_info.with_valid_download_url: continue
+                # --lyric results
+                data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
+                try:
+                    resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
+                    resp.raise_for_status()
+                    lyric_result: dict = resp2json(resp)
+                    lyric = safeextractfromdict(lyric_result, ['lrc', 'lyric'], 'NULL')
+                    lyric = 'NULL' if not lyric else cleanlrc(lyric)
+                except:
+                    lyric_result, lyric = dict(), 'NULL'
+                song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+                song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
+                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+                # --append to song_infos
+                song_infos.append(song_info)
+                # --judgement for search_size
+                if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure
@@ -412,7 +476,6 @@ class NeteaseMusicClient(BaseMusicClient):
             return []
         
         self.logger_handle.info(f'{self.source}.parseplaylist >>> Found {len(track_ids)} tracks, starting to parse...', disable_print=self.disable_print)
-        
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
             
@@ -425,7 +488,7 @@ class NeteaseMusicClient(BaseMusicClient):
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
                 
                 song_parsed = False
-                for api_idx, third_part_api in enumerate([self._parsewithcggapi, self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithtmetuapi, self._parsewithxiaoqinapi]):
+                for api_idx, third_part_api in enumerate([self._parsewithcggapi, self._parsewithcyruiapi, self._parsewithtmetuapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithbugpkapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi]):
                     current_api_name = api_names[api_idx]
                     
                     if api_fail_counts[current_api_name] >= MAX_CONSECUTIVE_FAILURES:

@@ -98,13 +98,10 @@ class SodaMusicClient(BaseMusicClient):
                     download_url = audio_sorted.get('MainPlayUrl') or audio_sorted.get('BackupPlayUrl')
                     play_auth = safeextractfromdict(audio_sorted, ['PlayAuth'], '')
                     song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)),
-                        singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                        album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=safeextractfromdict(audio_sorted, ['Format'], 'm4a'), file_size_bytes=safeextractfromdict(audio_sorted, ['Size'], 0), 
-                        file_size=byte2mb(safeextractfromdict(audio_sorted, ['Size'], 0)), identifier=song_id, duration_s=safeextractfromdict(audio_sorted, ['Duration'], 0), duration=seconds2hms(safeextractfromdict(audio_sorted, ['Duration'], 0)), 
-                        lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], "")))) or 'NULL', 
-                        cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', 
-                        download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
+                        album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=safeextractfromdict(audio_sorted, ['Format'], 'm4a'), file_size_bytes=safeextractfromdict(audio_sorted, ['Size'], 0), file_size=byte2mb(safeextractfromdict(audio_sorted, ['Size'], 0)), identifier=song_id, duration_s=audio_sorted.get('Duration', None), duration=seconds2hms(audio_sorted.get('Duration', None)), 
+                        lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], "")))) or 'NULL', cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', download_url=download_url, 
+                        download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
                     song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                     song_info.file_size = song_info.download_url_status['probe_status']['file_size']

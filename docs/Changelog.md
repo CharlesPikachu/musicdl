@@ -1,5 +1,7 @@
 # Release Log
 
+- 2026-02-14: Released musicdl v2.9.5 — this update fixes the incomplete playlist retrieval for NetEase Cloud Music, adds support for Kugou Music playlist parsing, introduces multiple lossless music APIs, and includes several potential bug fixes.
+
 - 2026-02-11: Released musicdl v2.9.4 — supported batch downloading for Kuwo Music playlists; optimized playlist downloading for NetEase Cloud Music and QQ Music; added support for QQ Music’s "Premium Master 4.0" (臻品母带 4.0) to provide high-fidelity audio files.
 
 - 2026-02-10: Released musicdl v2.9.3 — refactored the TIDAL client to utilize N_m3u8DL-RE for HI_RES_LOSSLESS support, and optimized the lossless interface for shared membership accounts.

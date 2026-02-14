@@ -49,6 +49,7 @@ def sectolrcts(t: Union[str, float, int], centis: int = 2) -> str:
 
 '''kuwolyricslisttolrc'''
 def kuwolyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyric_key: str = "lineLyric", centis: int = 2, offset: float = 0.0, skip_empty: bool = True, dedup_same_time: bool = False, join_sep: str = " / ") -> str:
+    if not items or str(items) in {'NULL'}: return 'NULL'
     norm = []
     for x in items:
         lyric = str(x.get(lyric_key, "")).strip()

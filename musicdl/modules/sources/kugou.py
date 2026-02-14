@@ -6,7 +6,9 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import copy
+import time
 import random
 import base64
 import hashlib
@@ -15,8 +17,12 @@ import json_repair
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
+from pathvalidate import sanitize_filepath
+from ..utils.hosts import KUGOU_MUSIC_HOSTS
+from urllib.parse import urlparse, parse_qs
 from ..utils.kugouutils import KugouMusicClientUtils, MUSIC_QUALITIES
-from ..utils import legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, optionalimport, cleanlrc, SongInfo
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
+from ..utils import touchdir, legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, optionalimport, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
 warnings.filterwarnings('ignore')
 
 
@@ -25,16 +31,13 @@ class KugouMusicClient(BaseMusicClient):
     source = 'KugouMusicClient'
     def __init__(self, **kwargs):
         super(KugouMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        }
-        self.default_download_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        }
+        self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'}
+        self.default_parse_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'}
+        self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_parsewithcggapi'''
-    def _parsewithcggapi(self, file_hash: list, search_result: dict, request_overrides: dict = None):
+    def _parsewithcggapi(self, file_hash: str, search_result: dict, request_overrides: dict = None):
         # init
         curl_cffi = optionalimport('curl_cffi')
         request_overrides = request_overrides or {}
@@ -48,13 +51,13 @@ class KugouMusicClient(BaseMusicClient):
             download_result = json_repair.loads(resp.text)
             if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
             download_url = safeextractfromdict(download_result, ['data', 'url'], '')
-            if not download_url: continue
+            if not download_url or not str(download_url).startswith('http'): continue
+            try: duration_in_secs = search_result.get('duration') or (float(search_result.get('timelen', 0) or 0) / 1000)
+            except Exception: duration_in_secs = 0
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)),
-                singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), album=legalizestring(search_result.get('album_name')), ext=download_url.split('?')[0].split('.')[-1], 
-                file_size=str(safeextractfromdict(download_result, ['data', 'size'], "")).removesuffix('MB').strip() + ' MB', identifier=file_hash, duration_s=safeextractfromdict(search_result, ['duration'], 0), 
-                duration=seconds2hms(safeextractfromdict(search_result, ['duration'], 0)), lyric='NULL', cover_url=safeextractfromdict(download_result, ['data', 'pic'], ""), download_url=download_url, 
-                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), 
+                album=legalizestring(search_result.get('album_name') or safeextractfromdict(search_result, ['albuminfo', 'name'], "")), ext=download_url.split('?')[0].split('.')[-1], file_size=str(safeextractfromdict(download_result, ['data', 'size'], "")).removesuffix('MB').strip() + ' MB',
+                identifier=file_hash, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', cover_url=safeextractfromdict(download_result, ['data', 'pic'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -158,8 +161,8 @@ class KugouMusicClient(BaseMusicClient):
                     lyric = cleanlrc(base64.b64decode(lyric).decode('utf-8'))
                 except:
                     lyric_result, lyric = dict(), 'NULL'
-                song_info.raw_data['lyric'] = lyric_result
-                song_info.lyric = lyric
+                song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+                song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
@@ -170,4 +173,44 @@ class KugouMusicClient(BaseMusicClient):
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        hostname = obtainhostname(url=playlist_url)
+        if not hostname or not hostmatchessuffix(hostname, KUGOU_MUSIC_HOSTS): return []
+        assert 'special/single/' in urlparse(playlist_url).path, 'kugou playlist link must look like "https://www.kugou.com/yy/special/single/6914288.html"'
+        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=False).get('id')[0]; assert playlist_id
+        except: playlist_id = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html')
+        headers = {'User-Agent': 'Android9-AndroidPhone-11239-18-0-playlist-wifi', 'Host': 'gatewayretry.kugou.com', 'x-router': 'pubsongscdn.kugou.com', 'mid': '239526275778893399526700786998289824956', 'dfid': '-', 'clienttime': str(time.time()).split('.')[0]}
+        page, tracks, song_infos = 1, [], []
+        while True:
+            api_url = f'http://gatewayretry.kugou.com/v2/get_other_list_file?specialid={playlist_id}&need_sort=1&module=CloudMusic&clientver=11239&pagesize=300&specalidpgc={playlist_id}&userid=0&page={page}&type=0&area_code=1&appid=1005'
+            kugou_signature_func = lambda api_url: hashlib.md5(("OIlwieks28dk2k092lksi2UIkp" + "".join(sorted(api_url.split("?", 1)[1].split("&"))) + "OIlwieks28dk2k092lksi2UIkp").encode("utf-8")).hexdigest()
+            try: (resp := self.get(api_url + '&signature=' + kugou_signature_func(api_url), headers=headers, **request_overrides)).raise_for_status()
+            except Exception: continue
+            playlist_results = resp2json(resp=resp)
+            if (not safeextractfromdict(playlist_results, ['data', 'info'], [])) or (float(safeextractfromdict(playlist_results, ['data', 'count'], 0)) <= len(tracks)): break
+            tracks.extend(safeextractfromdict(playlist_results, ['data', 'info'], []))
+        tracks = list({d["hash"]: d for d in tracks}.values())
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(tracks)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks)})", total=len(tracks))
+            for idx, track_info in enumerate(tracks):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(tracks)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks)})")
+                for third_part_api in [self._parsewithcggapi]:
+                    try:
+                        song_info = third_part_api(track_info['hash'], track_info, request_overrides=request_overrides)
+                        if song_info.with_valid_download_url: song_infos.append(song_info); break
+                    except:
+                        continue
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(tracks)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks)})")
+        song_infos = self._removeduplicates(song_infos=song_infos)
+        work_dir = self._constructuniqueworkdir(keyword=playlist_id)
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
         return song_infos

@@ -48,21 +48,20 @@ class QQMusicClient(BaseMusicClient):
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse
         for quality in list(ThirdPartVKeysAPISongFileType.ID_TO_NAME.value.keys())[::-1]:
-            try: resp = self.get(f"https://api.vkeys.cn/v2/music/tencent/geturl?mid={song_id}&quality={quality}", timeout=10, **request_overrides); resp.raise_for_status()
+            try: (resp := self.get(f"https://api.vkeys.cn/v2/music/tencent/geturl?mid={song_id}&quality={quality}", timeout=10, **request_overrides)).raise_for_status()
             except Exception: break
             download_result = resp2json(resp=resp)
             if ('data' not in download_result) or ('url' not in download_result['data']) or (safe_fetch_filesize_func(download_result['data']) < 1): continue
             download_url: str = download_result['data']['url']
-            if not download_url: continue
-            album_mid = safeextractfromdict(search_result, ['album', 'mid'], '')
-            cover_url = safeextractfromdict(download_result['data'], ['cover'], "")
-            if (not cover_url) and album_mid: cover_url = f'https://y.gtimg.cn/music/photo_new/T002R1500x1500M000{album_mid}.jpg'
+            if not download_url or not str(download_url).startswith('http'): continue
+            try: (resp := self.get(f"https://api.vkeys.cn/v2/music/tencent/lyric?mid={song_id}", timeout=10, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp)
+            except Exception: lyric_result = {}
+            ext, duration_in_secs = download_url.split('?')[0].split('.')[-1], safeextractfromdict(download_result, ['data', 'interval'], "")
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result['data'], ['song'], None)),
-                singers=legalizestring(safeextractfromdict(download_result['data'], ['singer'], None)), album=legalizestring(safeextractfromdict(download_result['data'], ['album'], None)), 
-                ext=download_url.split('?')[0].split('.')[-1], file_size=str(safeextractfromdict(download_result['data'], ['size'], "")).removesuffix('MB').strip() + ' MB', identifier=song_id,
-                duration_s=to_seconds_func(safeextractfromdict(download_result['data'], ['interval'], "")), duration=seconds2hms(to_seconds_func(safeextractfromdict(download_result['data'], ['interval'], ""))), 
-                lyric=None, cover_url=safeextractfromdict(download_result['data'], ['cover'], None) or (lambda mid: f'https://y.gtimg.cn/music/photo_new/T002R1500x1500M000{mid}.jpg' if mid else None)(safeextractfromdict(search_result, ['album', 'mid'], None) or search_result.get('albummid')),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'song'], None)),
+                singers=legalizestring(safeextractfromdict(download_result, ['data', 'singer'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=ext or "mp3", 
+                file_size_bytes=None, file_size=str(safeextractfromdict(download_result, ['data', 'size'], "")).removesuffix('MB').strip() + ' MB', identifier=song_id, duration_s=to_seconds_func(duration_in_secs),
+                duration=seconds2hms(to_seconds_func(duration_in_secs)), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], "")), cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""),
                 download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -80,16 +79,15 @@ class QQMusicClient(BaseMusicClient):
             except Exception: break
             download_result = resp2json(resp=resp)
             download_url: str = safeextractfromdict(download_result, ['data', 'audio'], '')
-            if not download_url: continue
-            album_mid = safeextractfromdict(search_result, ['album', 'mid'], '')
-            cover_url = f'https://y.gtimg.cn/music/photo_new/T002R1500x1500M000{album_mid}.jpg' if album_mid else None
+            if not download_url or not str(download_url).startswith('http'): continue
+            try: (resp := self.get(f"https://www.littleyouzi.com/api/v2/qqmusic?mid={song_id}&lyrics=true", timeout=10, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp)
+            except Exception: lyric_result = {}
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')),
                 singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['singer'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', 
-                identifier=song_id, duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=None, 
-                cover_url=(lambda mid: f'https://y.gtimg.cn/music/photo_new/T002R1500x1500M000{mid}.jpg' if mid else None)(safeextractfromdict(search_result, ['album', 'mid'], None) or search_result.get('albummid')), 
-                download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None,
+                file_size='NULL', identifier=song_id, duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=cleanlrc(lyric_result.get('content') or "NULL"),
+                cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -106,7 +104,7 @@ class QQMusicClient(BaseMusicClient):
         resp = self.get(f'https://api.nki.pw/API/music_open_api.php?mid={song_id}&apikey={decrypt_func(random.choice(REQUEST_KEYS))}', **request_overrides)
         resp.raise_for_status()
         download_result = resp2json(resp=resp)
-        download_url: str = download_result['song_play_url_sq'] or download_result['song_play_url']
+        download_url: str = download_result.get('song_play_url_sq') or download_result.get('song_filename_pq') or download_result.get('song_play_url_accom') or download_result.get('song_play_url_hq') or download_result.get('song_play_url') or download_result.get('song_play_url_standard') or download_result.get('song_play_url_fq')
         if not download_url or not download_url.startswith('http'): return song_info
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['song_name'], None)),
@@ -115,6 +113,27 @@ class QQMusicClient(BaseMusicClient):
             file_size=str(safeextractfromdict(download_result, ['song_size_sq'], "") or safeextractfromdict(download_result, ['song_size'], "")).removesuffix('MB').strip() + ' MB', 
             identifier=song_id, duration=safeextractfromdict(download_result, ['duration'], ""), lyric=cleanlrc(safeextractfromdict(download_result, ['song_lyric'], "")) or 'NULL',
             cover_url=safeextractfromdict(download_result, ['album_pic'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        # return
+        return song_info
+    '''_parsewithtangapi'''
+    def _parsewithtangapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
+        # parse
+        resp = self.get(f'https://tang.api.s01s.cn/music_open_api.php?mid={song_id}', **request_overrides)
+        resp.raise_for_status()
+        download_result = resp2json(resp=resp)
+        download_url: str = download_result.get('song_play_url_sq') or download_result.get('song_filename_pq') or download_result.get('song_play_url_accom') or download_result.get('song_play_url_hq') or download_result.get('song_play_url') or download_result.get('song_play_url_standard') or download_result.get('song_play_url_fq')
+        if not download_url or not download_url.startswith('http'): return song_info
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('song_name') or ""),
+            singers=legalizestring(safeextractfromdict(download_result, ['singer_name'], None)), album=legalizestring(safeextractfromdict(download_result, ['album_name'], None)), 
+            ext=download_url.split('?')[0].split('.')[-1], file_size_bytes='NULL', file_size='NULL', identifier=song_id, duration=download_result.get('duration') or '-:-:-',
+            lyric=cleanlrc(safeextractfromdict(download_result, ['song_lyric'], "")) or 'NULL', cover_url=download_result.get('album_pic', None), download_url=download_url,
+            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -132,22 +151,24 @@ class QQMusicClient(BaseMusicClient):
         download_result = resp2json(resp=resp)
         download_url: str = download_result['data']['url']
         if not download_url or not download_url.startswith('http'): return song_info
+        lyric = cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], "")) or "NULL"
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)),
-            singers=legalizestring(safeextractfromdict(download_result, ['data', 'author'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
-            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=song_id, duration='-:-:-', lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], "")),
-            cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            singers=legalizestring(safeextractfromdict(download_result, ['data', 'author'], None) or "NULL"), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
+            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=song_id, duration_s=extractdurationsecondsfromlrc(lyric), duration=seconds2hms(extractdurationsecondsfromlrc(lyric)),
+            lyric=lyric, cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
         song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric)
         song_info.duration = seconds2hms(song_info.duration_s)
+        if song_info.album == 'NULL': song_info.album = legalizestring(safeextractfromdict(search_result, ['album', 'title'], None))
         # return
         return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for imp_func in [self._parsewithlittleyouziapi, self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
+        for imp_func in [self._parsewithvkeysapi, self._parsewithtangapi, self._parsewithnkiapi, self._parsewithxianyuwapi, self._parsewithlittleyouziapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -266,7 +287,8 @@ class QQMusicClient(BaseMusicClient):
                     lyric = 'NULL' if not lyric else cleanlrc(base64.b64decode(lyric).decode('utf-8'))
                 except:
                     lyric_result, lyric = {}, "NULL"
-                song_info.raw_data['lyric'], song_info.lyric = lyric_result, lyric
+                song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+                song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
@@ -285,7 +307,7 @@ class QQMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         hostname = obtainhostname(url=playlist_url)
         if not hostname or not hostmatchessuffix(hostname, QQ_MUSIC_HOSTS): return []
-        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=True).get('id')[0]
+        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=False).get('id')[0]; assert playlist_id
         except: playlist_id = urlparse(playlist_url).path.strip('/').split('/')[-1]
         headers = {"Referer": f"https://y.qq.com/n/ryqq/playlist/{playlist_id}"}
         resp = self.get("https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg", headers=headers, params={"disstid": str(playlist_id), "type": "1", "json": "1", "utf8": "1", "onlysong": "0", "format": "json"}, **request_overrides)
@@ -297,7 +319,7 @@ class QQMusicClient(BaseMusicClient):
             for idx, track_info in enumerate(tracks):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(tracks)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks)})")
-                for third_part_api in [self._parsewithlittleyouziapi, self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
+                for third_part_api in [self._parsewithvkeysapi, self._parsewithtangapi, self._parsewithnkiapi, self._parsewithxianyuwapi, self._parsewithlittleyouziapi]:
                     try:
                         song_info = third_part_api(track_info, request_overrides=request_overrides)
                         if song_info.with_valid_download_url: song_infos.append(song_info); break
