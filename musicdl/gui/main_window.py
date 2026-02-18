@@ -183,13 +183,13 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(control_group)
         
         # === Playlist Panel ===
-        playlist_group = QGroupBox("歌单下载 (QQ/NetEase)")
+        playlist_group = QGroupBox("歌单下载 (QQ/NetEase/Kuwo/Kugou)")
         playlist_layout = QHBoxLayout(playlist_group)
         playlist_layout.setSpacing(10)
         
         playlist_layout.addWidget(QLabel("歌单URL:"))
         self.playlist_url_input = QLineEdit()
-        self.playlist_url_input.setPlaceholderText("请输入网易云或QQ音乐歌单URL...")
+        self.playlist_url_input.setPlaceholderText("请输入网易云/QQ/酷我/酷狗歌单URL...")
         self.playlist_url_input.returnPressed.connect(self._start_parse_playlist)
         playlist_layout.addWidget(self.playlist_url_input, stretch=2)
         
@@ -361,6 +361,29 @@ class MainWindow(QMainWindow):
         if not playlist_url:
             QMessageBox.warning(self, "提示", "请输入歌单URL")
             return
+        
+        # Check if source is enabled and auto-enable if necessary
+        target_source = None
+        if 'kuwo.cn' in playlist_url: target_source = 'KuwoMusicClient'
+        elif 'kugou.com' in playlist_url: target_source = 'KugouMusicClient'
+        elif '163.com' in playlist_url: target_source = 'NeteaseMusicClient'
+        elif 'qq.com' in playlist_url: target_source = 'QQMusicClient'
+        
+        if target_source:
+            current_sources = self.music_client.music_sources
+            if target_source not in current_sources:
+                reply = QMessageBox.question(
+                    self, "提示", 
+                    f"检测到 {target_source.replace('MusicClient', '')} 歌单，但该源未启用。\n是否立即启用？",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes
+                )
+                
+                if reply == QMessageBox.StandardButton.Yes:
+                    new_sources = current_sources + [target_source]
+                    self.settings.setValue("selected_sources", new_sources)
+                    self._init_client()
+                    self._append_log("SYSTEM", f"已启用源: {target_source}")
         
         self.is_parsing_playlist = True
         self.parse_playlist_btn.setEnabled(False)
