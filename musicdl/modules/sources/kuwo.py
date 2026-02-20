@@ -20,7 +20,7 @@ from ..utils.hosts import KUWO_MUSIC_HOSTS
 from ..utils.kuwoutils import KuwoMusicClientUtils
 from urllib.parse import urlencode, urlparse, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, optionalimport, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, kuwolyricslisttolrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
+from ..utils import touchdir, optionalimport, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
 warnings.filterwarnings('ignore')
 
 
@@ -129,13 +129,10 @@ class KuwoMusicClient(BaseMusicClient):
         if not song_info.with_valid_download_url: return song_info
         # parse lyric results
         try:
-            headers = {
-                'Cookie':'Hm_lvt_cdb524f42f0ce19b169a8071123a4797=1690625730; Hm_lpvt_cdb524f42f0ce19b169a8071123a4797=1690625730; _ga=GA1.2.438975400.1690625730; _gid=GA1.2.265176886.1690625730; _gat=1; _ga_ETPBRPM9ML=GS1.2.1690625730.1.0.1690625730.60.0.0; Hm_Iuvt_cdb524f42f0ce19b169b8072123a4727=rWSMW8NykzdryGC2ejXpscaj3k5NZPrF',
-                'Host':'kuwo.cn', 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36', 'Secret':'2c0b2921adbca370d5418932dda1dacf58dfa1f8ce8e5de14b17399ffee9657d021b5fd1'
-            }
-            (resp := self.get(f'http://kuwo.cn/newh5/singles/songinfoandlrc?musicId={song_id}', headers=headers, **request_overrides)).raise_for_status()
-            lyric_result: dict = resp2json(resp)
-            lyric = cleanlrc(kuwolyricslisttolrc(safeextractfromdict(lyric_result, ['data', 'lrclist'], [])))
+            encoded_params = KuwoMusicClientUtils.buildlyricsparams(song_id, True)
+            (resp := self.get(f"http://newlyric.kuwo.cn/newlyric.lrc?{encoded_params}", **request_overrides)).raise_for_status()
+            lyric_result = {'content': resp.content}
+            lyric = cleanlrc(KuwoMusicClientUtils.convertrawlrc(KuwoMusicClientUtils.decodelyrics(resp.content, True)))
         except:
             lyric_result, lyric = {}, 'NULL'
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
@@ -205,7 +202,7 @@ class KuwoMusicClient(BaseMusicClient):
             except Exception: break
             playlist_results = resp2json(resp=resp)
             if (not safeextractfromdict(playlist_results, ['data', 'musicList'], [])) or (float(safeextractfromdict(playlist_results, ['data', 'total'], 0)) <= len(tracks)): break
-            tracks.extend(safeextractfromdict(playlist_results, ['data', 'musicList'], []))
+            tracks.extend(safeextractfromdict(playlist_results, ['data', 'musicList'], [])); page += 1
         tracks = list({d["musicrid"]: d for d in tracks}.values())
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(tracks)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks)})", total=len(tracks))

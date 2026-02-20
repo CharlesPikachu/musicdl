@@ -11,18 +11,12 @@ from urllib.parse import urlsplit
 
 
 '''settings'''
-NETEASE_MUSIC_HOSTS = {
-    "music.163.com", "y.music.163.com", "m.music.163.com", "3g.music.163.com", "163cn.tv",
-}
-QQ_MUSIC_HOSTS = {
-    "y.qq.com", "i.y.qq.com", "m.y.qq.com", "c.y.qq.com", "c6.y.qq.com", "music.qq.com",
-}
-KUWO_MUSIC_HOSTS = {
-    "kuwo.cn", "www.kuwo.cn", "m.kuwo.cn", "mobile.kuwo.cn",
-}
-KUGOU_MUSIC_HOSTS = {
-    "www.kugou.com", "m.kugou.com", "kugou.com", "h5.kugou.com", 
-}
+NETEASE_MUSIC_HOSTS = {"music.163.com", "y.music.163.com", "m.music.163.com", "3g.music.163.com", "163cn.tv",}
+QQ_MUSIC_HOSTS = {"y.qq.com", "i.y.qq.com", "m.y.qq.com", "c.y.qq.com", "c6.y.qq.com", "music.qq.com",}
+KUWO_MUSIC_HOSTS = {"kuwo.cn", "www.kuwo.cn", "m.kuwo.cn", "mobile.kuwo.cn",}
+KUGOU_MUSIC_HOSTS = {"www.kugou.com", "m.kugou.com", "kugou.com", "h5.kugou.com",}
+MIGU_MUSIC_HOSTS = {"music.migu.cn", "m.music.migu.cn", "h5.nf.migu.cn", "c.migu.cn", "migu.cn"}
+QIANQIAN_MUSIC_HOSTS = {"music.91q.com", "music.taihe.com", "music.baidu.com"}
 
 
 '''obtainhostname'''

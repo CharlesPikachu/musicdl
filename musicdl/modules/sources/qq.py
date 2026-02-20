@@ -28,14 +28,9 @@ class QQMusicClient(BaseMusicClient):
     def __init__(self, use_encrypted_endpoint: bool = False, **kwargs):
         super(QQMusicClient, self).__init__(**kwargs)
         self.use_encrypted_endpoint = use_encrypted_endpoint
-        self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-            'Referer': 'https://y.qq.com/', 'Origin': 'https://y.qq.com/',
-        }
-        self.default_download_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-            'Referer': 'http://y.qq.com',
-        }
+        self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', 'Referer': 'https://y.qq.com/', 'Origin': 'https://y.qq.com/',}
+        self.default_parse_headers = copy.deepcopy(self.default_search_headers)
+        self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', 'Referer': 'http://y.qq.com',}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_parsewithvkeysapi'''

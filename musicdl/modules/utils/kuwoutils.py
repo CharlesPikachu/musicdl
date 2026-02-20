@@ -6,6 +6,9 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import re
+import math
+import zlib
 import base64
 
 
@@ -29,7 +32,7 @@ class HelperFunctions():
 
 
 '''settings'''
-SECRET_KEY = b"ylzsxkwm"
+SECRET_KEY_SONG, SECRET_KEY_LYRIC = b"ylzsxkwm", b'yeelion'
 ARRAYLS = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 ARRAYLSMASK = HelperFunctions.longarray(0, 0x100001, 0x300003)
 ARRAYE = HelperFunctions.longarray(31, 0, 1, 2, 3, 4, -1, -1, 3, 4, 5, 6, 7, 8, -1, -1, 7, 8, 9, 10, 11, 12, -1, -1, 11, 12, 13, 14, 15, 16, -1, -1, 15, 16, 17, 18, 19, 20, -1, -1, 19, 20, 21, 22, 23, 24, -1, -1, 23, 24, 25, 26, 27, 28, -1, -1, 27, 28, 29, 30, 31, 30, -1, -1)
@@ -119,12 +122,72 @@ class KuwoMusicClientUtils:
     '''encrypt'''
     @staticmethod
     def encrypt(msg: bytes) -> bytes:
-        return KuwoMusicClientUtils.crypt(msg, SECRET_KEY, 0)
+        return KuwoMusicClientUtils.crypt(msg, SECRET_KEY_SONG, 0)
     '''decrypt'''
     @staticmethod
     def decrypt(msg: bytes) -> bytes:
-        return KuwoMusicClientUtils.crypt(msg, SECRET_KEY, 1)
+        return KuwoMusicClientUtils.crypt(msg, SECRET_KEY_SONG, 1)
     '''encryptquery'''
     @staticmethod
     def encryptquery(query: str) -> str:
         return base64.b64encode(KuwoMusicClientUtils.encrypt(query.encode("utf-8"))).decode("ascii")
+    '''xorencrypt'''
+    @staticmethod
+    def xorencrypt(data: bytes, key: bytes) -> bytes:
+        key_len = len(key)
+        output = bytearray(len(data))
+        for i in range(len(data)): output[i] = data[i] ^ key[i % key_len]
+        return bytes(output)
+    '''buildlyricsparams'''
+    @staticmethod
+    def buildlyricsparams(music_id, is_get_lyricx: bool = True):
+        params_str = f"user=12345,web,web,web&requester=localhost&req=1&rid=MUSIC_{music_id}"
+        if is_get_lyricx: params_str += '&lrcx=1'
+        buf_str = params_str.encode('utf-8')
+        encrypted_bytes = KuwoMusicClientUtils.xorencrypt(buf_str, SECRET_KEY_LYRIC)
+        final_params = base64.b64encode(encrypted_bytes).decode('utf-8')
+        return final_params
+    '''decodelyrics'''
+    @staticmethod
+    def decodelyrics(buf: bytes, is_get_lyricx: bool):
+        if buf[:10] != b'tp=content': return ''
+        try: split_index = buf.index(b'\r\n\r\n') + 4; compressed_data = buf[split_index:]
+        except ValueError: return ''
+        try: lrc_data = zlib.decompress(compressed_data)
+        except zlib.error: return ''
+        if not is_get_lyricx: return lrc_data.decode('gb18030', errors='ignore')
+        base64_str = lrc_data.decode('utf-8')
+        buf_str = base64.b64decode(base64_str)
+        decrypted_buffer = KuwoMusicClientUtils.xorencrypt(buf_str, SECRET_KEY_LYRIC)
+        final_lrc = decrypted_buffer.decode('gb18030', errors='ignore')
+        return final_lrc
+    '''formatlyricstime'''
+    @staticmethod
+    def formatlyricstime(ms):
+        if math.isnan(ms) or ms < 0: ms = 0
+        total_seconds = ms / 1000
+        minutes = math.floor(total_seconds / 60)
+        seconds = math.floor(total_seconds % 60)
+        milliseconds = round((ms % 1000))
+        return f"[{minutes:02}:{seconds:02}.{milliseconds:03}]"
+    '''convertrawlrc'''
+    @staticmethod
+    def convertrawlrc(raw_lrc: str) -> str:
+        out, i = [], 0
+        lines, rx_line, rx_word, rx_zh = re.split(r"\r\n|\r|\n", raw_lrc), re.compile(r"^\[(\d{2}:\d{2}\.\d{3})\](.*)$"), re.compile(r"<(-?\d+),(-?\d+)>([^<]*)"), re.compile(r"[\u4e00-\u9fa5]")
+        while i < len(lines):
+            line = lines[i]
+            m = rx_line.match(line)
+            if not m: out.append(line); i += 1; continue
+            ts, payload = m.group(1), m.group(2)
+            if not payload.replace("<0,0>", "").strip(): i += 1; continue
+            if payload.startswith("<0,0>") and rx_zh.search(payload): i += 1; continue
+            words = list(rx_word.finditer(payload))
+            lyric = "".join(w.group(3) for w in words) if words else payload.replace("<0,0>", "").strip(); trans = ""
+            if i + 1 < len(lines) and (nm := rx_line.match(lines[i + 1])):
+                next_payload = nm.group(2)
+                if next_payload.startswith("<0,0>") and rx_zh.search(next_payload): trans = next_payload.replace("<0,0>", "").strip(); i += 1
+            out.append(f"[{ts}]{lyric}")
+            if trans: out.append(f"[{ts}]{trans}")
+            i += 1
+        return "\n".join(out)

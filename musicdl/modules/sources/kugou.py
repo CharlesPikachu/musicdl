@@ -85,6 +85,7 @@ class KugouMusicClient(BaseMusicClient):
         except Exception: duration_in_secs = 0
         try: cover_url = self.session.head(urljoin(base_url, safeextractfromdict(download_result, ['data', 0, 'cover'], "")), headers=headers, allow_redirects=True, **request_overrides).url
         except Exception: cover_url = None
+        if not cover_url: cover_url = safeextractfromdict(search_result, ['trans_param', 'union_cover'], "")
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 0, 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 0, 'artist'], None)), 
             album=legalizestring(search_result.get('album_name') or safeextractfromdict(search_result, ['albuminfo', 'name'], "")), ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=file_hash, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), 
@@ -92,6 +93,7 @@ class KugouMusicClient(BaseMusicClient):
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        if song_info.cover_url and isinstance(song_info.cover_url, str) and ('{size}' in song_info.cover_url): song_info.cover_url = song_info.cover_url.format(size=300)
         if not song_info.with_valid_download_url: return song_info
         lyric_url = urljoin(base_url, safeextractfromdict(download_result, ['data', 0, 'lrc'], ""))
         try: (resp := self.get(lyric_url, headers=headers, allow_redirects=True, **request_overrides)).raise_for_status(); lyric = cleanlrc(resp.text)
@@ -225,7 +227,7 @@ class KugouMusicClient(BaseMusicClient):
             except Exception: continue
             playlist_results = resp2json(resp=resp)
             if (not safeextractfromdict(playlist_results, ['data', 'info'], [])) or (float(safeextractfromdict(playlist_results, ['data', 'count'], 0)) <= len(tracks)): break
-            tracks.extend(safeextractfromdict(playlist_results, ['data', 'info'], []))
+            tracks.extend(safeextractfromdict(playlist_results, ['data', 'info'], [])); page += 1
         tracks = list({d["hash"]: d for d in tracks}.values())
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(tracks)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks)})", total=len(tracks))

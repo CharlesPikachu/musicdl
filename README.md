@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
+- 2026-02-19: Released musicdl v2.9.6 — this release introduces official API support for parsing complete playlists across NetEase, Migu, Qianqian, Kuwo, and Kugou Music; it also includes bug fixes for incomplete playlist/lyric fetching on specific platforms, alongside minor under-the-hood code improvements.
 - 2026-02-14: Released musicdl v2.9.5 — this update fixes the incomplete playlist retrieval for NetEase Cloud Music, adds support for Kugou Music playlist parsing, introduces multiple lossless music APIs, and includes several potential bug fixes.
 - 2026-02-11: Released musicdl v2.9.4 — supported batch downloading for Kuwo Music playlists; optimized playlist downloading for NetEase Cloud Music and QQ Music; added support for QQ Music’s "Premium Master 4.0" (臻品母带 4.0) to provide high-fidelity audio files.
-- 2026-02-10: Released musicdl v2.9.3 — refactored the TIDAL client to utilize N_m3u8DL-RE for HI_RES_LOSSLESS support, and optimized the lossless interface for shared membership accounts.
 
 
 # 🎵 Introduction
@@ -420,14 +420,18 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 - [QQMusicClient | QQ音乐](https://y.qq.com/)
 - [KuwoMusicClient | 酷我音乐](http://www.kuwo.cn/)
 - [KugouMusicClient | 酷狗音乐](https://www.kugou.com/)
+- [QianqianMusicClient | 千千音乐](https://music.91q.com/)
+- [MiguMusicClient | 咪咕音乐](https://music.migu.cn/v5/#/musicLibrary)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
 ```sh
-musicdl -p "https://music.163.com/#/playlist?id=7583298906" -m NeteaseMusicClient
+musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
-musicdl -p "https://www.kuwo.cn/playlist_detail/3387576633" -m KuwoMusicClient
-musicdl -p "https://www.kugou.com/yy/special/single/6914288.html" -m KugouMusicClient
+musicdl -p "https://www.kuwo.cn/playlist_detail/2358858706" -m KuwoMusicClient
+musicdl -p "https://www.kugou.com/yy/special/single/3280341.html" -m KugouMusicClient
+musicdl -p "https://music.91q.com/songlist/309319" -m QianqianMusicClient
+musicdl -p "https://music.migu.cn/v5/#/playlist?playlistId=228114498&playlistType=ordinary" -m MiguMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
