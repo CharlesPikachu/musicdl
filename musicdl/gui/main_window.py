@@ -183,13 +183,13 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(control_group)
         
         # === Playlist Panel ===
-        playlist_group = QGroupBox("歌单下载 (QQ/NetEase/Kuwo/Kugou)")
+        playlist_group = QGroupBox("歌单下载 (QQ/NetEase/Kuwo/Kugou/Migu)")
         playlist_layout = QHBoxLayout(playlist_group)
         playlist_layout.setSpacing(10)
         
         playlist_layout.addWidget(QLabel("歌单URL:"))
         self.playlist_url_input = QLineEdit()
-        self.playlist_url_input.setPlaceholderText("请输入网易云/QQ/酷我/酷狗歌单URL...")
+        self.playlist_url_input.setPlaceholderText("请输入网易云/QQ/酷我/酷狗/咪咕歌单URL...")
         self.playlist_url_input.returnPressed.connect(self._start_parse_playlist)
         playlist_layout.addWidget(self.playlist_url_input, stretch=2)
         
@@ -368,6 +368,7 @@ class MainWindow(QMainWindow):
         elif 'kugou.com' in playlist_url: target_source = 'KugouMusicClient'
         elif '163.com' in playlist_url: target_source = 'NeteaseMusicClient'
         elif 'qq.com' in playlist_url: target_source = 'QQMusicClient'
+        elif 'migu.cn' in playlist_url: target_source = 'MiguMusicClient'
         
         if target_source:
             current_sources = self.music_client.music_sources
