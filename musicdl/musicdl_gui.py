@@ -48,7 +48,7 @@ def main():
     # Set application metadata
     app.setApplicationName("MusicDL")
     app.setOrganizationName("MusicDL")
-    app.setApplicationVersion("2.9.13")
+    app.setApplicationVersion("2.9.14")
     
     # Create and show main window
     window = MainWindow()
