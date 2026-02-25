@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
+- 2026-02-24: Released musicdl v2.9.7 — Fix some bugs in musicdl, and add support for searching and downloading books and albums from LanRenTingShu site.
 - 2026-02-19: Released musicdl v2.9.6 — this release introduces official API support for parsing complete playlists across NetEase, Migu, Qianqian, Kuwo, and Kugou Music; it also includes bug fixes for incomplete playlist/lyric fetching on specific platforms, alongside minor under-the-hood code improvements.
 - 2026-02-14: Released musicdl v2.9.5 — this update fixes the incomplete playlist retrieval for NetEase Cloud Music, adds support for Kugou Music playlist parsing, introduces multiple lossless music APIs, and includes several potential bug fixes.
-- 2026-02-11: Released musicdl v2.9.4 — supported batch downloading for Kuwo Music playlists; optimized playlist downloading for NetEase Cloud Music and QQ Music; added support for QQ Music’s "Premium Master 4.0" (臻品母带 4.0) to provide high-fidelity audio files.
 
 
 # 🎵 Introduction
@@ -99,6 +99,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [TIDALMusicClient](https://tidal.com/)                             | [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)                       | ✅        | ✅         | [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)                 |
 |                                          | [YouTubeMusicClient](https://music.youtube.com/)                   | [油管音乐](https://music.youtube.com/)                                       | ✅        | ✅         | [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)             |
 | **Audio / Radio**                        | [LizhiMusicClient](https://www.lizhi.fm/)                          | [荔枝FM](https://www.lizhi.fm/)                                              | ✅        | ✅         | [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/lizhi.py)              |
+|                                          | [LRTSMusicClient](https://www.lrts.me/)                            | [懒人听书](https://www.lrts.me/)                                             | ✅        | ✅         | [lrts.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/lrts.py)                |
 |                                          | [QingtingMusicClient](https://www.qtfm.cn/)                        | [蜻蜓FM](https://www.qtfm.cn/)                                               | ✅        | ✅         | [qingting.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/qingting.py)        |
 |                                          | [XimalayaMusicClient](https://www.ximalaya.com/)                   | [喜马拉雅](https://www.ximalaya.com/)                                        | ✅        | ✅         | [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/audiobooks/ximalaya.py)        |
 | **Aggregators / Multi-Source Gateways**  | [GDStudioMusicClient](https://music.gdstudio.xyz/)                 | [GD音乐台 (Spotify, Qobuz等10个音乐源)](https://music.gdstudio.xyz/)         | ✅        | ✅         | [gdstudio.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/gdstudio.py)            |
@@ -539,7 +540,7 @@ music_client.startcmdui()
 Keep in mind that cookie names captured from network traffic may not match the cookie names required by musicdl.
 You need to map them correctly to construct valid cookies, otherwise, member-only music downloads won’t work.
 
-#### XimalayaFM and LizhiFM Audio/Radio Download
+#### XimalayaFM and LizhiFM Track/Album Download
 
 Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
 By default, both modes start simultaneously, and the top few search results for each mode are shown based on the input keyword.
@@ -581,7 +582,7 @@ music_client.startcmdui()
 Please note that the code above only supports downloading free albums and audio. 
 If you need to download paid audio, please configure cookies in `init_music_clients_cfg`, just as you would with other music clients.
 
-#### QingtingFM Audio/Radio Download
+#### QingtingFM Track/Album Download
 
 The usage for searching and downloading on the QingTing FM website is similar to Ximalaya and Lizhi FM. 
 The only thing to watch out for is how cookies are set, it differs from typical music client objects.
@@ -633,6 +634,27 @@ music_client.startcmdui()
 ```
 
 Of course, it’s worth noting that another prerequisite for downloading paid audio is that your account must already have permission to access (listen to) that audio.
+
+#### LanRenTingShu Book/Album Download
+
+Musicdl currently supports searching and downloading books (书籍) and albums (节目) from LanRenTingShu. Example usage:
+
+```python
+from musicdl import musicdl
+
+# only search by book
+init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['book']}}
+# only search by album
+init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
+# search by album and book
+init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album', 'book']}}
+# instance music_client
+music_client = musicdl.MusicClient(music_sources=['LRTSMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+# start
+music_client.startcmdui()
+```
+
+By default, this example only downloads free albums and tracks. To access paid content, you must configure your user cookies in `init_music_clients_cfg`.
 
 #### TIDAL High-Quality Music Download
 

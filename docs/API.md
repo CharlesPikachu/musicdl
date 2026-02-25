@@ -146,6 +146,7 @@ Thread settings and request overrides are automatically taken from `MusicClient.
 - `musicdl.modules.common.MyFreeMP3MusicClient`
 - `musicdl.modules.common.TuneHubMusicClient`
 - `musicdl.modules.audiobooks.LizhiMusicClient`
+- `musicdl.modules.audiobooks.LRTSMusicClient`
 - `musicdl.modules.audiobooks.QingtingMusicClient`
 - `musicdl.modules.audiobooks.XimalayaMusicClient`
 

@@ -32,8 +32,11 @@ class QianqianMusicClient(BaseMusicClient):
             "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"", "sec-ch-ua-mobile": "?0", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "sec-ch-ua-platform": "\"Windows\"",
         }
+        self.default_parse_headers = copy.deepcopy(self.default_search_headers)
         if self.default_search_cookies: self.default_search_headers['authorization'] = f"access_token {self.default_search_cookies.get('access_token', '')}"
         if self.default_search_cookies: self.default_search_headers['cookie'] = cookies2string(self.default_search_cookies)
+        if self.default_parse_cookies: self.default_search_headers['authorization'] = f"access_token {self.default_parse_cookies.get('access_token', '')}"
+        if self.default_parse_cookies: self.default_search_headers['cookie'] = cookies2string(self.default_parse_cookies)
         self.default_download_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }

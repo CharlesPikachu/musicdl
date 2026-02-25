@@ -335,7 +335,7 @@ music_client.startcmdui()
 Keep in mind that cookie names captured from network traffic may not match the cookie names required by musicdl.
 You need to map them correctly to construct valid cookies, otherwise, member-only music downloads won’t work.
 
-#### XimalayaFM and LizhiFM Audio/Radio Download
+#### XimalayaFM and LizhiFM Track/Album Download
 
 Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
 By default, both modes start simultaneously, and the top few search results for each mode are shown based on the input keyword.
@@ -377,7 +377,7 @@ music_client.startcmdui()
 Please note that the code above only supports downloading free albums and audio. 
 If you need to download paid audio, please configure cookies in `init_music_clients_cfg`, just as you would with other music clients.
 
-#### QingtingFM Audio/Radio Download
+#### QingtingFM Track/Album Download
 
 The usage for searching and downloading on the QingTing FM website is similar to Ximalaya and Lizhi FM. 
 The only thing to watch out for is how cookies are set, it differs from typical music client objects.
@@ -429,6 +429,27 @@ music_client.startcmdui()
 ```
 
 Of course, it’s worth noting that another prerequisite for downloading paid audio is that your account must already have permission to access (listen to) that audio.
+
+#### LanRenTingShu Book/Album Download
+
+Musicdl currently supports searching and downloading books (书籍) and albums (节目) from LanRenTingShu. Example usage:
+
+```python
+from musicdl import musicdl
+
+# only search by book
+init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['book']}}
+# only search by album
+init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
+# search by album and book
+init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album', 'book']}}
+# instance music_client
+music_client = musicdl.MusicClient(music_sources=['LRTSMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+# start
+music_client.startcmdui()
+```
+
+By default, this example only downloads free albums and tracks. To access paid content, you must configure your user cookies in `init_music_clients_cfg`.
 
 #### TIDAL High-Quality Music Download
 

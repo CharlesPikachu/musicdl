@@ -74,7 +74,7 @@ class MusicClient():
                 'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {'cookies': 'your_cookies_with_str_or_dict_format','freeproxy_settings': None, 'enable_download_curl_cffi': False,
                 'enable_parse_curl_cffi': False, 'enable_search_curl_cffi': False}
             }
-            if music_source in {'GDStudioMusicClient', 'XimalayaMusicClient', 'LizhiMusicClient', 'QingtingMusicClient'}: init_music_client_cfg['search_size_per_source'] = 3
+            if music_source in {'GDStudioMusicClient', 'XimalayaMusicClient', 'LizhiMusicClient', 'QingtingMusicClient', 'LRTSMusicClient'}: init_music_client_cfg['search_size_per_source'] = 3
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))
             self.music_clients[music_source] = BuildMusicClient(module_cfg=init_music_client_cfg)
             self.work_dirs[music_source] = init_music_client_cfg['work_dir']

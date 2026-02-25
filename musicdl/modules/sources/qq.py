@@ -121,7 +121,7 @@ class QQMusicClient(BaseMusicClient):
         resp = self.get(f'https://tang.api.s01s.cn/music_open_api.php?mid={song_id}', **request_overrides)
         resp.raise_for_status()
         download_result = resp2json(resp=resp)
-        download_url: str = download_result.get('song_play_url_sq') or download_result.get('song_filename_pq') or download_result.get('song_play_url_accom') or download_result.get('song_play_url_hq') or download_result.get('song_play_url') or download_result.get('song_play_url_standard') or download_result.get('song_play_url_fq')
+        download_url: str = download_result.get('song_play_url_sq') or download_result.get('song_play_url_pq') or download_result.get('song_play_url_accom') or download_result.get('song_play_url_hq') or download_result.get('song_play_url') or download_result.get('song_play_url_standard') or download_result.get('song_play_url_fq')
         if not download_url or not download_url.startswith('http'): return song_info
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('song_name') or ""),

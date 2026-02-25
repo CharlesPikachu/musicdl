@@ -50,6 +50,7 @@ class MiguMusicClient(BaseMusicClient):
             if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
             if not isinstance(rate, dict): continue
             if byte2mb(safe_fetch_filesize_func(rate)) == 'NULL' or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')): continue
+            if rate['formatType'] in {'Z3D'}: continue # TODO: support decrypt Z3D files in migu music
             try: (resp := self.get(f"https://c.musicapp.migu.cn/MIGUM3.0/strategy/listen-url/v2.4?resourceType={rate['resourceType']}&netType=01&scene=&toneFlag={rate['formatType']}&contentId={search_result['contentId']}&copyrightId={search_result['copyrightId']}&lowerQualityContentId={search_result['contentId']}", **request_overrides)).raise_for_status()
             except Exception: continue
             download_result = resp2json(resp=resp)
