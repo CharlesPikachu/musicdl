@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QIcon
 
-from .utils import resource_path
+from .utils import resource_path, parselist
 from .themes import ThemeManager
 from .dialogs import SourceSelectionDialog, ThemeConfigDialog
 from .widgets import SortableTableWidgetItem
@@ -238,12 +238,18 @@ class MainWindow(QMainWindow):
         self.results_table.setSortingEnabled(True)
         self.results_table.setAlternatingRowColors(True)
         self.results_table.doubleClicked.connect(self._download_selected)
+        self.results_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.results_table.customContextMenuRequested.connect(self._show_context_menu)
         table_layout.addWidget(self.results_table)
         
         self.download_btn = QPushButton("⬇ 下载选中歌曲")
         self.download_btn.setProperty("accent", True)
         self.download_btn.clicked.connect(self._download_selected)
         table_layout.addWidget(self.download_btn)
+
+        self.parselist_btn = QPushButton("📋 解析列表")
+        self.parselist_btn.clicked.connect(self._start_parse_list)
+        table_layout.addWidget(self.parselist_btn)
         
         splitter.addWidget(table_container)
         
@@ -369,6 +375,7 @@ class MainWindow(QMainWindow):
         elif '163.com' in playlist_url: target_source = 'NeteaseMusicClient'
         elif 'qq.com' in playlist_url: target_source = 'QQMusicClient'
         elif 'migu.cn' in playlist_url: target_source = 'MiguMusicClient'
+        elif 'lrts.me' in playlist_url: target_source = 'LRTSMusicClient'
         
         if target_source:
             current_sources = self.music_client.music_sources
@@ -419,6 +426,9 @@ class MainWindow(QMainWindow):
         
         self.status_bar.showMessage(f"解析完成，共 {len(song_infos)} 首歌曲")
         
+        # Auto-expand episodes if present
+        song_infos = parselist(song_infos)
+
         # Group songs by source
         grouped_results = {}
         for song in song_infos:
@@ -433,6 +443,23 @@ class MainWindow(QMainWindow):
             grouped_results[source].append(song)
             
         self._display_song_list(grouped_results)
+    
+    def _show_context_menu(self, pos):
+        """Show context menu for table."""
+        from PyQt6.QtWidgets import QMenu
+        from PyQt6.QtGui import QAction
+        
+        menu = QMenu(self)
+        
+        parse_action = QAction("📋 解析列表", self)
+        parse_action.triggered.connect(self._start_parse_list)
+        menu.addAction(parse_action)
+        
+        download_action = QAction("⬇ 下载选中", self)
+        download_action.triggered.connect(self._download_selected)
+        menu.addAction(download_action)
+        
+        menu.exec(self.results_table.viewport().mapToGlobal(pos))
     
     def _display_song_list(self, search_results: dict):
         """Display song list in the table."""
@@ -586,6 +613,53 @@ class MainWindow(QMainWindow):
         self.download_worker.finished.connect(self._on_download_finished)
         self.download_worker.error.connect(self._on_worker_error)
         self.download_worker.start()
+    
+    def _start_parse_list(self):
+        """Parse episodes/list for selected items."""
+        selected_rows = set(item.row() for item in self.results_table.selectedItems())
+        if not selected_rows:
+            QMessageBox.information(self, "提示", "请先选择要解析列表的项目")
+            return
+        
+        items_to_parse = []
+        for row in selected_rows:
+            item = self.results_table.item(row, 0)
+            if item:
+                song_id = item.text()
+                if song_id in self.current_song_infos:
+                    items_to_parse.append(self.current_song_infos[song_id])
+        
+        if not items_to_parse:
+            return
+        
+        self.status_bar.showMessage(f"正在解析 {len(items_to_parse)} 个项目的列表...")
+        self.parselist_btn.setEnabled(False)
+        
+        # Expand episodes/list
+        final_song_infos = parselist(items_to_parse)
+        
+        self._on_list_parsed({'data': final_song_infos})
+
+    def _on_list_parsed(self, result):
+        """Handle list parsing completion."""
+        self.parselist_btn.setEnabled(True)
+        song_infos = result['data']
+        
+        if not song_infos:
+            self.status_bar.showMessage("未发现可解析的列表内容")
+            return
+            
+        self.status_bar.showMessage(f"列表解析完成，共 {len(song_infos)} 个项目")
+        
+        # Group songs by source
+        grouped_results = {}
+        for song in song_infos:
+            source = getattr(song, 'source', 'Unknown')
+            if source not in grouped_results:
+                grouped_results[source] = []
+            grouped_results[source].append(song)
+            
+        self._display_song_list(grouped_results)
     
     def _download_and_process(self, songs_to_download, progress_signal):
         """Download and process songs (runs in worker thread)."""

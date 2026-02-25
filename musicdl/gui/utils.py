@@ -25,3 +25,18 @@ def resource_path(relative_path: str) -> str:
         # Then go up one more level to reach project root
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(base_path, relative_path)
+
+
+def parselist(song_infos):
+    """
+    Expand episodes in song_infos.
+    Used by GUI modules to handle albums/books.
+    """
+    final_song_infos = []
+    for song in song_infos:
+        episodes = getattr(song, 'episodes', None) or (song.get('episodes') if isinstance(song, dict) else None) or []
+        if episodes:
+            final_song_infos.extend(episodes)
+        else:
+            final_song_infos.append(song)
+    return final_song_infos

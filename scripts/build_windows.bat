@@ -90,6 +90,7 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.audiobooks.lizhi" ^
     --hidden-import "musicdl.modules.audiobooks.qingting" ^
     --hidden-import "musicdl.modules.audiobooks.ximalaya" ^
+    --hidden-import "musicdl.modules.audiobooks.lrts" ^
     --hidden-import "musicdl.modules.sources.apple" ^
     --hidden-import "musicdl.modules.sources.bilibili" ^
     --hidden-import "musicdl.modules.sources.buguyy" ^

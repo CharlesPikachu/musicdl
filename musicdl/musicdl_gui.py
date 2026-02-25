@@ -32,9 +32,17 @@ rich.progress.Progress = GUIProgress
 from musicdl.modules.sources import base as base_module
 from musicdl.modules.sources import qq as qq_module
 from musicdl.modules.sources import netease as netease_module
+from musicdl.modules.audiobooks import lrts as lrts_module
+from musicdl.modules.audiobooks import ximalaya as ximalaya_module
+from musicdl.modules.audiobooks import lizhi as lizhi_module
+from musicdl.modules.audiobooks import qingting as qingting_module
 base_module.Progress = GUIProgress
 qq_module.Progress = GUIProgress
 netease_module.Progress = GUIProgress
+lrts_module.Progress = GUIProgress
+ximalaya_module.Progress = GUIProgress
+lizhi_module.Progress = GUIProgress
+qingting_module.Progress = GUIProgress
 # ----------------------------------------------------
 
 from PyQt6.QtWidgets import QApplication
@@ -48,7 +56,7 @@ def main():
     # Set application metadata
     app.setApplicationName("MusicDL")
     app.setOrganizationName("MusicDL")
-    app.setApplicationVersion("2.9.14")
+    app.setApplicationVersion("2.9.15")
     
     # Create and show main window
     window = MainWindow()
