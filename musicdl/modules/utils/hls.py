@@ -190,7 +190,7 @@ class HLSDownloader:
         progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> completed (0/{len(jobs)})", total=len(jobs), kind='hls')
         byterange_cursor: Dict[str, int] = {}; seg_paths: List[Optional[str]] = [None] * len(jobs)
         init_cache: Dict[str, str] = {}; init_inflight: Dict[str, threading.Event] = {}; init_cache_lock = threading.Lock()
-        def _ensureinitsection(map_uri: str, map_byterange: Optional[str]) -> bytes:
+        def ensureinitsection_func(map_uri: str, map_byterange: Optional[str]) -> bytes:
             key = f"{map_uri}|{map_byterange or ''}"
             with init_cache_lock:
                 cached = init_cache.get(key)
@@ -208,17 +208,17 @@ class HLSDownloader:
                 return data
             finally:
                 with init_cache_lock: (evt := init_inflight.pop(key, None)) and evt.set()
-        def _worker(job: SegmentJob) -> Tuple[int, str]:
+        def worker_func(job: SegmentJob) -> Tuple[int, str]:
             seg_path = os.path.join(temp_folder, f"seg_{job.index:06d}.bin")
             if self._fileok(seg_path): return job.index, seg_path
-            prepend = _ensureinitsection(job.map_uri, job.map_byterange) if job.map_uri else b""
+            prepend = ensureinitsection_func(job.map_uri, job.map_byterange) if job.map_uri else b""
             eff_byterange = self._normalizebyterange(job.uri, job.byterange, byterange_cursor) if job.byterange else job.byterange
             data = self._fetchandmaybedecrypt(job, eff_byterange)
             self._atomicwrite(seg_path, prepend + data)
             return job.index, seg_path
         exceptions: List[Exception] = []
         with cf.ThreadPoolExecutor(max_workers=self.concurrency) as ex:
-            futures = [ex.submit(_worker, j) for j in jobs]
+            futures = [ex.submit(worker_func, j) for j in jobs]
             for fut in cf.as_completed(futures):
                 try:
                     idx, path = fut.result()

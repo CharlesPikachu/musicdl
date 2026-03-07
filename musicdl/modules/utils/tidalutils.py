@@ -960,7 +960,7 @@ class TIDALMusicClientUtils:
         cover_id = getattr(album, "cover", None) if album else None
         if aigpy.string.isNull(cover_id): return None
         url, cache_key = TIDALMusicClientUtils.getcoverurl(cover_id, "1280", "1280"), str(cover_id)
-        def _fetch(tmp_path: Path) -> Optional[Path]:
+        def fetch_func(tmp_path: Path) -> Optional[Path]:
             destination, cover_bytes = tmp_path / "fallback_cover.jpg", TIDALMusicClientUtils.ALBUM_COVER_CACHE.get(cache_key)
             if cover_bytes is None:
                 cover_bytes = TIDALMusicClientUtils.downloadcoverbytes(url, album)
@@ -969,7 +969,7 @@ class TIDALMusicClientUtils:
             try: destination.write_bytes(cover_bytes)
             except OSError: return None
             return destination
-        return _fetch
+        return fetch_func
     '''parsempd'''
     @staticmethod
     def parsempd(xml: bytes) -> Manifest:

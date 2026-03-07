@@ -74,8 +74,7 @@ class XimalayaMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('id') or search_result.get('trackId'), SongInfo(source=self.source)
         # parse
-        resp = self.get(f"https://api-v2.cenguigui.cn/api/music/ximalaya.php?trackId={song_id}", **request_overrides)
-        resp.raise_for_status()
+        (resp := self.get(f"https://api-v2.cenguigui.cn/api/music/ximalaya.php?trackId={song_id}", **request_overrides)).raise_for_status()
         download_result = resp2json(resp=resp)
         if ('0 MB' in download_result['size']) or (not download_result.get('url')): return song_info
         download_url = download_result['url']
@@ -98,8 +97,7 @@ class XimalayaMusicClient(BaseMusicClient):
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('id') or search_result.get('trackId'), SongInfo(source=self.source)
         # parse
         params = {"device": "web", "trackId": song_id, "trackQualityLevel": '3'}
-        resp = self.get(f"https://www.ximalaya.com/mobile-playpage/track/v3/baseInfo/{int(time.time() * 1000)}", params=params, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.get(f"https://www.ximalaya.com/mobile-playpage/track/v3/baseInfo/{int(time.time() * 1000)}", params=params, **request_overrides)).raise_for_status()
         download_result = resp2json(resp=resp)
         track_info = safeextractfromdict(download_result, ['trackInfo'], {})
         if not track_info or not isinstance(track_info, dict): return song_info
@@ -192,8 +190,7 @@ class XimalayaMusicClient(BaseMusicClient):
         # successful
         try:
             # --search results
-            resp = self.get(search_url, **request_overrides)
-            resp.raise_for_status()
+            (resp := self.get(search_url, **request_overrides)).raise_for_status()
             search_results = resp2json(resp)
             # --parse based on search type
             search_type = parse_qs(urlparse(search_url).query, keep_blank_values=True).get('core')[0]

@@ -1067,16 +1067,16 @@ class Stream:
             self.oncomplete(file_path)
             return file_path
         bytes_remaining = self.filesize
-        def _writechunk(chunk_, bytes_remaining_): self.onprogress(chunk_, fh, bytes_remaining_)
+        def writechunk_func(chunk_, bytes_remaining_): self.onprogress(chunk_, fh, bytes_remaining_)
         with open(file_path, "wb") as fh:
             try:
                 if not self.issabr:
                     for chunk in RequestWrapper.stream(self.url, timeout=timeout, max_retries=max_retries):
                         if interrupt_checker is not None and interrupt_checker() == True: return
                         bytes_remaining -= len(chunk)
-                        _writechunk(chunk, bytes_remaining)
+                        writechunk_func(chunk, bytes_remaining)
                 else:
-                    ServerAbrStream(stream=self, write_chunk=_writechunk, monostate=self._monostate).start()
+                    ServerAbrStream(stream=self, write_chunk=writechunk_func, monostate=self._monostate).start()
             except HTTPError as e:
                 if e.code != 404: raise Exception
             except StopIteration:
@@ -1084,9 +1084,9 @@ class Stream:
                     for chunk in RequestWrapper.seqstream(self.url, timeout=timeout, max_retries=max_retries):
                         if interrupt_checker is not None and interrupt_checker() == True: return
                         bytes_remaining -= len(chunk)
-                        _writechunk(chunk, bytes_remaining)
+                        writechunk_func(chunk, bytes_remaining)
                 else:
-                    ServerAbrStream(stream=self, write_chunk=_writechunk, monostate=self._monostate).start()
+                    ServerAbrStream(stream=self, write_chunk=writechunk_func, monostate=self._monostate).start()
             self.oncomplete(file_path)
             return file_path
     '''getfilepath'''
@@ -3517,7 +3517,7 @@ class YouTube:
         if optional_client is None:
             if self._vid_info: return self._vid_info
             optional_client = self.client
-        def _callinnertube(optional_client):
+        def callinnertube_func(optional_client):
             innertube = InnerTube(
                 client=optional_client, use_oauth=self.use_oauth, allow_cache=self.allow_oauth_cache, token_file=self.token_file, oauth_verifier=self.oauth_verifier,
                 use_po_token=self.use_po_token, po_token_verifier=self.po_token_verifier
@@ -3528,12 +3528,12 @@ class YouTube:
             response = innertube.player(self.video_id)
             if self.use_po_token or innertube.require_po_token: self.po_token = innertube.access_po_token or self.pot
             return response
-        innertube_response = _callinnertube(optional_client)
+        innertube_response = callinnertube_func(optional_client)
         for client in self.fallback_clients:
             playability_status = innertube_response['playabilityStatus']
             if playability_status['status'] == 'UNPLAYABLE' and 'reason' in playability_status and playability_status['reason'] == 'This video is not available':
                 self.client = client
-                innertube_response = _callinnertube(client)
+                innertube_response = callinnertube_func(client)
             else:
                 break
         return innertube_response

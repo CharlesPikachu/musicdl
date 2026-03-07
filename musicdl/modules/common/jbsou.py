@@ -10,7 +10,7 @@ import copy
 from urllib.parse import urljoin
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester
 
 
 '''JBSouMusicClient'''
@@ -21,9 +21,8 @@ class JBSouMusicClient(BaseMusicClient):
         self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', JBSouMusicClient.ALLOWED_SITES)))
         super(JBSouMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", 
-            "accept": "application/json, text/javascript, */*; q=0.01", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-            "origin": "https://www.jbsou.cn", "x-requested-with": "XMLHttpRequest", "referer": "https://www.jbsou.cn/"
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", "origin": "https://www.jbsou.cn", "x-requested-with": "XMLHttpRequest", 
+            "accept": "application/json, text/javascript, */*; q=0.01", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "referer": "https://www.jbsou.cn/"
         }
         self.default_download_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
@@ -59,14 +58,12 @@ class JBSouMusicClient(BaseMusicClient):
         # successful
         try:
             # --search results
-            resp = self.post(**search_url, **request_overrides)
-            resp.raise_for_status()
+            (resp := self.post(**search_url, **request_overrides)).raise_for_status()
             search_results = resp2json(resp)['data']
             for search_result in search_results:
                 # --download results
                 if not isinstance(search_result, dict) or ('songid' not in search_result) or ('url' not in search_result): continue
-                search_result['source'] = source
-                song_info = SongInfo(source=self.source, root_source=search_result['source'])
+                search_result['source'] = source; song_info = SongInfo(source=self.source, root_source=search_result['source'])
                 download_url = urljoin(base_url, search_result['url'])
                 try: (resp := self.session.head(download_url, allow_redirects=True, **request_overrides)).raise_for_status(); download_url = resp.url
                 except Exception: continue
@@ -74,26 +71,20 @@ class JBSouMusicClient(BaseMusicClient):
                 try: (resp := self.session.head(cover_url, timeout=10, allow_redirects=True, **request_overrides)).raise_for_status(); cover_url = resp.url
                 except Exception: cover_url = cover_url
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
-                    singers=legalizestring(str(safeextractfromdict(search_result, ['artist'], "")).replace('/', ', ')), album=legalizestring(search_result.get('album')),
-                    ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['songid'], duration='-:-:-', lyric=None, cover_url=cover_url, 
+                    raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(str(safeextractfromdict(search_result, ['artist'], "")).replace('/', ', ')),
+                    album=legalizestring(search_result.get('album')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=search_result['songid'], duration_s=None, duration='-:-:-', lyric=None, cover_url=cover_url, 
                     download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), root_source=search_result['source'],
                 )
                 if not song_info.with_valid_download_url: continue
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-                song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
+                if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
+                elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
                 # --lyric results
-                try:
-                    resp = self.get(urljoin(base_url, search_result['lrc']), **request_overrides)
-                    resp.raise_for_status()
-                    lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}
-                    song_info.duration_s = extractdurationsecondsfromlrc(lyric)
-                    song_info.duration = seconds2hms(song_info.duration_s)
-                except:
-                    lyric_result, lyric = dict(), 'NULL'
-                song_info.lyric = lyric
-                song_info.raw_data['lyric'] = lyric_result
+                try: (resp := self.get(urljoin(base_url, search_result['lrc']), **request_overrides)).raise_for_status(); lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}; song_info.duration_s = extractdurationsecondsfromlrc(lyric); song_info.duration = seconds2hms(song_info.duration_s)
+                except Exception: lyric_result, lyric = dict(), 'NULL'
+                song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+                song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

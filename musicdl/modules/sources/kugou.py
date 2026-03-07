@@ -122,8 +122,7 @@ class KugouMusicClient(BaseMusicClient):
             if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
             per_request_overrides = copy.deepcopy(request_overrides)
             if ('impersonate' not in per_request_overrides) and self.enable_curl_cffi: per_request_overrides['impersonate'] = random.choice(self.cc_impersonates)
-            self._autosetproxies()
-            per_request_overrides['proxies'] = per_request_overrides.pop('proxies', None) or self.session.proxies
+            per_request_overrides['proxies'] = per_request_overrides.pop('proxies', None) or self._autosetproxies()
             try: download_result: dict = KugouMusicClientUtils.getsongurl(self.session, hash_value=search_result['hash'], quality=quality, request_overrides=per_request_overrides, cookies=copy.deepcopy(per_request_overrides.pop('cookies', None) or self.default_cookies))
             except Exception: download_result, download_url = {}, None
             download_url = safeextractfromdict(download_result, ['url'], '') or safeextractfromdict(download_result, ['backupUrl'], '')

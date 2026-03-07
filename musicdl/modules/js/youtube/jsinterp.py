@@ -44,24 +44,24 @@ def js2json(code, vars={}, *, strict=False):
     SKIP_RE = fr'\s*(?:{COMMENT_RE})?\s*'
     INTEGER_TABLE = ((fr'(?s)^(0[xX][0-9a-fA-F]+){SKIP_RE}:?$', 16), (fr'(?s)^(0+[0-7]+){SKIP_RE}:?$', 8))
     # process escape
-    def _processescape(match):
+    def processescape(match):
         JSON_PASSTHROUGH_ESCAPES = R'"\bfnrtu'
         escape = match.group(1) or match.group(2)
         return (Rf'\{escape}' if escape in JSON_PASSTHROUGH_ESCAPES else R'\u00' if escape == 'x' else '' if escape == '\n' else escape)
     # template substitute
-    def _templatesubstitute(match):
+    def templatesubstitute(match):
         evaluated = js2json(match.group(1), vars, strict=strict)
         if evaluated[0] == '"': return json.loads(evaluated)
         return evaluated
     # fix kv
-    def _fixkv(m):
+    def fixkv(m):
         v: str = m.group(0)
         if v in ('true', 'false', 'null'): return v
         elif v in ('undefined', 'void 0'): return 'null'
         elif v.startswith('/*') or v.startswith('//') or v.startswith('!') or v == ',': return ''
         if v[0] in STRING_QUOTES:
-            v = re.sub(r'(?s)\${([^}]+)}', _templatesubstitute, v[1:-1]) if v[0] == '`' else v[1:-1]
-            escaped = re.sub(r'(?s)(")|\\(.)', _processescape, v)
+            v = re.sub(r'(?s)\${([^}]+)}', templatesubstitute, v[1:-1]) if v[0] == '`' else v[1:-1]
+            escaped = re.sub(r'(?s)(")|\\(.)', processescape, v)
             r = f'"{escaped}"'
             return r
         for regex, base in INTEGER_TABLE:
@@ -79,11 +79,11 @@ def js2json(code, vars={}, *, strict=False):
         if not strict: return f'"{v}"'
         raise ValueError(f'Unknown value: {v}')
     # create map
-    def _createmap(mobj):
+    def createmap(mobj):
         r = json.dumps(dict(json.loads(js2json(mobj.group(1) or '[]', vars=vars))))
         return r
     # process
-    code = re.sub(r'new Map\((\[.*?\])?\)', _createmap, code)
+    code = re.sub(r'new Map\((\[.*?\])?\)', createmap, code)
     if not strict:
         code = re.sub(r'new Date\((".+")\)', r'\g<1>', code)
         code = re.sub(r'new \w+\((.*?)\)', lambda m: json.dumps(m.group(0)), code)
@@ -97,7 +97,7 @@ def js2json(code, vars={}, *, strict=False):
         \b(?:0[xX][0-9a-fA-F]+|0+[0-7]+)(?:{SKIP_RE}:)?|
         [0-9]+(?={SKIP_RE}:)|
         !+
-        ''', _fixkv, code)
+        ''', fixkv, code)
 
 
 '''extracttimezone'''
@@ -249,11 +249,11 @@ def jstypeof(expr):
 
 '''wrapsop'''
 def wrapsop(op):
-    def _updateandrenamewrapper(w):
+    def updateandrenamewrapper(w):
         f = update_wrapper(w, op)
         f.__name__ = str('JS_') + f.__name__
         return f
-    return _updateandrenamewrapper
+    return updateandrenamewrapper
 
 
 '''jsunaryop'''
@@ -513,11 +513,11 @@ class JSInterpreter:
             inner, outer = self._separateatparen(expr)
             sub_expressions = [list(self._separate(sub_expr.strip(), ':', 1)) for sub_expr in self._separate(inner)]
             if all(len(sub_expr) == 2 for sub_expr in sub_expressions):
-                def _dictitem(key, val):
+                def dictitem_func(key, val):
                     val = self.interpretexpression(val, local_vars, allow_recursion)
                     if re.match(_NAME_RE, key): return key, val
                     return self.interpretexpression(key, local_vars, allow_recursion), val
-                return dict(_dictitem(k, v) for k, v in sub_expressions), should_return
+                return dict(dictitem_func(k, v) for k, v in sub_expressions), should_return
             inner, should_abort = self.interpretstatement(inner, local_vars, allow_recursion)
             if not outer or should_abort:
                 return inner, should_abort or should_return
@@ -713,7 +713,7 @@ class JSInterpreter:
             else: arg_str, remaining = None, arg_str
             def assertion(cndn, msg):
                 if not cndn: raise self.Exception(f'{member} {msg}', expr)
-            def _evalmethod():
+            def evalmethod_func():
                 nonlocal member
                 types = {'String': str, 'Math': float, 'Array': list}
                 obj = local_vars.get(variable, types.get(variable, NODEFAULT))
@@ -813,10 +813,10 @@ class JSInterpreter:
                 idx = int(member) if isinstance(obj, list) else member
                 return obj[idx](argvals, allow_recursion=allow_recursion)
             if remaining:
-                ret, should_abort = self.interpretstatement(self._namedobject(local_vars, _evalmethod()) + remaining, local_vars, allow_recursion)
+                ret, should_abort = self.interpretstatement(self._namedobject(local_vars, evalmethod_func()) + remaining, local_vars, allow_recursion)
                 return ret, should_return or should_abort
             else:
-                return _evalmethod(), should_return
+                return evalmethod_func(), should_return
         elif m and m.group('function'):
             fname = m.group('fname')
             argvals = [self.interpretexpression(v, local_vars, allow_recursion) for v in self._separate(m.group('args'))]

@@ -15,11 +15,9 @@ class BaseModuleBuilder():
     REGISTERED_MODULES = collections.OrderedDict()
     def __init__(self, requires_register_modules=None, requires_renew_modules=None):
         if requires_register_modules is not None and isinstance(requires_register_modules, (dict, collections.OrderedDict)):
-            for name, module in requires_register_modules.items():
-                self.register(name, module)
+            for name, module in requires_register_modules.items(): self.register(name, module)
         if requires_renew_modules is not None and isinstance(requires_renew_modules, (dict, collections.OrderedDict)):
-            for name, module in requires_renew_modules.items():
-                self.renew(name, module)
+            for name, module in requires_renew_modules.items(): self.renew(name, module)
         self.validate()
     '''build'''
     def build(self, module_cfg):

@@ -3,7 +3,7 @@
   <br />
 
   <a href="https://musicdl.readthedocs.io/">
-    <img src="https://img.shields.io/badge/docs-latest-blue" alt="docs" />
+    <img src="https://img.shields.io/badge/docs-latest-blue" alt="Docs" />
   </a>
   <a href="https://pypi.org/project/musicdl/">
     <img src="https://img.shields.io/pypi/pyversions/musicdl" alt="PyPI - Python Version" />
@@ -12,19 +12,25 @@
     <img src="https://img.shields.io/pypi/v/musicdl" alt="PyPI" />
   </a>
   <a href="https://github.com/CharlesPikachu/musicdl/blob/master/LICENSE">
-    <img src="https://img.shields.io/badge/license-PolyForm--Noncommercial--1.0.0-blue" alt="license" />
+    <img src="https://img.shields.io/badge/license-PolyForm--Noncommercial--1.0.0-blue" alt="License" />
   </a>
   <a href="https://pypi.org/project/musicdl/">
-    <img src="https://static.pepy.tech/badge/musicdl" alt="PyPI - Downloads">
+    <img src="https://static.pepy.tech/badge/musicdl" alt="PyPI - Downloads (total)">
   </a>
   <a href="https://pypi.org/project/musicdl/">
-    <img src="https://static.pepy.tech/badge/musicdl/month" alt="PyPI - Downloads">
+    <img src="https://static.pepy.tech/badge/musicdl/month" alt="PyPI - Downloads (month)">
+  </a>
+  <a href="https://pypi.org/project/musicdl/">
+    <img src="https://static.pepy.tech/badge/musicdl/week" alt="PyPI - Downloads (week)">
+  </a>
+  <a href="https://github.com/CharlesPikachu/musicsquare/actions/workflows/pages/pages-build-deployment">
+    <img src="https://github.com/CharlesPikachu/musicsquare/actions/workflows/pages/pages-build-deployment/badge.svg" alt="Pages-Build-Deployment">
   </a>
   <a href="https://github.com/CharlesPikachu/musicdl/issues">
-    <img src="https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg" alt="issue resolution" />
+    <img src="https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg" alt="Issue Resolution" />
   </a>
   <a href="https://github.com/CharlesPikachu/musicdl/issues">
-    <img src="https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg" alt="open issues" />
+    <img src="https://isitmaintained.com/badge/open/CharlesPikachu/musicdl.svg" alt="Open Issues" />
   </a>
 </div>
 

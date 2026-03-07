@@ -188,7 +188,7 @@ def isvalidresp(resp: requests.Response, valid_status_codes: list | tuple | set 
 
 
 '''safeextractfromdict'''
-def safeextractfromdict(data, progressive_keys, default_value):
+def safeextractfromdict(data, progressive_keys, default_value = None):
     try:
         result = data
         for key in progressive_keys: result = result[key]
@@ -258,17 +258,18 @@ def searchdictbykey(obj, target_key: str):
 
 '''AudioLinkTester'''
 class AudioLinkTester(object):
-    MAGIC = [
-        (b"ID3", "mp3"), (b"\xFF\xFB", "mp3"), (b"fLaC", "flac"), (b"RIFF", "wav"), (b"OggS", "ogg"), (b"MThd", "midi"), (b"\x00\x00\x00\x18ftyp", "mp4/m4a"),
-    ]
+    VALID_AUDIO_EXTS = {
+        "aac", "aax", "aaxc", "ac3", "adts", "aif", "aifc", "aiff", "alac", "amr", "ape", "au", "avr", "awb", "caf", "cda", "dff", "dfsf", "dsf", "dss", "dts", "dtshd", "ec3", "f32", 
+        "f64", "flac", "gsm", "hca", "htk", "iff", "ima", "ircam", "kar", "kss", "la", "l16", "m15", "m3u8", "m4a", "m4b", "m4p", "m4r", "mat4", "mat5", "med", "midi", "mid", "mlp", 
+        "mod", "mo3", "mp1", "mp2", "mp3", "mpa", "mpc", "mp+", "mpp", "mptm", "msv", "mt2", "mtm", "mxmf", "nist", "nsf", "oga", "ogg", "okt", "oma", "ofr", "ofs", "opus", "paf", 
+        "pcm", "ptm", "pvf", "ra", "ram", "rf64", "rmi", "rmj", "rmm", "rmx", "roq", "raw", "s3m", "sap", "sds", "sd2", "sd2f", "sf", "shn", "sid", "snd", "spc", "spx", "stm", "tak", 
+        "tta", "thd", "ul", "ult", "umx", "voc", "vgm", "vgz", "wav", "wave", "wax", "w64", "wma", "wve", "wv", "wvx", "xi", "xm", "8svx", "16svx", "669", "amf", "dmf", "far", "gbs", 
+        "gym", "hes", "it", "mdl", "mpc2k", "nsa", "psf", "psf1", "psf2", "ssf", "miniusf", "usf", "2sf", "gsf", "qsf", "spu", "at3", "aa3", "at9", "3ga", "m4s"
+    }
     AUDIO_CT_PREFIX = "audio/"
-    AUDIO_CT_EXTRA = {
-        "application/octet-stream", "application/x-flac", "application/flac", "application/x-mpegurl", "video/mp4"
-    }
-    CTYPE_TO_EXT = {
-        "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4",
-        "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg",
-    }
+    AUDIO_CT_EXTRA = {"application/octet-stream", "application/x-flac", "application/flac", "application/x-mpegurl", "video/mp4"}
+    MAGIC = [(b"ID3", "mp3"), (b"\xFF\xFB", "mp3"), (b"fLaC", "flac"), (b"RIFF", "wav"), (b"OggS", "ogg"), (b"MThd", "midi"), (b"\x00\x00\x00\x18ftyp", "mp4/m4a")]
+    CTYPE_TO_EXT = {"audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4", "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg"}
     def __init__(self, timeout=(5, 15), headers: dict = None, cookies: dict = None):
         self.session = requests.Session()
         self.timeout = timeout

@@ -37,7 +37,7 @@ class RandomIPGenerator:
             return self._randomglobalipv6()
     '''randomipv4scn'''
     def randomipv4scn(self, num_samples: int = 1) -> List[str]:
-        def _buildsampler(blocks):
+        def buildsampler_func(blocks):
             cum, s = [], 0
             for _, c in blocks: s += c; cum.append(s)
             total = s
@@ -52,7 +52,7 @@ class RandomIPGenerator:
                 return out
             return sample
         blocks = self._loadcnipv4blocks()
-        sampler = _buildsampler(blocks)
+        sampler = buildsampler_func(blocks)
         return sampler(num_samples)
     '''addrandomipv4toheaders'''
     def addrandomipv4toheaders(self, headers: dict = None, prefix: Optional[str] = None) -> dict:

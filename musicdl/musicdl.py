@@ -99,6 +99,7 @@ class MusicClient():
                     search_result['song_name'], search_result['file_size'] if search_result['ext'] not in {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'} else colorize(search_result['file_size'], 'flac'),
                     search_result['duration'], search_result['album'], colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
                 ])
+        if not print_items: self.logger_handle.warning('No songs found from %s' % ', '.join(self.music_sources)); return []
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
         picked_ids = cursorpickintable(print_titles, print_items, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
         id2row = dict(zip(row_ids, print_items))
@@ -124,7 +125,7 @@ class MusicClient():
         max_workers, main_progress_lock = min(len(self.music_sources), 10), Lock()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"ALL sources >>> completed (0/0)", total=0)
-            def _search(ms):
+            def search_func(ms):
                 try:
                     return ms, self.music_clients[ms].search(
                         keyword=keyword, num_threadings=self.clients_threadings[ms], request_overrides=self.requests_overrides[ms], rule=self.search_rules[ms], 
@@ -134,7 +135,7 @@ class MusicClient():
                     self.logger_handle.error(f'MusicClient.{ms}.search >>> {keyword} (Error: {err})')
                     return ms, []
             with ThreadPoolExecutor(max_workers=max_workers) as ex:
-                return dict(ex.map(_search, self.music_sources))
+                return dict(ex.map(search_func, self.music_sources))
     '''download'''
     def download(self, song_infos: list[dict], progress_handler=None):
         classified_song_infos = {}
