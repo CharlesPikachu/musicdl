@@ -8,10 +8,14 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import re
+import copy
+import random
 import tempfile
 import requests
+from typing import Optional
+from .misc import resp2json
+from urllib.parse import quote
 from .importutils import optionalimportfrom
-from typing import Optional, Union, Dict, Any, List
 
 
 '''cleanlrc'''
@@ -27,89 +31,13 @@ def fractoseconds(frac: str | None) -> float:
 
 '''extractdurationsecondsfromlrc'''
 def extractdurationsecondsfromlrc(lrc: str) -> Optional[float]:
-    if not lrc: return None
+    if not lrc or (lrc == 'NULL'): return None
     max_t, time_pattern_re = None, re.compile(r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
     for h, m, s, frac in time_pattern_re.findall(lrc):
-        hh = int(h) if h else 0
-        mm = int(m)
-        ss = int(s)
+        hh = int(h) if h else 0; mm = int(m); ss = int(s)
         t = hh * 3600 + mm * 60 + ss + fractoseconds(frac)
         max_t = t if (max_t is None or t > max_t) else max_t
     return max_t
-
-
-'''sectolrcts'''
-def sectolrcts(t: Union[str, float, int], centis: int = 2) -> str:
-    try: sec = float(t)
-    except (TypeError, ValueError): sec = 0.0
-    if sec < 0: sec = 0.0
-    if centis == 3: return f"{(cs:=int(round(sec*1000)))//60000:02d}:{(cs//1000)%60:02d}.{cs%1000:03d}"
-    else: return f"{(cs:=int(round(sec*100)))//6000:02d}:{(cs//100)%60:02d}.{cs%100:02d}"
-
-
-'''kuwolyricslisttolrc'''
-def kuwolyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyric_key: str = "lineLyric", centis: int = 2, offset: float = 0.0, skip_empty: bool = True, dedup_same_time: bool = False, join_sep: str = " / ") -> str:
-    if not items or str(items) in {'NULL'}: return 'NULL'
-    norm = []
-    for x in items:
-        lyric = str(x.get(lyric_key, "")).strip()
-        if skip_empty and not lyric: continue
-        try: t = float(x.get(time_key, 0.0)) + float(offset)
-        except (TypeError, ValueError): t = 0.0
-        if t < 0: t = 0.0
-        norm.append((t, lyric))
-    norm.sort(key=lambda z: z[0])
-    if dedup_same_time:
-        merged = []
-        for t, lyric in norm:
-            if merged and abs(merged[-1][0] - t) < 1e-6: merged[-1] = (merged[-1][0], merged[-1][1] + join_sep + lyric)
-            else: merged.append((t, lyric))
-        norm = merged
-    lines = [f"[{sectolrcts(t, centis=centis)}]{lyric}" for t, lyric in norm]
-    return "\n".join(lines)
-
-
-'''SodaTimedLyricsParser'''
-class SodaTimedLyricsParser:
-    LINE_PATTERN_RE = re.compile(r"^\[(\d+),(\d+)\]")
-    TOKEN_PATTERN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
-    '''parsetimedlyrics'''
-    @staticmethod
-    def parsetimedlyrics(text: str) -> List[Dict[str, Any]]:
-        if not text: return []
-        text = text.replace(r"\u003C", "<").replace(r"\u003E", ">")
-        lines_out: List[Dict[str, Any]] = []
-        for raw_line in text.splitlines():
-            raw_line = raw_line.rstrip("\n")
-            if not raw_line.strip(): continue
-            m = SodaTimedLyricsParser.LINE_PATTERN_RE.match(raw_line.strip())
-            if not m: continue
-            line_start, line_dur = int(m.group(1)), int(m.group(2))
-            line_end, rest, tokens, pieces = line_start + line_dur, raw_line[m.end():], [], []
-            matches = list(SodaTimedLyricsParser.TOKEN_PATTERN_RE.finditer(rest))
-            for i, tm in enumerate(matches):
-                offset, dur, flag, seg_start = int(tm.group(1)), int(tm.group(2)), int(tm.group(3)), tm.end()
-                seg_end = matches[i + 1].start() if i + 1 < len(matches) else len(rest)
-                token_text = rest[seg_start: seg_end].replace("\r", "")
-                if token_text == "": continue
-                abs_start, abs_end = line_start + offset, line_start + offset + dur
-                tokens.append({"text": token_text, "offset_ms": offset, "duration_ms": dur, "flag": flag, "start_ms": abs_start, "end_ms": abs_end}); pieces.append(token_text)
-            lines_out.append({"line_start_ms": line_start, "line_duration_ms": line_dur, "line_end_ms": line_end, "text": "".join(pieces), "tokens": tokens, "raw": rest})
-        return lines_out
-    '''toplaintext'''
-    @staticmethod
-    def toplaintext(parsed: List[Dict[str, Any]]) -> str:
-        if not parsed: return
-        return "\n".join(line["text"] for line in parsed)
-    '''tolrclinelevel'''
-    @staticmethod
-    def tolrclinelevel(parsed: List[Dict[str, Any]], use_centiseconds: bool = True) -> str:
-        if not parsed: return
-        def fmt(ms: int) -> str:
-            mm, ss = ms // 60000, (ms % 60000) // 1000
-            if use_centiseconds: xx = (ms % 1000) // 10; return f"{mm:02d}:{ss:02d}.{xx:02d}"
-            else: return f"{mm:02d}:{ss:02d}"
-        return "\n".join(f"[{fmt(line['line_start_ms'])}]{line['text']}" for line in parsed)
 
 
 '''WhisperLRC'''
@@ -120,12 +48,11 @@ class WhisperLRC:
     '''downloadtotmpdir'''
     @staticmethod
     def downloadtotmpdir(url: str, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):
-        headers, cookies, request_overrides = headers or {}, cookies or {}, request_overrides or {}
+        headers, cookies, request_overrides = headers or {}, cookies or {}, copy.deepcopy(request_overrides or {})
         if 'headers' not in request_overrides: request_overrides['headers'] = headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = cookies
-        resp = requests.get(url, stream=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.get(url, stream=True, **request_overrides)).raise_for_status()
         m = re.search(r"\.([a-z0-9]{2,5})(?:\?|$)", url, re.I)
         fd, path = tempfile.mkstemp(suffix="."+(m.group(1).lower() if m else "bin"))
         with os.fdopen(fd, "wb") as fp:
@@ -140,12 +67,10 @@ class WhisperLRC:
     '''fromurl'''
     def fromurl(self, url: str, transcribe_overrides: dict = None, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):
         assert self.whisper_model is not None, 'faster_whisper should be installed via "pip install "faster_whisper"'
-        transcribe_overrides, headers, cookies, request_overrides = transcribe_overrides or {}, headers or {}, cookies or {}, request_overrides or {}
-        tmp_file_path = ''
+        transcribe_overrides, headers, cookies, request_overrides, tmp_file_path = transcribe_overrides or {}, headers or {}, cookies or {}, request_overrides or {}, ''
         try:
             tmp_file_path = self.downloadtotmpdir(url, headers=headers, timeout=timeout, cookies=cookies, request_overrides=request_overrides)
-            default_transcribe_settings = {'language': None, 'vad_filter': True, 'vad_parameters': dict(min_silence_duration_ms=300), 'chunk_length': 30, 'beam_size': 5}
-            default_transcribe_settings.update(transcribe_overrides)
+            (default_transcribe_settings := {'language': None, 'vad_filter': True, 'vad_parameters': dict(min_silence_duration_ms=300), 'chunk_length': 30, 'beam_size': 5}).update(transcribe_overrides)
             segs, info = self.whisper_model.transcribe(tmp_file_path, **default_transcribe_settings)
             lrc = "\n".join(f"{self.timestamp(s.start)}{s.text.strip()}" for s in segs)
             result = {"language": info.language, "prob": info.language_probability, "duration": getattr(info, "duration", None), 'lyric': lrc}
@@ -162,3 +87,53 @@ class WhisperLRC:
         lrc = "\n".join(f"{self.timestamp(s.start)}{s.text.strip()}" for s in segs)
         result = {"language": info.language, "prob": info.language_probability, "duration": getattr(info, "duration", None), 'lyric': lrc}
         return result
+
+
+'''LyricSearchClient'''
+class LyricSearchClient():
+    '''search'''
+    @staticmethod
+    def search(track_name: str, artist_name: str, allowed_lyric_apis: tuple = ('searchbylrclibapig', 'searchbylrclibapis'), request_overrides: dict = None):
+        lyric_result, lyric = {}, 'NULL'
+        for lyric_api in allowed_lyric_apis:
+            if not callable(lyric_api): lyric_api = getattr(LyricSearchClient, lyric_api, None)
+            try: lyric_result, lyric = lyric_api(track_name=track_name, artist_name=artist_name, request_overrides=request_overrides)
+            except Exception: lyric_result, lyric = {}, 'NULL'
+            if lyric and (lyric not in {'NULL', 'None'}): return lyric_result, lyric
+        return lyric_result, lyric
+    '''searchbylrclibapig'''
+    @staticmethod
+    def searchbylrclibapig(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get("https://lrclib.net/api/get", params={"artist_name": artist_name, "track_name": track_name}, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp)).get('syncedLyrics') or lyric_result.get('plainLyrics') or 'NULL')
+        return lyric_result, lyric
+    '''searchbylrclibapis'''
+    @staticmethod
+    def searchbylrclibapis(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get("https://lrclib.net/api/search", params={"q": f"{artist_name} {track_name}"}, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp))[0].get('syncedLyrics') or lyric_result[0].get('plainLyrics') or 'NULL')
+        return lyric_result, lyric
+    '''searchbylyricsovhapiv1'''
+    @staticmethod
+    def searchbylyricsovhapiv1(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get(f"https://api.lyrics.ovh/v1/{quote(artist_name, safe='')}/{quote(track_name, safe='')}", headers=headers, timeout=10, **request_overrides))
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp)).get('lyrics') or 'NULL')
+        return lyric_result, lyric
+    '''searchbyhappiapiv1'''
+    @staticmethod
+    def searchbyhappiapiv1(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {'accept': 'application/json', 'x-happi-token': 'hk254-C1VegxwlJjYdYFPtdUDpg8qiVpmAXVl0aA'}
+        (resp := requests.get('https://api.happi.dev/v1/lyrics', params={'artist': artist_name, 'track': track_name}, headers=headers, timeout=10, **request_overrides))
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp))['result'][0]['lyrics'] or 'NULL')
+        return lyric_result, lyric
+    '''searchbymusixmatchapi'''
+    @staticmethod
+    def searchbymusixmatchapi(track_name: str, artist_name: str, request_overrides: dict = None):
+        candidate_req_keys = ['3bc1042fde1ac8c1979c400d6f921320']
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get(f"https://api.musixmatch.com/ws/1.1/matcher.lyrics.get?apikey={random.choice(candidate_req_keys)}&q_track={track_name}&q_artist={artist_name}", headers=headers, timeout=10, **request_overrides))
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp))['message']['body']['lyrics']['lyrics_body'] or 'NULL')
+        return lyric_result, lyric

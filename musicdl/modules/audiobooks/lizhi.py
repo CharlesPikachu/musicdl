@@ -67,8 +67,7 @@ class LizhiMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], ''), SongInfo(source=self.source)
         # parse
-        resp = self.get(f'https://m.lizhi.fm/vodapi/voice/info/{song_id}', **request_overrides)
-        resp.raise_for_status()
+        (resp := self.get(f'https://m.lizhi.fm/vodapi/voice/info/{song_id}', **request_overrides)).raise_for_status()
         download_result = resp2json(resp=resp)
         download_url = safeextractfromdict(download_result, ['data', 'userVoice', 'voicePlayProperty', 'trackUrl'], '')
         if not download_url or not str(download_url).startswith('http'):
@@ -134,7 +133,7 @@ class LizhiMusicClient(BaseMusicClient):
             )
             download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/0) pages downloaded in album {album_id}", total=0)
             while True:
-                try: resp = self.get(f'https://m.lizhi.fm/vodapi/user/{album_id}?pageNo={page_no}&pageSize={page_size}', **request_overrides); resp.raise_for_status()
+                try: (resp := self.get(f'https://m.lizhi.fm/vodapi/user/{album_id}?pageNo={page_no}&pageSize={page_size}', **request_overrides)).raise_for_status()
                 except Exception: break
                 download_result = resp2json(resp=resp)
                 if not download_result.get('data'): break
@@ -191,8 +190,7 @@ class LizhiMusicClient(BaseMusicClient):
         # successful
         try:
             # --search results
-            resp = self.get(search_url, **request_overrides)
-            resp.raise_for_status()
+            (resp := self.get(search_url, **request_overrides)).raise_for_status()
             search_results = resp2json(resp)['data']
             # --parse based on search type
             parsers = {'album': self._parsebyalbum, 'track': self._parsebytrack}

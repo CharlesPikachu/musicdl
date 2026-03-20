@@ -8,10 +8,10 @@ from .songinfoutils import SongInfoUtils
 from .modulebuilder import BaseModuleBuilder
 from .hosts import obtainhostname, hostmatchessuffix
 from .importutils import optionalimport, optionalimportfrom
+from .lyric import WhisperLRC, LyricSearchClient, extractdurationsecondsfromlrc, cleanlrc
 from .logger import LoggerHandle, colorize, printtable, printfullline, smarttrunctable, cursorpickintable
-from .lyric import WhisperLRC, SodaTimedLyricsParser, extractdurationsecondsfromlrc, kuwolyricslisttolrc, cleanlrc
 from .misc import (
     AudioLinkTester, legalizestring, touchdir, seconds2hms, byte2mb, cachecookies, resp2json, isvalidresp, safeextractfromdict, replacefile,
     usedownloadheaderscookies, useparseheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, estimatedurationwithfilesizebr,
-    estimatedurationwithfilelink, searchdictbykey, shortenpathsinsonginfos
+    estimatedurationwithfilelink, searchdictbykey, shortenpathsinsonginfos, naiveguessextfromaudiobytes,
 )

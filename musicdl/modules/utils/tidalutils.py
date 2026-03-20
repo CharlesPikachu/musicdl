@@ -34,9 +34,9 @@ from platformdirs import user_log_dir
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
-from .misc import safeextractfromdict, replacefile
 from urllib.parse import urljoin, urlparse, parse_qs
 from .importutils import optionalimport, optionalimportfrom
+from .misc import safeextractfromdict, replacefile, resp2json
 from typing import List, Optional, Any, Union, Tuple, Callable, Dict
 
 
@@ -421,17 +421,23 @@ class TidalSession(ABC):
         return SessionStorage(**{"access_token": self.access_token, "refresh_token": self.refresh_token, "expires": self.expires, "user_id": self.user_id, "country_code": self.country_code, 'client_id': getattr(self, 'client_id'), 'client_secret': getattr(self, 'client_secret')})
     '''getsubscription'''
     def getsubscription(self, request_overrides: dict = None) -> str:
-        if not self.access_token: return
         request_overrides = request_overrides or {}
-        resp = requests.get(f"https://api.tidal.com/v1/users/{self.user_id}/subscription", params={"countryCode": self.country_code}, headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        if (self.access_token is None or datetime.now() > self.expires): return 'FREE'
+        (resp := requests.get(f"https://api.tidal.com/v1/users/{self.user_id}/subscription", params={"countryCode": self.country_code}, headers=self.auth_headers, **request_overrides)).raise_for_status()
         return resp.json()["subscription"]["type"]
     '''valid'''
     def valid(self, request_overrides: dict = None):
         request_overrides = request_overrides or {}
-        if not isinstance(self, TidalSession) and (self.access_token is None or datetime.now() > self.expires): return False
+        if (self.access_token is None or datetime.now() > self.expires): return False
         resp = requests.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)
         return resp.status_code == 200
+    '''isvipaccount'''
+    def isvipaccount(self, request_overrides: dict = None) -> bool:
+        request_overrides = request_overrides or {}
+        if (self.access_token is None or datetime.now() > self.expires): return False
+        (resp := requests.get(f'https://tidal.com/v1/users/{self.user_id}/subscription?countryCode={self.country_code}&locale=en_US&deviceType=BROWSER', headers=self.auth_headers, **request_overrides)).raise_for_status()
+        vip_flag = safeextractfromdict(resp2json(resp=resp), ['premiumAccess'], False) or (safeextractfromdict(resp2json(resp=resp), ['subscription', 'type'], 'FREE') not in {'FREE'})
+        return vip_flag
 
 
 '''TidalMobileSession'''
@@ -443,7 +449,7 @@ class TidalMobileSession(TidalSession):
         {'client_id': 'zU4XHVVkc2tDPo4t', 'client_secret': 'VJKhDFqJPqvsPVNBV6ukXTJmwlvbttP7wlMlrc72se4='}, {'client_id': 'fX2JxdmntZWK0ixT', 'client_secret': '1Nm5AfDAjxrgJFJbKNWLeAyKGVGmINuXPPLHVXAvxAg='},
         {'client_id': 'Dt4NnnGCAeHlCFnZ', 'client_secret': 'fmEBbWpJYd6eR6THNksXWEZSTNPWmIejTMNxncSGHmU='},
     ]
-    def __init__(self, client_id: str = '7m7Ap0JC9j1cOM3n'):
+    def __init__(self, client_id: str = 'fX2JxdmntZWK0ixT'):
         super(TidalMobileSession, self).__init__()
         self.client_id = client_id
         self.redirect_uri = "https://tidal.com/android/login/auth"
@@ -457,35 +463,28 @@ class TidalMobileSession(TidalSession):
     '''auth'''
     def auth(self, username: str, password: str, request_overrides: dict = None):
         session, request_overrides = requests.Session(), request_overrides or {}
-        resp = session.post("https://dd.tidal.com/js/", data={"jsData": f'{{"opts":"endpoint,ajaxListenerPath","ua":"Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}}', "ddk": "1F633CDD8EF22541BD6D9B1B8EF13A", "Referer": "https%3A%2F%2Ftidal.com%2F", "responsePage": "origin", "ddv": "4.17.0"}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "content-type": "application/x-www-form-urlencoded"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.post("https://dd.tidal.com/js/", data={"jsData": f'{{"opts":"endpoint,ajaxListenerPath","ua":"Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}}', "ddk": "1F633CDD8EF22541BD6D9B1B8EF13A", "Referer": "https%3A%2F%2Ftidal.com%2F", "responsePage": "origin", "ddv": "4.17.0"}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "content-type": "application/x-www-form-urlencoded"}, **request_overrides)).raise_for_status()
         assert safeextractfromdict(resp.json(), ['cookie'], "")
         dd_cookie = safeextractfromdict(resp.json(), ['cookie'], "").split(";")[0]
         session.cookies[dd_cookie.split("=")[0]] = dd_cookie.split("=")[1]
         params = {"response_type": "code", "redirect_uri": self.redirect_uri, "lang": "en_US", "appMode": "android", "client_id": self.client_id, "client_unique_key": self.client_unique_key, "code_challenge": self.code_challenge, "code_challenge_method": "S256", "restrict_signup": "true"}
-        resp = session.get("https://login.tidal.com/authorize", params=params, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
-        resp.raise_for_status()
-        resp = session.post(self.TIDAL_LOGIN_BASE + "email", params=params, json={"email": username}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.get("https://login.tidal.com/authorize", params=params, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
+        (resp := session.post(self.TIDAL_LOGIN_BASE + "email", params=params, json={"email": username}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
         assert resp.json()['isValidEmail'] and not resp.json()['newUser']
-        resp = session.post(self.TIDAL_LOGIN_BASE + "email/user/existing", params=params, json={"email": username, "password": password}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.post(self.TIDAL_LOGIN_BASE + "email/user/existing", params=params, json={"email": username, "password": password}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
         resp = session.get("https://login.tidal.com/success", allow_redirects=False, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
         assert resp.status_code == 302
         oauth_code = parse_qs(urlparse(resp.headers["location"]).query)["code"][0]
-        resp = requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"code": oauth_code, "client_id": self.client_id, "grant_type": "authorization_code", "redirect_uri": self.redirect_uri, "scope": "r_usr w_usr w_sub", "code_verifier": self.code_verifier, "client_unique_key": self.client_unique_key}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"code": oauth_code, "client_id": self.client_id, "grant_type": "authorization_code", "redirect_uri": self.redirect_uri, "scope": "r_usr w_usr w_sub", "code_verifier": self.code_verifier, "client_unique_key": self.client_unique_key}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}, **request_overrides)).raise_for_status()
         self.access_token, self.refresh_token = resp.json()["access_token"], resp.json()["refresh_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
-        resp = requests.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)).raise_for_status()
         self.user_id, self.country_code = resp.json()["userId"], resp.json()["countryCode"]
     '''refresh'''
     def refresh(self, request_overrides: dict = None):
         assert self.refresh_token is not None
         request_overrides = request_overrides or {}
-        resp = requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "grant_type": "refresh_token"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "grant_type": "refresh_token"}, **request_overrides)).raise_for_status()
         self.access_token = resp.json()["access_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
         if "refresh_token" in resp.json(): self.refresh_token = resp.json()["refresh_token"]
@@ -499,7 +498,7 @@ class TidalTvSession(TidalSession):
         {'client_id': 'zU4XHVVkc2tDPo4t', 'client_secret': 'VJKhDFqJPqvsPVNBV6ukXTJmwlvbttP7wlMlrc72se4='}, {'client_id': 'fX2JxdmntZWK0ixT', 'client_secret': '1Nm5AfDAjxrgJFJbKNWLeAyKGVGmINuXPPLHVXAvxAg='},
         {'client_id': 'Dt4NnnGCAeHlCFnZ', 'client_secret': 'fmEBbWpJYd6eR6THNksXWEZSTNPWmIejTMNxncSGHmU='},
     ]
-    def __init__(self, client_id: str = '7m7Ap0JC9j1cOM3n', client_secret: str = 'vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY='):
+    def __init__(self, client_id: str = 'fX2JxdmntZWK0ixT', client_secret: str = '1Nn9AfDAjxrgJFJbKNWLeAyKGVGmINuXPPLHVXAvxAg='):
         super(TidalTvSession, self).__init__()
         self.client_id = client_id
         self.client_secret = client_secret
@@ -515,8 +514,7 @@ class TidalTvSession(TidalSession):
     '''auth'''
     def auth(self, request_overrides: dict = None):
         session, request_overrides = requests.Session(), request_overrides or {}
-        resp = session.post(self.TIDAL_AUTH_BASE + "oauth2/device_authorization", data={"client_id": self.client_id, "scope": "r_usr+w_usr+w_sub"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.post(self.TIDAL_AUTH_BASE + "oauth2/device_authorization", data={"client_id": self.client_id, "scope": "r_usr+w_usr+w_sub"}, **request_overrides)).raise_for_status()
         device_code, user_code = resp.json()["deviceCode"], resp.json()["userCode"]
         user_login_url = f'https://link.tidal.com/{user_code}'
         msg = f'Opening {user_login_url} in the browser, log in or sign up to TIDAL manually to continue (in 300 seconds please).'
@@ -537,17 +535,14 @@ class TidalTvSession(TidalSession):
         resp.raise_for_status()
         self.access_token, self.refresh_token = resp.json()["access_token"], resp.json()["refresh_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
-        resp = session.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)).raise_for_status()
         self.user_id, self.country_code = resp.json()["userId"], resp.json()["countryCode"]
-        resp = session.get("https://api.tidal.com/v1/users/{}?countryCode={}".format(self.user_id, self.country_code), headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.get("https://api.tidal.com/v1/users/{}?countryCode={}".format(self.user_id, self.country_code), headers=self.auth_headers, **request_overrides)).raise_for_status()
     '''refresh'''
     def refresh(self, request_overrides: dict = None):
         assert self.refresh_token is not None
         request_overrides = request_overrides or {}
-        resp = requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "client_secret": self.client_secret, "grant_type": "refresh_token"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "client_secret": self.client_secret, "grant_type": "refresh_token"}, **request_overrides)).raise_for_status()
         self.access_token = resp.json()["access_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
         if "refresh_token" in resp.json(): self.refresh_token = resp.json()["refresh_token"]
@@ -950,7 +945,7 @@ class TIDALMusicClientUtils:
     '''downloadcoverbytes'''
     @staticmethod
     def downloadcoverbytes(url: str, album: Optional[Album]) -> Optional[bytes]:
-        try: resp = requests.get(url, timeout=30); resp.raise_for_status()
+        try: (resp := requests.get(url, timeout=30)).raise_for_status()
         except Exception: return None
         if not resp.content: return None
         return resp.content
@@ -981,8 +976,7 @@ class TIDALMusicClientUtils:
     def tidalhifiapiget(path, params: Optional[dict] = None, urlpre: str = 'https://api.tidalhifi.com/v1/', request_overrides: dict = None):
         request_overrides, headers, params = request_overrides or {}, {'authorization': f'Bearer {TIDALMusicClientUtils.SESSION_STORAGE.access_token}'}, dict(params or {})
         params['countryCode'] = TIDALMusicClientUtils.SESSION_STORAGE.country_code
-        resp = requests.get(urlpre + path, headers=headers, params=params, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.get(urlpre + path, headers=headers, params=params, **request_overrides)).raise_for_status()
         return resp.json()
     '''getstreamurlofficialapi'''
     @staticmethod
@@ -1013,7 +1007,111 @@ class TIDALMusicClientUtils:
     def getstreamurlsquidapi(song_id, quality: str, request_overrides: dict = None):
         request_overrides = request_overrides or {}
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
-        data = requests.get(f'https://triton.squid.wtf/track/?id={song_id}&quality={quality}', headers=headers, **request_overrides).json()['data']
+        data = requests.get(f'https://triton.squid.wtf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        resp = aigpy.model.dictToModel(data, StreamRespond())
+        if "vnd.tidal.bt" in resp.manifestMimeType:
+            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
+            return ret, data
+        elif "dash+xml" in resp.manifestMimeType:
+            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
+            if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
+            representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
+            codec = (representation.codec or '').upper()
+            if codec.startswith('MP4A'): codec = 'AAC'
+            ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
+            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            return ret, data
+        raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
+    '''getstreamurlmonochromeapi'''
+    @staticmethod
+    def getstreamurlmonochromeapi(song_id, quality: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        data = requests.get(f'https://api.monochrome.tf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        resp = aigpy.model.dictToModel(data, StreamRespond())
+        if "vnd.tidal.bt" in resp.manifestMimeType:
+            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
+            return ret, data
+        elif "dash+xml" in resp.manifestMimeType:
+            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
+            if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
+            representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
+            codec = (representation.codec or '').upper()
+            if codec.startswith('MP4A'): codec = 'AAC'
+            ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
+            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            return ret, data
+        raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
+    '''getstreamurlbinimumapi'''
+    @staticmethod
+    def getstreamurlbinimumapi(song_id, quality: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        data = requests.get(f'https://tidal-api.binimum.org/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        resp = aigpy.model.dictToModel(data, StreamRespond())
+        if "vnd.tidal.bt" in resp.manifestMimeType:
+            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
+            return ret, data
+        elif "dash+xml" in resp.manifestMimeType:
+            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
+            if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
+            representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
+            codec = (representation.codec or '').upper()
+            if codec.startswith('MP4A'): codec = 'AAC'
+            ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
+            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            return ret, data
+        raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
+    '''getstreamurlspotisaverapi'''
+    @staticmethod
+    def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        for host in ['hifi-one.spotisaver.net', 'hifi-two.spotisaver.net']:
+            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            except Exception: continue
+        resp = aigpy.model.dictToModel(data, StreamRespond())
+        if "vnd.tidal.bt" in resp.manifestMimeType:
+            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
+            return ret, data
+        elif "dash+xml" in resp.manifestMimeType:
+            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
+            if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
+            representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
+            codec = (representation.codec or '').upper()
+            if codec.startswith('MP4A'): codec = 'AAC'
+            ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
+            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            return ret, data
+        raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
+    '''getstreamurlqqdlapi'''
+    @staticmethod
+    def getstreamurlqqdlapi(song_id, quality: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        for host in ['maus.qqdl.site', 'hund.qqdl.site', 'katze.qqdl.site', 'wolf.qqdl.site', 'vogel.qqdl.site']:
+            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            except Exception: continue
         resp = aigpy.model.dictToModel(data, StreamRespond())
         if "vnd.tidal.bt" in resp.manifestMimeType:
             manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
@@ -1035,8 +1133,9 @@ class TIDALMusicClientUtils:
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurl'''
     @staticmethod
-    def getstreamurl(song_id, quality: str, request_overrides: dict = None):
-        for parser in [TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlofficialapi]:
+    def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None):
+        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlmonochromeapi, TIDALMusicClientUtils.getstreamurlbinimumapi, TIDALMusicClientUtils.getstreamurlqqdlapi] if apply_thirdpart_apis else []
+        for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
             try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
             except Exception: continue
         return stream_url, stream_resp

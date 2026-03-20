@@ -9,6 +9,7 @@ WeChat Official Account (微信公众号):
 import re
 import os
 import html
+import copy
 import emoji
 import errno
 import pickle
@@ -21,9 +22,17 @@ import json_repair
 import unicodedata
 from io import BytesIO
 from pathlib import Path
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.asf import ASF
+from mutagen.flac import FLAC
+from mutagen.aiff import AIFF
+from mutagen.wave import WAVE
 from bs4 import BeautifulSoup
+from http.cookies import SimpleCookie
 from .importutils import optionalimport
 from mutagen import File as MutagenFile
+from mutagen.oggvorbis import OggVorbis
 from pathvalidate import sanitize_filepath, sanitize_filename
 
 
@@ -43,10 +52,8 @@ def estimatedurationwithfilesizebr(file_size_bytes: int, br_kbps: float, return_
 def estimatedurationwithfilelink(filelink: str = '', headers: dict = None, request_overrides: dict = None):
     headers, request_overrides = headers or {}, request_overrides or {}
     try:
-        resp = requests.get(filelink, headers=headers, timeout=10, **request_overrides)
-        resp.raise_for_status()
-        f = BytesIO(resp.content)
-        audio = MutagenFile(f)
+        (resp := requests.get(filelink, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        audio = MutagenFile(BytesIO(resp.content))
         length = getattr(audio.info, "length", 0)
         return int(length)
     except:
@@ -57,7 +64,7 @@ def estimatedurationwithfilelink(filelink: str = '', headers: dict = None, reque
 def cookies2dict(cookies: str | dict = None):
     if not cookies: cookies = {}
     if isinstance(cookies, dict): return cookies
-    if isinstance(cookies, str): return dict(item.split("=", 1) for item in cookies.split("; "))
+    if isinstance(cookies, str): (c := SimpleCookie()).load(cookies); return {k: morsel.value for k, morsel in c.items()}
     raise TypeError(f'cookies type is "{type(cookies)}", expect cookies to "str" or "dict" or "None".')
 
 
@@ -65,7 +72,7 @@ def cookies2dict(cookies: str | dict = None):
 def cookies2string(cookies: str | dict = None):
     if not cookies: cookies = ""
     if isinstance(cookies, str): return cookies
-    if isinstance(cookies, dict): return "; ".join(f"{k}={v}" for k, v in cookies.items())
+    if isinstance(cookies, dict): return (lambda c: ([c.__setitem__(k, "" if v is None else str(v)) for k, v in cookies.items()], "; ".join(m.OutputString() for m in c.values()))[1])(SimpleCookie())
     raise TypeError(f'cookies type is "{type(cookies)}", expect cookies to "str" or "dict" or "None".')
 
 
@@ -126,10 +133,8 @@ def shortenpathsinsonginfos(song_infos: list, max_path: int = 240, keep_ext: boo
     for info in song_infos:
         raw_path = (info.save_path or "").strip()
         if not raw_path or raw_path.upper() == "NULL": continue
-        src_path = Path(raw_path)
-        output_dir = src_path.parent.resolve(); output_dir.mkdir(parents=True, exist_ok=True)
-        ext = src_path.suffix if keep_ext else ""
-        stem = src_path.stem
+        src_path = Path(raw_path); output_dir = src_path.parent.resolve(); output_dir.mkdir(parents=True, exist_ok=True)
+        ext = src_path.suffix if keep_ext else ""; stem = src_path.stem
         digest = hashlib.md5(str(src_path).encode("utf-8")).hexdigest()
         for hash_len in (8, 10):
             hash_suffix = f"-{digest[:hash_len]}" if with_hash_suffix else ""
@@ -256,6 +261,19 @@ def searchdictbykey(obj, target_key: str):
     return results
 
 
+'''naiveguessextfromaudiobytes'''
+def naiveguessextfromaudiobytes(content: bytes):
+    if (audio := MutagenFile(BytesIO(content))) is None: return None
+    if isinstance(audio, MP3): return "mp3"
+    if isinstance(audio, FLAC): return "flac"
+    if isinstance(audio, MP4): return "m4a"
+    if isinstance(audio, OggVorbis): return "ogg"
+    if isinstance(audio, WAVE): return "wav"
+    if isinstance(audio, AIFF): return "aiff"
+    if isinstance(audio, ASF): return "wma"
+    return None
+
+
 '''AudioLinkTester'''
 class AudioLinkTester(object):
     VALID_AUDIO_EXTS = {
@@ -269,7 +287,7 @@ class AudioLinkTester(object):
     AUDIO_CT_PREFIX = "audio/"
     AUDIO_CT_EXTRA = {"application/octet-stream", "application/x-flac", "application/flac", "application/x-mpegurl", "video/mp4"}
     MAGIC = [(b"ID3", "mp3"), (b"\xFF\xFB", "mp3"), (b"fLaC", "flac"), (b"RIFF", "wav"), (b"OggS", "ogg"), (b"MThd", "midi"), (b"\x00\x00\x00\x18ftyp", "mp4/m4a")]
-    CTYPE_TO_EXT = {"audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4", "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg"}
+    CTYPE_TO_EXT = {"audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4", "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg", "audio/x-ogg": "ogg", "audio/x-m4p": "m4a"}
     def __init__(self, timeout=(5, 15), headers: dict = None, cookies: dict = None):
         self.session = requests.Session()
         self.timeout = timeout
@@ -291,18 +309,16 @@ class AudioLinkTester(object):
         return None
     '''probe'''
     def probe(self, url: str, request_overrides: dict = None):
-        request_overrides, naive_guess_ext = request_overrides or {}, url.split('?')[0].split('.')[-1]
+        request_overrides, naive_guess_ext = copy.deepcopy(request_overrides or {}), url.split('?')[0].split('.')[-1]
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
         outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
         # HEAD probe
         try:
-            resp = self.session.head(url, allow_redirects=True, verify=False, **request_overrides)
-            resp.raise_for_status()
-            resp_headers, final_url = resp.headers, resp.url
-            resp.close()
-            file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
+            (resp := self.session.head(url, allow_redirects=True, verify=False, **request_overrides)).raise_for_status()
+            resp_headers, final_url = resp.headers, resp.url; resp.close()
+            file_size, ctype = byte2mb(resp_headers.get('content-length')), str(resp_headers.get('content-type')).removesuffix('; charset=UTF-8')
             if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
             if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
             ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
@@ -312,11 +328,9 @@ class AudioLinkTester(object):
         if outputs['file_size'] and outputs['file_size'] not in ('NULL',): return outputs
         # GETSTREAM probe
         try:
-            resp = self.session.get(url, allow_redirects=True, stream=True, verify=False, **request_overrides)
-            resp.raise_for_status()
-            resp_headers, final_url = resp.headers, resp.url
-            resp.close()
-            file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
+            (resp := self.session.get(url, allow_redirects=True, stream=True, verify=False, **request_overrides)).raise_for_status()
+            resp_headers, final_url = resp.headers, resp.url; resp.close()
+            file_size, ctype = byte2mb(resp_headers.get('content-length')), str(resp_headers.get('content-type')).removesuffix('; charset=UTF-8')
             if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
             if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
             ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
@@ -326,7 +340,7 @@ class AudioLinkTester(object):
         return outputs
     '''test'''
     def test(self, url: str, request_overrides: dict = None):
-        request_overrides, naive_guess_ext = request_overrides or {}, url.split('?')[0].split('.')[-1]
+        request_overrides, naive_guess_ext = copy.deepcopy(request_overrides or {}), url.split('?')[0].split('.')[-1]
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
@@ -338,9 +352,7 @@ class AudioLinkTester(object):
             clen = int(clen) if clen and clen.isdigit() else None
             outputs.update(dict(status=resp.status_code, method="HEAD", final_url=str(resp.url), ctype=resp.headers.get("Content-Type"), clen=clen, range=(resp.headers.get("Accept-Ranges") or "").lower() == "bytes"))
             if outputs["ctype"] == 'text/plain' and naive_guess_ext == 'm4s': outputs["ctype"] = 'audio/mp4'
-            if 200 <= resp.status_code < 300 and ((self.isaudioct(outputs["ctype"]) or (naive_guess_ext in ('m4s',))) and (outputs["clen"] or outputs["range"])):
-                outputs.update(dict(ok=True, reason="HEAD success"))
-                return outputs
+            if 200 <= resp.status_code < 300 and ((self.isaudioct(outputs["ctype"]) or (naive_guess_ext in ('m4s',))) and (outputs["clen"] or outputs["range"])): outputs.update(dict(ok=True, reason="HEAD success")); return outputs
         except Exception as err:
             outputs["reason"] = f"HEAD error: {err}"
         # RANGEGET test

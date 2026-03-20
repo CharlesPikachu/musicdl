@@ -26,20 +26,19 @@ class QingtingMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         self.allowed_search_types = list(set(kwargs.pop('allowed_search_types', QingtingMusicClient.ALLOWED_SEARCH_TYPES)))
         super(QingtingMusicClient, self).__init__(**kwargs)
-        if self.default_cookies: assert ("qingting_id" in self.default_cookies) and (("access_token" in self.default_cookies) or ("refresh_token" in self.default_cookies)), '"qingting_id", "access_token" and "refresh_token" should be configured, refer to "https://musicdl.readthedocs.io/zh/latest/Quickstart.html#qingtingfm-audio-radio-download"'
+        if self.default_search_cookies: assert ("qingting_id" in self.default_search_cookies) and (("access_token" in self.default_search_cookies) or ("refresh_token" in self.default_search_cookies)), '"qingting_id", "access_token" and "refresh_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Quickstart.html#qingtingfm-audio-radio-download"'
+        if self.default_download_cookies: assert ("qingting_id" in self.default_download_cookies) and (("access_token" in self.default_download_cookies) or ("refresh_token" in self.default_download_cookies)), '"qingting_id", "access_token" and "refresh_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Quickstart.html#qingtingfm-audio-radio-download"'
         self.default_search_headers = {"User-Agent": "QingTing-iOS/10.7.9.0 com.Qting.QTTour Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", "QT-App-Version": "10.7.9.0"}
         self.default_download_headers = {"User-Agent": "QingTing-iOS/10.7.9.0 com.Qting.QTTour Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", "QT-App-Version": "10.7.9.0"}
         self.default_headers = self.default_search_headers
         self.auth_info = copy.deepcopy(self.default_search_cookies or self.default_download_cookies)
-        self.default_search_cookies = {}
-        self.default_download_cookies = {}
+        self.default_search_cookies = {}; self.default_download_cookies = {}
         self._initsession()
     '''_auth'''
     def _auth(self, request_overrides: dict = None):
         request_overrides = request_overrides or {}
         qingting_id, refresh_token = self.auth_info['qingting_id'], self.auth_info['refresh_token']
-        resp = self.post("https://user.qtfm.cn/u2/api/v4/auth", headers={"Content-Type": "application/x-www-form-urlencoded"}, data={"refresh_token": refresh_token, "qingting_id": qingting_id, "device_id": QingtingMusicClient.DEVICE_ID, "grant_type": "refresh_token"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.post("https://user.qtfm.cn/u2/api/v4/auth", headers={"Content-Type": "application/x-www-form-urlencoded"}, data={"refresh_token": refresh_token, "qingting_id": qingting_id, "device_id": QingtingMusicClient.DEVICE_ID, "grant_type": "refresh_token"}, **request_overrides)).raise_for_status()
         auth_info = resp2json(resp)['data']
         self.auth_info = copy.deepcopy(auth_info)
         return auth_info
@@ -70,16 +69,14 @@ class QingtingMusicClient(BaseMusicClient):
     def _fetchchannelinfo(self, channel_id: str, request_overrides: dict = None) -> Dict[str, Any]:
         request_overrides = request_overrides or {}
         url = f"https://app.qtfm.cn/m-bff/v2/channel/{channel_id}"
-        resp = self.get(url, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.get(url, **request_overrides)).raise_for_status()
         channel_info = resp2json(resp=resp)
         return channel_info
     '''_listpageprograms'''
     def _listpageprograms(self, channel_id: str, page: int, page_size: int, request_overrides: dict = None) -> List[Dict[str, Any]]:
         request_overrides = request_overrides or {}
         url = f"https://app.qtfm.cn/m-bff/v2/channel/{channel_id}/programs"
-        resp = self.get(url, params={"order": "asc", "pagesize": str(page_size), "curpage": str(page)}, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.get(url, params={"order": "asc", "pagesize": str(page_size), "curpage": str(page)}, **request_overrides)).raise_for_status()
         programs = resp2json(resp=resp)
         return programs
     '''_parsewithofficialapiv1'''
@@ -94,8 +91,7 @@ class QingtingMusicClient(BaseMusicClient):
         assert str(song_id) == str(program_id), 'song_id and app_url are not synchronized'
         path_query = f"/m-bff/v1/audiostreams/channel/{channel_id}/program/{program_id}?access_token={self.auth_info.get('access_token', '')}&device_id={QingtingMusicClient.DEVICE_ID}&qingting_id={self.auth_info.get('qingting_id', '')}&type=play"
         sign = hmac_md5_hex_func(QingtingMusicClient.HMAC_KEY, path_query)
-        resp = self.get(f"https://app.qtfm.cn{path_query}&sign={sign}", **request_overrides)
-        resp.raise_for_status()
+        (resp := self.get(f"https://app.qtfm.cn{path_query}&sign={sign}", **request_overrides)).raise_for_status()
         download_result = resp2json(resp=resp)
         if 'channel_info' not in search_result:
             try: search_result['channel_info'] = self._fetchchannelinfo(channel_id, request_overrides)
@@ -189,8 +185,7 @@ class QingtingMusicClient(BaseMusicClient):
         # successful
         try:
             # --search results
-            resp = self.get(search_url, **request_overrides)
-            resp.raise_for_status()
+            (resp := self.get(search_url, **request_overrides)).raise_for_status()
             search_results = resp2json(resp)
             # --parse based on search type
             search_type = parse_qs(urlparse(search_url).query, keep_blank_values=True).get('include')[0]

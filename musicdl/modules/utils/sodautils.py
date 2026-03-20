@@ -6,8 +6,10 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import re
 import struct
 import base64
+from typing import Dict, Any, List
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -128,3 +130,43 @@ class AudioDecryptor:
         if len(decrypted_mdat) == mdat['size'] - 8: file_data[mdat['offset']+8: mdat['offset']+mdat['size']] = decrypted_mdat
         else: pass 
         with open(output_filepath, "wb") as fp: fp.write(file_data)
+
+
+'''SodaTimedLyricsParser'''
+class SodaTimedLyricsParser:
+    LINE_PATTERN_RE = re.compile(r"^\[(\d+),(\d+)\]")
+    TOKEN_PATTERN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
+    '''parsetimedlyrics'''
+    @staticmethod
+    def parsetimedlyrics(text: str) -> List[Dict[str, Any]]:
+        if not text or text in {'NULL'}: return []
+        text = text.replace(r"\u003C", "<").replace(r"\u003E", ">")
+        lines_out: List[Dict[str, Any]] = []
+        for raw_line in text.splitlines():
+            if not (raw_line := raw_line.rstrip("\n")).strip(): continue
+            if not (m := SodaTimedLyricsParser.LINE_PATTERN_RE.match(raw_line.strip())): continue
+            line_start, line_dur = int(m.group(1)), int(m.group(2))
+            line_end, rest, tokens, pieces = line_start + line_dur, raw_line[m.end():], [], []
+            matches = list(SodaTimedLyricsParser.TOKEN_PATTERN_RE.finditer(rest))
+            for i, tm in enumerate(matches):
+                offset, dur, flag, seg_start = int(tm.group(1)), int(tm.group(2)), int(tm.group(3)), tm.end()
+                seg_end = matches[i + 1].start() if i + 1 < len(matches) else len(rest)
+                if (token_text := rest[seg_start: seg_end].replace("\r", "")) == "": continue
+                abs_start, abs_end = line_start + offset, line_start + offset + dur
+                tokens.append({"text": token_text, "offset_ms": offset, "duration_ms": dur, "flag": flag, "start_ms": abs_start, "end_ms": abs_end}); pieces.append(token_text)
+            lines_out.append({"line_start_ms": line_start, "line_duration_ms": line_dur, "line_end_ms": line_end, "text": "".join(pieces), "tokens": tokens, "raw": rest})
+        return lines_out
+    '''toplaintext'''
+    @staticmethod
+    def toplaintext(parsed: List[Dict[str, Any]]) -> str:
+        if not parsed: return
+        return "\n".join(line["text"] for line in parsed)
+    '''tolrclinelevel'''
+    @staticmethod
+    def tolrclinelevel(parsed: List[Dict[str, Any]], use_centiseconds: bool = True) -> str:
+        if not parsed: return
+        def fmt(ms: int) -> str:
+            mm, ss = ms // 60000, (ms % 60000) // 1000
+            if use_centiseconds: xx = (ms % 1000) // 10; return f"{mm:02d}:{ss:02d}.{xx:02d}"
+            else: return f"{mm:02d}:{ss:02d}"
+        return "\n".join(f"[{fmt(line['line_start_ms'])}]{line['text']}" for line in parsed)

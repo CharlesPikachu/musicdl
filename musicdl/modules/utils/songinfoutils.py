@@ -27,9 +27,9 @@ from mutagen.id3 import ID3, USLT, APIC, TIT2, TALB, TPE1
 
 '''SongInfoUtils'''
 class SongInfoUtils:
-    '''fillsongtechinfo'''
+    '''supplsonginfothensavelyricsthenwritetags'''
     @staticmethod
-    def fillsongtechinfo(song_info: SongInfo, logger_handle: LoggerHandle, disable_print: bool, auto_write_tags_to_downloaded_audio: bool = True) -> SongInfo:
+    def supplsonginfothensavelyricsthenwritetags(song_info: SongInfo, logger_handle: LoggerHandle, disable_print: bool, auto_save_lyrics_then_write_tags: bool = True, enable_whisperlrc: bool = False) -> SongInfo:
         path = Path(song_info.save_path)
         # correct file size
         size = path.stat().st_size
@@ -37,32 +37,29 @@ class SongInfoUtils:
         song_info.file_size = byte2mb(size=size)
         # tinytag parse
         try: tag = TinyTag.get(str(path))
-        except Exception as err: logger_handle.warning(f'SongInfoUtils.fillsongtechinfo >>> {str(path)} (Err: {err})', disable_print=disable_print); return song_info
-        if tag.duration: song_info.duration_s = int(round(tag.duration)); song_info.duration = seconds2hms(tag.duration)
-        if tag.bitrate: song_info.bitrate = int(round(tag.bitrate))
-        if tag.samplerate: song_info.samplerate = int(tag.samplerate)
-        if tag.channels: song_info.channels = int(tag.channels)
-        if getattr(tag, "codec", None): song_info.codec = tag.codec
-        elif getattr(tag, "extra", None) and isinstance(tag.extra, dict): song_info.codec = tag.extra.get("codec") or tag.extra.get("mime-type")
+        except Exception as err: logger_handle.warning(f'SongInfoUtils.supplsonginfothensavelyricsthenwritetags >>> {str(path)} (Err: {err})', disable_print=disable_print); tag = None
+        if tag and tag.duration: song_info.duration_s = int(round(tag.duration)); song_info.duration = seconds2hms(tag.duration)
+        if tag and tag.bitrate: song_info.bitrate = int(round(tag.bitrate))
+        if tag and tag.samplerate: song_info.samplerate = int(tag.samplerate)
+        if tag and tag.channels: song_info.channels = int(tag.channels)
+        if tag and getattr(tag, "codec", None): song_info.codec = tag.codec
+        elif tag and getattr(tag, "extra", None) and isinstance(tag.extra, dict): song_info.codec = tag.extra.get("codec") or tag.extra.get("mime-type")
         # lyric
-        if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true' and ((not song_info.lyric) or (song_info.lyric == 'NULL')):
+        if ((os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true') or enable_whisperlrc) and ((not song_info.lyric) or (song_info.lyric in {'NULL'})):
             lyric_result = WhisperLRC(model_size_or_path='small').fromfilepath(str(path))
             lyric = lyric_result['lyric']; song_info.lyric = lyric; song_info.raw_data['lyric'] = lyric_result
         # write tags to audio file
-        if auto_write_tags_to_downloaded_audio:
-            try: SongInfoUtils.writetagstoaudio(song_info, overwrite=False)
+        if auto_save_lyrics_then_write_tags:
+            try: SongInfoUtils.savelyricsthenwritetagstoaudio(song_info, overwrite=False)
             except: pass
         # return
         return song_info
-    '''writetagstoaudio'''
+    '''savelyricsthenwritetagstoaudio'''
     @staticmethod
-    def writetagstoaudio(song_info: SongInfo, overwrite: bool = False, *, timeout: int = 15) -> dict:
-        audio_path = Path(song_info.save_path)
-        lyrics_text = SongInfoUtils.normalizetext(getattr(song_info, "lyric", None))
-        title = SongInfoUtils.normalizetext(getattr(song_info, "song_name", None))
-        album = SongInfoUtils.normalizetext(getattr(song_info, "album", None))
-        artists = SongInfoUtils.normalizetext(getattr(song_info, "singers", None))
-        cover_source = SongInfoUtils.normalizetext(getattr(song_info, "cover_url", None))
+    def savelyricsthenwritetagstoaudio(song_info: SongInfo, overwrite: bool = False, *, timeout: int = 15) -> dict:
+        lyrics_text = SongInfoUtils.normalizetext(getattr(song_info, "lyric", None)); title = SongInfoUtils.normalizetext(getattr(song_info, "song_name", None))
+        album = SongInfoUtils.normalizetext(getattr(song_info, "album", None)); artists = SongInfoUtils.normalizetext(getattr(song_info, "singers", None))
+        cover_source = SongInfoUtils.normalizetext(getattr(song_info, "cover_url", None)); audio_path = Path(song_info.save_path)
         results = {"lyrics_embedded": False, "basic_tags_embedded": False, "cover_embedded": False, "lrc_saved": False}
         if lyrics_text: results["lrc_saved"] = SongInfoUtils.savelrctofile(audio_path, lyrics_text, overwrite=overwrite)
         if lyrics_text: results["lyrics_embedded"] = SongInfoUtils.safeeditaudio(audio_path=audio_path, editor=SongInfoUtils.embedlyrics, overwrite=overwrite, lyrics_text=lyrics_text)

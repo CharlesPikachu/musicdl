@@ -1,6 +1,18 @@
 # Release Log
 
-- 2026-02-24: Released musicdl v2.9.7 — Fix some bugs in musicdl, and add support for searching and downloading books and albums from LanRenTingShu site.
+- 2026-03-16: Released musicdl v2.10.2 — added multiple shared premium membership APIs for Tidal, Deezer, and Qobuz; added support for multiple lyric search platforms to supplement third-party lyric information for several music platforms supported by musicdl; and made some minor code optimizations.
+
+- 2026-03-14: Released musicdl v2.10.1 — added music search and download support for Qobuz (https://play.qobuz.com/discover), along with playlist parsing and download features; expanded the number of shared NetEase Cloud Music premium accounts; fixed several known minor bugs.
+
+- 2026-03-13: Released musicdl v2.10.0 — added support for the Deezer Music Client (search, download, playlist); modified arguments of some API interfaces so that users can choose whether to write song metadata and save lyrics; and attempted to fix several known bugs.
+
+- 2026-03-11: Released musicdl v2.9.10 — meticulously refactored the core code for Qishui Music, SoundCloud, TIDAL, and Apple Music to support playlist parsing and downloading across these platforms; fixed some bugs.
+
+- 2026-03-10: Released musicdl v2.9.9 — refactored the code for QQ Music, Migu Music, Kugou Music, Kuwo Music, Qianqian Music, NetEase Cloud Music, YouTube Music, JOOX Music, Jamendo Music, Bilibili Music, 5SING Music, and StreetVoice to better support playlist parsing and future feature expansion; also improved the downloadable audio quality for some of the above platforms, such as Jamendo Music; fix some known bugs.
+
+- 2026-03-07: Released musicdl v2.9.8 — fixed multiple third-party music search and download platforms; resolved a bug in determining whether music download links are available; unified the code style across the e-book platform and third-party music platforms.
+
+- 2026-02-24: Released musicdl v2.9.7 — fix some bugs in musicdl, and add support for searching and downloading books and albums from LanRenTingShu site.
 
 - 2026-02-19: Released musicdl v2.9.6 — this release introduces official API support for parsing complete playlists across NetEase, Migu, Qianqian, Kuwo, and Kugou Music; it also includes bug fixes for incomplete playlist/lyric fetching on specific platforms, alongside minor under-the-hood code improvements.
 

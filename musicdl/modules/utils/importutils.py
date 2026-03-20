@@ -28,7 +28,7 @@ def optionalimport(name: str, show_warning: bool = False):
 def optionalimportfrom(module: str, attr: str, show_warning: bool = False):
     try:
         mod = sys.modules.get(module) or importlib.import_module(module)
-        return getattr(mod, attr)
+        return (getattr(mod, attr) if hasattr(mod, attr) else importlib.import_module(f"{module}.{attr}"))
     except (ModuleNotFoundError, AttributeError):
         key = (module, attr)
         missing = getattr(optionalimportfrom, "_missing", set())

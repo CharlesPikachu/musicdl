@@ -275,8 +275,7 @@ class LRTSMusicClient(BaseMusicClient):
         # successful
         try:
             # --search results
-            resp = self.get(search_url, **request_overrides)
-            resp.raise_for_status()
+            (resp := self.get(search_url, **request_overrides)).raise_for_status()
             search_results = resp2json(resp)
             # --parse based on search type
             parsers = {'album': self._parsebyalbum, 'book': self._parsebybook}

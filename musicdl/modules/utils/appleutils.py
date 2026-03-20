@@ -368,13 +368,11 @@ class AppleMusicClientAPIUtils:
     '''gettoken'''
     def gettoken(self, request_overrides: dict = None) -> str:
         request_overrides = request_overrides or {}
-        resp = self.client.get(APPLE_MUSIC_HOMEPAGE_URL, params={"l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(APPLE_MUSIC_HOMEPAGE_URL, params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         index_js_uri_match = re.search(r"/(assets/index-legacy[~-][^/\"]+\.js)", resp.text)
         if not index_js_uri_match: raise Exception("index.js URI not found in Apple Music homepage")
         index_js_uri = index_js_uri_match.group(1)
-        resp = self.client.get(f"{APPLE_MUSIC_HOMEPAGE_URL}/{index_js_uri}", params={"l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{APPLE_MUSIC_HOMEPAGE_URL}/{index_js_uri}", params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         token_match = re.search('(?=eyJh)(.*?)(?=")', resp.text)
         if not token_match: raise Exception("Token not found in index.js page")
         token = token_match.group(1)
@@ -394,80 +392,70 @@ class AppleMusicClientAPIUtils:
     '''getaccountinfo'''
     def getaccountinfo(self, meta: str | None = "subscription", request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/me/account", params={**({"meta": meta} if meta else {}), **{"l": self.language}}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/me/account", params={**({"meta": meta} if meta else {}), **{"l": self.language}}, allow_redirects=True, **request_overrides)).raise_for_status()
         account_info = resp2json(resp=resp)
         if not "data" in account_info or (meta and "meta" not in account_info): raise Exception("Error getting account info: ", resp.text)
         return account_info
     '''getsong'''
     def getsong(self, song_id: str, extend: str = "extendedAssetUrls", include: str = "lyrics,albums", request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/songs/{song_id}", params={"extend": extend, "include": include, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/songs/{song_id}", params={"extend": extend, "include": include, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         song = resp2json(resp=resp)
         if not ("data" in song): raise Exception("Error getting song: ", resp.text)
         return song
     '''getmusicvideo'''
     def getmusicvideo(self, music_video_id: str, include: str = "albums", request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/music-videos/{music_video_id}", params={"include": include, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/music-videos/{music_video_id}", params={"include": include, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         music_video = resp2json(resp=resp)
         if not ("data" in music_video): raise Exception("Error getting music video: ", resp.text)
         return music_video
     '''getuploadedvideo'''
     def getuploadedvideo(self, post_id: str, request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/uploaded-videos/{post_id}", params={"l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/uploaded-videos/{post_id}", params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         uploaded_video = resp2json(resp=resp)
         if not ("data" in uploaded_video): raise Exception("Error getting uploaded video: ", resp.text)
         return uploaded_video
     '''getalbum'''
     def getalbum(self, album_id: str, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         album = resp2json(resp=resp)
         if not ("data" in album): raise Exception("Error getting album: ", resp.text)
         return album
     '''getplaylist'''
     def getplaylist(self, playlist_id: str, limit_tracks: int = 300, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/playlists/{playlist_id}", params={"limit[tracks]": limit_tracks, "extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/playlists/{playlist_id}", params={"limit[tracks]": limit_tracks, "extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         playlist = resp2json(resp=resp)
         if not ("data" in playlist): raise Exception("Error getting playlist: ", resp.text)
         return playlist
     '''getartist'''
     def getartist(self, artist_id: str, include: str = "albums,music-videos", limit: int = 100, request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/artists/{artist_id}", params={"include": include, "l": self.language, **{f"limit[{_include}]": limit for _include in include.split(",")}}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/artists/{artist_id}", params={"include": include, "l": self.language, **{f"limit[{_include}]": limit for _include in include.split(",")}}, allow_redirects=True, **request_overrides)).raise_for_status()
         artist = resp2json(resp=resp)
         if not ("data" in artist): raise Exception("Error getting artist:", resp.text)
         return artist
     '''getlibraryalbum'''
     def getlibraryalbum(self, album_id: str, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/me/library/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/me/library/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         album = resp2json(resp=resp)
         if not ("data" in album): raise Exception("Error getting library album: ", resp.text)
         return album
     '''getlibraryplaylist'''
     def getlibraryplaylist(self, playlist_id: str, include: str = "tracks", limit: int = 100, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/me/library/playlists/{playlist_id}", params={"include": include, **{f"limit[{_include}]": limit for _include in include.split(",")}, "extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/me/library/playlists/{playlist_id}", params={"include": include, **{f"limit[{_include}]": limit for _include in include.split(",")}, "extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         playlist = resp2json(resp=resp)
         if not ("data" in playlist): raise Exception("Error getting library playlist: ", resp.text)
         return playlist
     '''getsearchresults'''
     def getsearchresults(self, term: str, types: str = "songs,music-videos,albums,playlists,artists", limit: int = 50, offset: int = 0, request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/search", params={"term": term, "types": types, "limit": limit, "offset": offset, "l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/search", params={"term": term, "types": types, "limit": limit, "offset": offset, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         search_results = resp2json(resp=resp)
         if not ("results" in search_results): raise Exception("Error searching: ", resp.text)
         return search_results
@@ -485,24 +473,21 @@ class AppleMusicClientAPIUtils:
     '''getextendedapidata'''
     def getextendedapidata(self, next_uri: str, limit: int, extend: str, request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.get(AMP_API_URL + next_uri, params={"limit": limit, "extend": extend, "l": self.language, **parse_qs(urlparse(next_uri).query)}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(AMP_API_URL + next_uri, params={"limit": limit, "extend": extend, "l": self.language, **parse_qs(urlparse(next_uri).query)}, allow_redirects=True, **request_overrides)).raise_for_status()
         extended_api_data = resp2json(resp=resp)
         if not ("data" in extended_api_data): raise Exception("Error getting extended API data: ", resp.text)
         return extended_api_data
     '''getwebplayback'''
     def getwebplayback(self, track_id: str, request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.post(WEBPLAYBACK_API_URL, json={"salableAdamId": track_id, "language": self.language}, params={"l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.post(WEBPLAYBACK_API_URL, json={"salableAdamId": track_id, "language": self.language}, params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         webplayback = resp2json(resp=resp)
         if not ("songList" in webplayback): raise Exception("Error getting webplayback: ", resp.text)
         return webplayback
     '''getlicenseexchange'''
     def getlicenseexchange(self, track_id: str, track_uri: str, challenge: str, key_system: str = "com.widevine.alpha", request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.post(LICENSE_API_URL, json={"challenge": challenge, "key-system": key_system, "uri": track_uri, "adamId": track_id, "isLibrary": False, "user-initiated": True}, params={"l": self.language}, allow_redirects=True, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.post(LICENSE_API_URL, json={"challenge": challenge, "key-system": key_system, "uri": track_uri, "adamId": track_id, "isLibrary": False, "user-initiated": True}, params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
         license_exchange = resp2json(resp=resp)
         if not ("license" in license_exchange): raise Exception("Error getting license exchange: ", resp.text)
         return license_exchange
@@ -529,16 +514,14 @@ class AppleMusicClientItunesApiUtils:
     '''getlookupresult'''
     def getlookupresult(self, media_id: str, entity: str = "album", request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.get(ITUNES_LOOKUP_API_URL, params={"id": media_id, "entity": entity, "country": self.storefront, "lang": self.language}, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(ITUNES_LOOKUP_API_URL, params={"id": media_id, "entity": entity, "country": self.storefront, "lang": self.language}, **request_overrides)).raise_for_status()
         lookup_result = resp2json(resp)
         if ("results" not in lookup_result): raise Exception("Error getting lookup result: ", resp.text)
         return lookup_result
     '''getitunespage'''
     def getitunespage(self, media_type: str, media_id: str, request_overrides: dict = None) -> dict:
         request_overrides = request_overrides or {}
-        resp = self.client.get(f"{ITUNES_PAGE_API_URL}/{media_type}/{media_id}", params={"country": self.storefront, "lang": self.language}, **request_overrides)
-        resp.raise_for_status()
+        (resp := self.client.get(f"{ITUNES_PAGE_API_URL}/{media_type}/{media_id}", params={"country": self.storefront, "lang": self.language}, **request_overrides)).raise_for_status()
         itunes_page = resp2json(resp)
         if ("storePlatformData" not in itunes_page): raise Exception("Error getting iTunes page: ", resp.text)
         return itunes_page

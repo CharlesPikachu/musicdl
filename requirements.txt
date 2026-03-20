@@ -6,7 +6,7 @@ orjson
 requests
 cryptography
 fake_useragent
-pathvalidate
+pathvalidate>=3.0.0
 rich
 emoji
 bleach

@@ -21,36 +21,22 @@ class RandomIPGenerator:
         self.default_ipv6_prefixes: List[str] = list(default_ipv6_prefixes or [])
     '''ipv4'''
     def ipv4(self, prefix: Optional[str] = None) -> str:
-        if prefix is None and self.default_ipv4_prefixes:
-            prefix = random.choice(self.default_ipv4_prefixes)
-        if prefix is not None:
-            return self._randomipv4inprefix(prefix)
-        else:
-            return self._randomglobalipv4()
+        if prefix is None and self.default_ipv4_prefixes: prefix = random.choice(self.default_ipv4_prefixes)
+        if prefix is not None: return self._randomipv4inprefix(prefix)
+        else: return self._randomglobalipv4()
     '''ipv6'''
     def ipv6(self, prefix: Optional[str] = None) -> str:
-        if prefix is None and self.default_ipv6_prefixes:
-            prefix = random.choice(self.default_ipv6_prefixes)
-        if prefix is not None:
-            return self._randomipv6inprefix(prefix)
-        else:
-            return self._randomglobalipv6()
+        if prefix is None and self.default_ipv6_prefixes: prefix = random.choice(self.default_ipv6_prefixes)
+        if prefix is not None: return self._randomipv6inprefix(prefix)
+        else: return self._randomglobalipv6()
     '''randomipv4scn'''
     def randomipv4scn(self, num_samples: int = 1) -> List[str]:
         def buildsampler_func(blocks):
             cum, s = [], 0
             for _, c in blocks: s += c; cum.append(s)
             total = s
-            def sample(n=10):
-                out = []
-                for _ in range(n):
-                    r = random.randrange(total)
-                    idx = bisect(cum, r)
-                    base, count = blocks[idx]
-                    ip = ipaddress.IPv4Address(base + random.randrange(count))
-                    out.append(str(ip))
-                return out
-            return sample
+            def sample_func(n=10): out=[]; [out.append(str(ipaddress.IPv4Address((lambda bc: bc[0]+random.randrange(bc[1]))(blocks[bisect(cum, random.randrange(total))])))) for _ in range(n)]; return out
+            return sample_func
         blocks = self._loadcnipv4blocks()
         sampler = buildsampler_func(blocks)
         return sampler(num_samples)
@@ -58,9 +44,7 @@ class RandomIPGenerator:
     def addrandomipv4toheaders(self, headers: dict = None, prefix: Optional[str] = None) -> dict:
         assert isinstance(headers, dict), f'input "headers" should be "dict", but get {type(headers)}'
         random_ip = self.ipv4(prefix=prefix)
-        headers.update({
-            "X-Forwarded-For": random_ip, "X-Real-IP": random_ip, "Forwarded": f"for={random_ip};proto=https",
-        })
+        headers.update({"X-Forwarded-For": random_ip, "X-Real-IP": random_ip, "Forwarded": f"for={random_ip};proto=https"})
         return headers
     '''_loadcnipv4blocks'''
     def _loadcnipv4blocks(self):

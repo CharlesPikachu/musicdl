@@ -8,9 +8,9 @@ WeChat Official Account (微信公众号):
 '''
 from __future__ import annotations
 import os
-from .misc import sanitize_filepath
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, field, fields
+from .misc import sanitize_filepath, safeextractfromdict, AudioLinkTester
 
 
 '''SongInfo'''
@@ -50,10 +50,12 @@ class SongInfo:
     @property
     def with_valid_download_url(self) -> bool:
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
-        if isinstance(self.download_url, str): is_valid_format = self.download_url and self.download_url.startswith('http')
-        else: is_valid_format = self.download_url
+        if isinstance(self.download_url, str): is_valid_download_url_format = self.download_url and self.download_url.startswith('http')
+        else: is_valid_download_url_format = bool(self.download_url)
+        with_downloaded_contents = bool(self.downloaded_contents)
         is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
-        return bool(is_valid_format and is_downloadable)
+        if not is_downloadable and (safeextractfromdict(self.download_url_status, ['probe_status', 'ext'], None) in AudioLinkTester.VALID_AUDIO_EXTS): is_downloadable = True
+        return bool((is_valid_download_url_format or with_downloaded_contents) and is_downloadable)
     # save info
     work_dir: Optional[str] = './'
     _save_path: Optional[str] = None
@@ -112,3 +114,15 @@ class SongInfo:
     def get(self, key: str, default: Any = None) -> Any:
         if key in self.fieldnames(): return getattr(self, key)
         return default
+    '''largerthan'''
+    def largerthan(self, song_info: SongInfo):
+        # file_size_a
+        try: file_size_a = float(self.file_size.removesuffix('MB').strip())
+        except Exception: file_size_a = 0.0
+        if not isinstance(file_size_a, (int, float)): file_size_a = 0.0
+        # file_size_b
+        try: file_size_b = float(song_info.file_size.removesuffix('MB').strip())
+        except Exception: file_size_b = 0.0
+        if not isinstance(file_size_b, (int, float)): file_size_b = 0.0
+        # compare
+        return bool(file_size_a > file_size_b)
