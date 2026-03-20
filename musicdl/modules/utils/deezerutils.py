@@ -11,7 +11,7 @@ import base64
 import hashlib
 import binascii
 import functools
-from Cryptodome.Cipher import AES, Blowfish
+from Crypto.Cipher import AES, Blowfish
 
 
 '''DeezerMusicClientUtils'''

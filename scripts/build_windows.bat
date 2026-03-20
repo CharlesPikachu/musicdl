@@ -93,6 +93,7 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.audiobooks.lrts" ^
     --hidden-import "musicdl.modules.sources.apple" ^
     --hidden-import "musicdl.modules.sources.bilibili" ^
+    --hidden-import "musicdl.modules.sources.deezer" ^
     --hidden-import "musicdl.modules.sources.buguyy" ^
     --hidden-import "musicdl.modules.sources.fangpi" ^
     --hidden-import "musicdl.modules.sources.fivesing" ^
@@ -112,12 +113,12 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.sources.mitu" ^
     --hidden-import "musicdl.modules.sources.netease" ^
     --hidden-import "musicdl.modules.sources.qianqian" ^
+    --hidden-import "musicdl.modules.sources.qobuz" ^
     --hidden-import "musicdl.modules.sources.qq" ^
     --hidden-import "musicdl.modules.sources.soda" ^
     --hidden-import "musicdl.modules.sources.tidal" ^
     --hidden-import "musicdl.modules.sources.streetvoice" ^
     --hidden-import "musicdl.modules.sources.twot58" ^
-    --hidden-import "musicdl.modules.sources.yinyuedao" ^
     --hidden-import "musicdl.modules.sources.youtube" ^
     --hidden-import "musicdl.modules.sources.zhuolin" ^
     --hidden-import "musicdl.modules.common.gdstudio" ^
@@ -126,6 +127,7 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.common.myfreemp3" ^
     --hidden-import "musicdl.modules.common.tunehub" ^
     --hidden-import "musicdl.modules.sources.soundcloud" ^
+    --hidden-import "musicdl.modules.sources.spotify" ^
     --hidden-import "urllib3" ^
     --hidden-import "urllib3.util" ^
     --hidden-import "urllib3.util.retry" ^
