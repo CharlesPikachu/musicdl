@@ -130,7 +130,7 @@ def main():
         # def to(self, lyrics_format: LyricsFormat, langs: list[str] | None, offset: int = 0) -> str:
         # Try different formats and languages
         lyric_text = ""
-        formats_to_try = [LyricsFormat.VERBATIMLRC, LyricsFormat.ENHANCEDLRC, LyricsFormat.LINEBYLINELRC]
+        formats_to_try = [LyricsFormat.ENHANCEDLRC, LyricsFormat.VERBATIMLRC, LyricsFormat.LINEBYLINELRC]
         
         for fmt in formats_to_try:
             try:
