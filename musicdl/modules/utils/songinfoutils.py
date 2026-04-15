@@ -100,6 +100,13 @@ class SongInfoUtils:
             return False
         finally:
             temp_path.unlink(missing_ok=True)
+    '''safegeteditabletags'''
+    @staticmethod
+    def safegeteditabletags(audio):
+        if (tags := getattr(audio, "tags", None)) is not None: return tags
+        try: audio.add_tags()
+        except Exception: pass
+        return getattr(audio, "tags", None) or {}
     '''embedlyrics'''
     @staticmethod
     def embedlyrics(audio_path: Path, *, overwrite: bool, lyrics_text: str) -> bool:
@@ -119,19 +126,19 @@ class SongInfoUtils:
             return True
         # MP4/M4A
         if cls == "MP4":
-            tags = audio.tags or {}; key = "\xa9lyr"
+            tags = SongInfoUtils.safegeteditabletags(audio=audio); key = "\xa9lyr"
             if tags.get(key) and not overwrite: return False
             tags[key] = [text]; audio.tags = tags; audio.save()
             return True
         # FLAC/OGG/OPUS
         if cls in {"FLAC", "OggVorbis", "OggOpus", "OggSpeex", "OggTheora"}:
-            tags = audio.tags or {}; has = bool(tags.get("LYRICS"))
+            tags = SongInfoUtils.safegeteditabletags(audio=audio); has = bool(tags.get("LYRICS"))
             if has and not overwrite: return False
             tags["LYRICS"] = [text]; audio.tags = tags; audio.save()
             return True
         # ASF/WMA
         if cls == "ASF":
-            tags = audio.tags or {}; key = "WM/Lyrics"
+            tags = SongInfoUtils.safegeteditabletags(audio=audio); key = "WM/Lyrics"
             if tags.get(key) and not overwrite: return False
             tags[key] = [text]; audio.tags = tags; audio.save()
             return True
@@ -153,7 +160,7 @@ class SongInfoUtils:
             return changed
         # MP4/M4A
         if cls == "MP4":
-            tags = audio.tags or {}
+            tags = SongInfoUtils.safegeteditabletags(audio=audio)
             if title and (overwrite or not tags.get("\xa9nam")): tags["\xa9nam"] = [title]; changed = True
             if album and (overwrite or not tags.get("\xa9alb")): tags["\xa9alb"] = [album]; changed = True
             if artists and (overwrite or not tags.get("\xa9ART")): tags["\xa9ART"] = artists; changed = True
@@ -161,7 +168,7 @@ class SongInfoUtils:
             return changed
         # FLAC / OGG / OPUS
         if cls in {"FLAC", "OggVorbis", "OggOpus", "OggSpeex", "OggTheora"}:
-            tags = audio.tags or {}
+            tags = SongInfoUtils.safegeteditabletags(audio=audio)
             if title and (overwrite or not tags.get("TITLE")): tags["TITLE"] = [title]; changed = True
             if album and (overwrite or not tags.get("ALBUM")): tags["ALBUM"] = [album]; changed = True
             if artists and (overwrite or not tags.get("ARTIST")): tags["ARTIST"] = artists; changed = True
@@ -169,7 +176,7 @@ class SongInfoUtils:
             return changed
         # ASF/WMA
         if cls == "ASF":
-            tags = audio.tags or {}
+            tags = SongInfoUtils.safegeteditabletags(audio=audio)
             if title and (overwrite or not tags.get("Title")): tags["Title"] = [title]; changed = True
             if album and (overwrite or not tags.get("WM/AlbumTitle")): tags["WM/AlbumTitle"] = [album]; changed = True
             if artists and (overwrite or not tags.get("Author")): tags["Author"] = artists; changed = True
@@ -195,7 +202,7 @@ class SongInfoUtils:
         # MP4
         if cls == "MP4":
             if mime not in {"image/jpeg", "image/png"}: return False
-            tags = audio.tags or {}
+            tags = SongInfoUtils.safegeteditabletags(audio=audio)
             if tags.get("covr") and not overwrite: return False
             image_format = MP4Cover.FORMAT_PNG if mime == "image/png" else MP4Cover.FORMAT_JPEG
             tags["covr"] = [MP4Cover(cover_bytes, imageformat=image_format)]
@@ -212,7 +219,7 @@ class SongInfoUtils:
             return True
         # OGG/OPUS
         if cls in {"OggVorbis", "OggOpus", "OggSpeex", "OggTheora"}:
-            tags = audio.tags or {}
+            tags = SongInfoUtils.safegeteditabletags(audio=audio)
             if tags.get("METADATA_BLOCK_PICTURE") and not overwrite: return False
             picture = Picture()
             picture.type = 3; picture.mime = mime; picture.desc = "Cover"; picture.data = cover_bytes
@@ -223,7 +230,7 @@ class SongInfoUtils:
         if cls == "ASF":
             try: from mutagen.asf import ASFPicture
             except Exception: return False
-            tags = audio.tags or {}
+            tags = SongInfoUtils.safegeteditabletags(audio=audio)
             if tags.get("WM/Picture") and not overwrite: return False
             picture = ASFPicture()
             picture.type = 3; picture.mime_type = mime; picture.description = "Cover"; picture.data = cover_bytes
