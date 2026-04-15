@@ -62,8 +62,7 @@ class MusicClient():
         self.search_rules = search_rules
         self.clients_threadings = clients_threadings
         self.requests_overrides = requests_overrides
-        self.music_sources = music_sources if music_sources else DEFAULT_MUSIC_SOURCES
-        self.music_sources = list(set(self.music_sources))
+        self.music_sources = list(set(music_sources if music_sources else DEFAULT_MUSIC_SOURCES))
         # init
         self.logger_handle = logger_handle if logger_handle else LoggerHandle()
         self.music_clients: dict[str, BaseMusicClient] = dict()
@@ -122,7 +121,7 @@ class MusicClient():
         self.logger_handle.info(f'Searching {colorize(keyword, "highlight")} From {colorize("|".join(self.music_sources), "highlight")}')
         max_workers, main_progress_lock = min(len(self.music_sources), 10), Lock()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
-            main_progress_id = main_process_context.add_task(f"ALL sources >>> completed (0/0)", total=0)
+            main_progress_id = main_process_context.add_task(f"Search from sources >>> completed (0/0)", total=0)
             def search_func(ms):
                 try:
                     return ms, self.music_clients[ms].search(
