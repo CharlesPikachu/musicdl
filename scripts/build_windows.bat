@@ -94,23 +94,12 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.sources.apple" ^
     --hidden-import "musicdl.modules.sources.bilibili" ^
     --hidden-import "musicdl.modules.sources.deezer" ^
-    --hidden-import "musicdl.modules.sources.buguyy" ^
-    --hidden-import "musicdl.modules.sources.fangpi" ^
     --hidden-import "musicdl.modules.sources.fivesing" ^
-    --hidden-import "musicdl.modules.sources.fivesong" ^
-    --hidden-import "musicdl.modules.sources.flmp3" ^
-    --hidden-import "musicdl.modules.sources.gequbao" ^
-    --hidden-import "musicdl.modules.sources.gequhai" ^
-    --hidden-import "musicdl.modules.sources.htqyy" ^
     --hidden-import "musicdl.modules.sources.jamendo" ^
-    --hidden-import "musicdl.modules.sources.jcpoo" ^
     --hidden-import "musicdl.modules.sources.joox" ^
-    --hidden-import "musicdl.modules.sources.kkws" ^
     --hidden-import "musicdl.modules.sources.kugou" ^
     --hidden-import "musicdl.modules.sources.kuwo" ^
-    --hidden-import "musicdl.modules.sources.livepoo" ^
     --hidden-import "musicdl.modules.sources.migu" ^
-    --hidden-import "musicdl.modules.sources.mitu" ^
     --hidden-import "musicdl.modules.sources.netease" ^
     --hidden-import "musicdl.modules.sources.qianqian" ^
     --hidden-import "musicdl.modules.sources.qobuz" ^
@@ -118,16 +107,43 @@ pyinstaller --noconfirm --noconsole --onefile --windowed --icon="icon.ico" ^
     --hidden-import "musicdl.modules.sources.soda" ^
     --hidden-import "musicdl.modules.sources.tidal" ^
     --hidden-import "musicdl.modules.sources.streetvoice" ^
-    --hidden-import "musicdl.modules.sources.twot58" ^
     --hidden-import "musicdl.modules.sources.youtube" ^
-    --hidden-import "musicdl.modules.sources.zhuolin" ^
     --hidden-import "musicdl.modules.common.gdstudio" ^
     --hidden-import "musicdl.modules.common.jbsou" ^
     --hidden-import "musicdl.modules.common.mp3juice" ^
     --hidden-import "musicdl.modules.common.myfreemp3" ^
     --hidden-import "musicdl.modules.common.tunehub" ^
+    --hidden-import "musicdl.modules.thirdpartysites.buguyy" ^
+    --hidden-import "musicdl.modules.thirdpartysites.fangpi" ^
+    --hidden-import "musicdl.modules.thirdpartysites.fivesong" ^
+    --hidden-import "musicdl.modules.thirdpartysites.flmp3" ^
+    --hidden-import "musicdl.modules.thirdpartysites.gequbao" ^
+    --hidden-import "musicdl.modules.thirdpartysites.gequhai" ^
+    --hidden-import "musicdl.modules.thirdpartysites.htqyy" ^
+    --hidden-import "musicdl.modules.thirdpartysites.jcpoo" ^
+    --hidden-import "musicdl.modules.thirdpartysites.kkws" ^
+    --hidden-import "musicdl.modules.thirdpartysites.livepoo" ^
+    --hidden-import "musicdl.modules.thirdpartysites.mitu" ^
+    --hidden-import "musicdl.modules.thirdpartysites.twot58" ^
+    --hidden-import "musicdl.modules.thirdpartysites.yinyuedao" ^
+    --hidden-import "musicdl.modules.thirdpartysites.zhuolin" ^
+    --hidden-import "musicdl.modules.js.youtube.jsinterp" ^
+    --hidden-import "musicdl.modules.utils.cmd" ^
+    --hidden-import "musicdl.modules.utils.cookies" ^
+    --hidden-import "musicdl.modules.utils.lddc_adapter" ^
+    --hidden-import "musicdl.modules.utils.lddc_bridge" ^
+    --hidden-import "musicdl.modules.utils.qobuzutils" ^
+    --hidden-import "musicdl.modules.utils.soundcloudutils" ^
     --hidden-import "musicdl.modules.sources.soundcloud" ^
     --hidden-import "musicdl.modules.sources.spotify" ^
+    --hidden-import "filetype" ^
+    --hidden-import "puremagic" ^
+    --hidden-import "curl_cffi" ^
+    --hidden-import "freeproxy" ^
+    --hidden-import "av" ^
+    --hidden-import "PIL" ^
+    --hidden-import "pywidevine" ^
+    --hidden-import "cryptography" ^
     --hidden-import "urllib3" ^
     --hidden-import "urllib3.util" ^
     --hidden-import "urllib3.util.retry" ^
