@@ -385,7 +385,7 @@ class NeteaseMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES) else True
+        request_overrides = request_overrides or {}; lossless_quality_is_sufficient = False if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES) else True
         search_meta = copy.deepcopy(search_url)
         search_url = search_meta.pop('url')
         timeout = 60

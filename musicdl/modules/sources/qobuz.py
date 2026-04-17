@@ -169,7 +169,7 @@ class QobuzMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token") else True
+        request_overrides = request_overrides or {}; lossless_quality_is_sufficient = False if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token") else True
         self.default_headers.update({"X-App-Id": QobuzMusicClientUtils.initappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)})
         # successful
         try:

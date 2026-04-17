@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from collections import defaultdict
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import suppress
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn, Task
 from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, IOUtils, usedownloadheaderscookies, usesearchheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, optionalimport, optionalimportfrom
 
