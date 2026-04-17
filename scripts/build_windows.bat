@@ -14,6 +14,12 @@ echo.
 :: Change to project root directory
 cd /d "%~dp0\.."
 
+:: Activate virtual environment if it exists
+if exist ".venv\Scripts\activate.bat" (
+    echo Activating .venv virtual environment...
+    call ".venv\Scripts\activate.bat"
+)
+
 :: ============================================
 :: Extract version from musicdl_gui.py
 :: ============================================
