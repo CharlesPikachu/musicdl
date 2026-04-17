@@ -32,19 +32,19 @@ from ..thirdpartysites import (
 class MusicClientBuilder(BaseModuleBuilder):
     REGISTERED_MODULES = {
         # Platforms in Greater China
-        'QQMusicClient': QQMusicClient, 'KugouMusicClient': KugouMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient, 'SodaMusicClient': SodaMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 
-        'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 
+        'QQMusicClient': QQMusicClient,              'KugouMusicClient': KugouMusicClient,         'StreetVoiceMusicClient': StreetVoiceMusicClient,   'SodaMusicClient': SodaMusicClient,               'FiveSingMusicClient': FiveSingMusicClient, 
+        'NeteaseMusicClient': NeteaseMusicClient,    'QianqianMusicClient': QianqianMusicClient,   'MiguMusicClient': MiguMusicClient,                 'KuwoMusicClient': KuwoMusicClient,               'BilibiliMusicClient': BilibiliMusicClient, 
         # Global Streaming / Indie
-        'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'SoundCloudMusicClient': SoundCloudMusicClient, 
-        'DeezerMusicClient': DeezerMusicClient, 'QobuzMusicClient': QobuzMusicClient, 'SpotifyMusicClient': SpotifyMusicClient, 'TIDALMusicClient': TIDALMusicClient,
+        'YouTubeMusicClient': YouTubeMusicClient,    'JooxMusicClient': JooxMusicClient,           'AppleMusicClient': AppleMusicClient,               'JamendoMusicClient': JamendoMusicClient,         'SoundCloudMusicClient': SoundCloudMusicClient, 
+        'DeezerMusicClient': DeezerMusicClient,      'QobuzMusicClient': QobuzMusicClient,         'SpotifyMusicClient': SpotifyMusicClient,           'TIDALMusicClient': TIDALMusicClient,
         # Audio / Radio
-        'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'QingtingMusicClient': QingtingMusicClient, 'LRTSMusicClient': LRTSMusicClient,
+        'XimalayaMusicClient': XimalayaMusicClient,  'LizhiMusicClient': LizhiMusicClient,         'QingtingMusicClient': QingtingMusicClient,         'LRTSMusicClient': LRTSMusicClient,
         # Aggregators / Multi-Source Gateways
-        'MP3JuiceMusicClient': MP3JuiceMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GDStudioMusicClient': GDStudioMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient, 'JBSouMusicClient': JBSouMusicClient,
+        'MP3JuiceMusicClient': MP3JuiceMusicClient,  'TuneHubMusicClient': TuneHubMusicClient,     'GDStudioMusicClient': GDStudioMusicClient,         'MyFreeMP3MusicClient': MyFreeMP3MusicClient,     'JBSouMusicClient': JBSouMusicClient,
         # Unofficial Download Sites / Scrapers
-        'MituMusicClient': MituMusicClient, 'BuguyyMusicClient': BuguyyMusicClient, 'GequbaoMusicClient': GequbaoMusicClient, 'YinyuedaoMusicClient': YinyuedaoMusicClient, 'FLMP3MusicClient': FLMP3MusicClient,
-        'FangpiMusicClient': FangpiMusicClient, 'FiveSongMusicClient': FiveSongMusicClient, 'KKWSMusicClient': KKWSMusicClient, 'GequhaiMusicClient': GequhaiMusicClient, 'LivePOOMusicClient': LivePOOMusicClient,
-        'HTQYYMusicClient': HTQYYMusicClient, 'JCPOOMusicClient': JCPOOMusicClient, 'TwoT58MusicClient': TwoT58MusicClient, 'ZhuolinMusicClient': ZhuolinMusicClient,
+        'MituMusicClient': MituMusicClient,          'BuguyyMusicClient': BuguyyMusicClient,       'GequbaoMusicClient': GequbaoMusicClient,           'YinyuedaoMusicClient': YinyuedaoMusicClient,     'FLMP3MusicClient': FLMP3MusicClient,
+        'FangpiMusicClient': FangpiMusicClient,      'FiveSongMusicClient': FiveSongMusicClient,   'KKWSMusicClient': KKWSMusicClient,                 'GequhaiMusicClient': GequhaiMusicClient,         'LivePOOMusicClient': LivePOOMusicClient,
+        'HTQYYMusicClient': HTQYYMusicClient,        'JCPOOMusicClient': JCPOOMusicClient,         'TwoT58MusicClient': TwoT58MusicClient,             'ZhuolinMusicClient': ZhuolinMusicClient,
     }
 
 

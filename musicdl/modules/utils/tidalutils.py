@@ -26,6 +26,7 @@ from .logger import colorize
 from functools import reduce
 from Crypto.Cipher import AES
 from mutagen.flac import FLAC
+from contextlib import suppress
 from Crypto.Util import Counter
 from xml.etree import ElementTree
 from abc import ABC, abstractmethod
@@ -35,9 +36,10 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
 from urllib.parse import urljoin, urlparse, parse_qs
+from .misc import safeextractfromdict, resp2json, IOUtils
 from .importutils import optionalimport, optionalimportfrom
-from .misc import safeextractfromdict, replacefile, resp2json
-from typing import List, Optional, Any, Union, Tuple, Callable, Dict
+from typing import List, Optional, Any, Union, Tuple, Callable, Dict, TYPE_CHECKING
+from .cmd import ExtractAudioFromVideoFFmpegCommand, MetaflacListPictureCommand, MetaflacRemovePictureCommand, MetaflacExportPictureCommand, MetaflacImportPictureCommand, ConvertImageToJpegFFmpegCommand, NM3U8DLREDownloadCommand
 
 
 '''MediaMetadata'''
@@ -464,8 +466,7 @@ class TidalMobileSession(TidalSession):
     def auth(self, username: str, password: str, request_overrides: dict = None):
         session, request_overrides = requests.Session(), request_overrides or {}
         (resp := session.post("https://dd.tidal.com/js/", data={"jsData": f'{{"opts":"endpoint,ajaxListenerPath","ua":"Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}}', "ddk": "1F633CDD8EF22541BD6D9B1B8EF13A", "Referer": "https%3A%2F%2Ftidal.com%2F", "responsePage": "origin", "ddv": "4.17.0"}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "content-type": "application/x-www-form-urlencoded"}, **request_overrides)).raise_for_status()
-        assert safeextractfromdict(resp.json(), ['cookie'], "")
-        dd_cookie = safeextractfromdict(resp.json(), ['cookie'], "").split(";")[0]
+        dd_cookie = (safeextractfromdict(resp.json(), ['cookie'], '') or '').split(";")[0]
         session.cookies[dd_cookie.split("=")[0]] = dd_cookie.split("=")[1]
         params = {"response_type": "code", "redirect_uri": self.redirect_uri, "lang": "en_US", "appMode": "android", "client_id": self.client_id, "client_unique_key": self.client_unique_key, "code_challenge": self.code_challenge, "code_challenge_method": "S256", "restrict_signup": "true"}
         (resp := session.get("https://login.tidal.com/authorize", params=params, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
@@ -515,13 +516,10 @@ class TidalTvSession(TidalSession):
     def auth(self, request_overrides: dict = None):
         session, request_overrides = requests.Session(), request_overrides or {}
         (resp := session.post(self.TIDAL_AUTH_BASE + "oauth2/device_authorization", data={"client_id": self.client_id, "scope": "r_usr+w_usr+w_sub"}, **request_overrides)).raise_for_status()
-        device_code, user_code = resp.json()["deviceCode"], resp.json()["userCode"]
-        user_login_url = f'https://link.tidal.com/{user_code}'
+        device_code, user_code = resp.json()["deviceCode"], resp.json()["userCode"]; user_login_url = f'https://link.tidal.com/{user_code}'
         msg = f'Opening {user_login_url} in the browser, log in or sign up to TIDAL manually to continue (in 300 seconds please).'
-        print(colorize("TIDAL LOGIN REQUIRED:", 'highlight'))
-        print(colorize(msg, 'highlight'))
-        is_remote = bool(os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY"))
-        if not is_remote:
+        print(colorize("TIDAL LOGIN REQUIRED:", 'highlight')); print(colorize(msg, 'highlight'))
+        if not bool(os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY")):
             try: webbrowser.open(user_login_url, new=2)
             except Exception: pass
         if sys.platform.startswith("win") or sys.platform == "darwin" or bool(os.environ.get("DISPLAY")):
@@ -666,7 +664,7 @@ class TIDALMusicClientUtils:
     '''decryptdownloadedaudio'''
     @staticmethod
     def decryptdownloadedaudio(stream: StreamUrl, src_path: str, desc_path: str) -> str:
-        if aigpy.string.isNull(stream.encryptionKey): replacefile(src_path, desc_path); return desc_path
+        if aigpy.string.isNull(stream.encryptionKey): IOUtils.replacefile(src_path, desc_path); return desc_path
         key, nonce = TIDALMusicClientUtils.decryptsecuritytoken(stream.encryptionKey)
         TIDALMusicClientUtils.decryptfile(src_path, desc_path, key, nonce)
         try: os.remove(src_path)
@@ -675,21 +673,16 @@ class TIDALMusicClientUtils:
     '''guessstreamextension'''
     @staticmethod
     def guessstreamextension(stream: StreamUrl) -> str:
-        candidates = []
-        if stream.url: candidates.append(stream.url)
-        if stream.urls: candidates.extend(stream.urls)
+        candidates: list[str] = ([stream.url] if stream.url else []) + ([*stream.urls] if stream.urls else [])
         if (ext := next((e for c in candidates if c for s in (c.split("?")[0].lower(),) for e in (".flac", ".mp4", ".m4a", ".m4b", ".mp3", ".ogg", ".aac") if s.endswith(e)), None)) is not None: return ext
-        codec = (stream.codec or "").lower()
-        if "flac" in codec: return ".flac"
+        if "flac" in (codec := (stream.codec or "").lower()): return ".flac"
         if "mp4" in codec or "m4a" in codec or "aac" in codec: return ".m4a"
         return ".m4a"
     '''getexpectedextension'''
     @staticmethod
     def getexpectedextension(stream: StreamUrl):
         url, codec = (stream.url or '').lower(), (stream.codec or '').lower()
-        if '.flac' in url: return '.flac'
-        if ".mp4" in url: return ".mp4" if ("ac4" in codec or "mha1" in codec) else (".flac" if "flac" in codec else ".m4a")
-        return '.m4a'
+        return '.flac' if '.flac' in url else '.mp4' if '.mp4' in url and ('ac4' in codec or 'mha1' in codec) else '.flac' if '.mp4' in url and 'flac' in codec else '.m4a'
     '''shouldremuxflac'''
     @staticmethod
     def shouldremuxflac(download_ext: str, final_ext: str, stream: StreamUrl) -> bool:
@@ -700,6 +693,7 @@ class TIDALMusicClientUtils:
     def remuxwithpyav(src_path: str, dest_path: str) -> Tuple[bool, str]:
         if not TIDALMusicClientUtils.pyavready(): return False, "PyAV backend unavailable"
         av = optionalimport('av'); assert av is not None
+        if TYPE_CHECKING: import av as av
         try:
             with av.open(src_path) as container:
                 audio_stream = next((s for s in container.streams if s.type == "audio"), None)
@@ -716,7 +710,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def remuxwithffmpeg(src_path: str, dest_path: str) -> Tuple[bool, str]:
         if not TIDALMusicClientUtils.ffmpegready(): return False, "ffmpeg backend unavailable"
-        cmd = ["ffmpeg", "-y", "-v", "error", "-i", src_path, "-map", "0:a:0", "-c:a", "copy", dest_path]
+        cmd = ExtractAudioFromVideoFFmpegCommand().build(src_path, dest_path)
         try: subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         except subprocess.CalledProcessError as exc: return False, f"ffmpeg exited with code {exc.returncode}"
         return os.path.exists(dest_path) and os.path.getsize(dest_path) > 0, "ffmpeg"
@@ -737,7 +731,7 @@ class TIDALMusicClientUtils:
     def extractmediatags(track: Track, album: Optional[Album]) -> list[str]:
         tags: list[str] = []
         for source in (getattr(track, "mediaMetadata", None), getattr(album, "mediaMetadata", None) if album else None):
-            if source and getattr(source, "tags", None):
+            if source and isinstance(source, MediaMetadata) and getattr(source, "tags", None):
                 tags = [tag for tag in source.tags if tag]
                 if tags: break
         return tags
@@ -798,7 +792,7 @@ class TIDALMusicClientUtils:
         audio.save()
     '''getcoverurl'''
     @staticmethod
-    def getcoverurl(sid: str, width="320", height="320"):
+    def getcoverurl(sid: str, width: str = "320", height: str = "320"):
         if sid is None: return ""
         return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{width}x{height}.jpg"
     '''parsecontributors'''
@@ -818,10 +812,9 @@ class TIDALMusicClientUtils:
     @staticmethod
     def ensureflaccoverartisalreadygood(flac_path: Path, max_px: int) -> bool:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        try: out = run_cmd_func(["metaflac", "--list", "--block-type=PICTURE", str(flac_path)]).stdout
+        try: out = run_cmd_func(MetaflacListPictureCommand().build(str(flac_path))).stdout
         except subprocess.CalledProcessError: return False
-        blocks = out.split("METADATA_BLOCK_PICTURE")
-        if len(blocks) != 2: return False
+        if len((blocks := out.split("METADATA_BLOCK_PICTURE"))) != 2: return False
         block = blocks[1].splitlines()
         if not any("type:" in line and " 3 " in line for line in block): return False
         mime = next((line.split(":", 1)[1].strip().lower() for line in block if line.strip().startswith("mime type:")), "")
@@ -833,14 +826,14 @@ class TIDALMusicClientUtils:
     @staticmethod
     def hasmetaflacfrontcover(flac_path: Path) -> bool:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        try: out = run_cmd_func(["metaflac", "--list", "--block-type=PICTURE", str(flac_path)]).stdout
+        try: out = run_cmd_func(MetaflacListPictureCommand().build(str(flac_path))).stdout
         except subprocess.CalledProcessError: return False
         return bool(re.compile(r"^\s*type:\s+3\b", re.M).search(out))
     '''exportexistingpicture'''
     @staticmethod
     def exportexistingpicture(flac_path: Path, dest_file: Path) -> bool:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        try: run_cmd_func(["metaflac", f"--export-picture-to={dest_file}", str(flac_path)])
+        try: run_cmd_func(MetaflacExportPictureCommand().build(str(flac_path), dest_file))
         except subprocess.CalledProcessError: return False
         return dest_file.exists() and dest_file.stat().st_size > 0
     '''findfoldercover'''
@@ -854,16 +847,15 @@ class TIDALMusicClientUtils:
     @staticmethod
     def importfrontcover(flac_path: Path, jpg_file: Path) -> None:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        run_cmd_func(["metaflac", "--remove", "--block-type=PICTURE", str(flac_path)], capture=False)
-        run_cmd_func(["metaflac", f"--import-picture-from=3|image/jpeg|||{jpg_file}", str(flac_path)], capture=False)
+        run_cmd_func(MetaflacRemovePictureCommand().build(str(flac_path)), capture=False)
+        run_cmd_func(MetaflacImportPictureCommand().build(str(flac_path), str(jpg_file)), capture=False)
     '''reencodewithffmpeg'''
     @staticmethod
     def reencodewithffmpeg(src_img: Path, out_jpg: Path, max_px: int) -> Tuple[bool, str]:
         if not bool(shutil.which("ffmpeg") is not None): return False, "ffmpeg backend unavailable"
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
         scale = "scale='min({0},iw)':'min({0},ih)':force_original_aspect_ratio=decrease".format(max_px)
-        cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(src_img), "-vf", scale, "-q:v", "3", "-pix_fmt", "yuvj420p", str(out_jpg)]
-        try: run_cmd_func(cmd)
+        try: run_cmd_func(ConvertImageToJpegFFmpegCommand().build(str(src_img), str(out_jpg), scale))
         except subprocess.CalledProcessError as exc: return False, f"ffmpeg exited with code {exc.returncode}"
         return out_jpg.exists() and out_jpg.stat().st_size > 0, "ffmpeg"
     '''reencodewithpyav'''
@@ -871,20 +863,21 @@ class TIDALMusicClientUtils:
     def reencodewithpyav(src_img: Path, out_jpg: Path, max_px: int) -> Tuple[bool, str]:
         av = optionalimport('av'); Image = optionalimportfrom('PIL', 'Image')
         if not bool(av is not None and Image is not None): return False, "PyAV backend unavailable"
+        from PIL.Image import Image as PILImageType
+        if TYPE_CHECKING: import av as av; from PIL import Image as Image
         try:
             with av.open(str(src_img)) as container:
                 stream = next((s for s in container.streams if s.type == "video"), None)
                 if stream is None: return False, "PyAV could not locate a video stream"
                 frame = next(container.decode(stream), None)
                 if frame is None: return False, "PyAV failed to decode the image frame"
-                image = frame.to_image()
+                image: PILImageType = frame.to_image()
         except Exception as exc:
             return False, f"PyAV error: {exc}"
         try:
             width, height = image.size; scale = min(1.0, max_px / max(width, height))
             if scale < 1.0: new_size = (max(1, int(width * scale)), max(1, int(height * scale))); image = image.resize(new_size, Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
-            image = image.convert("RGB")
-            image.save(out_jpg, format="JPEG", quality=85, optimize=True, progressive=False)
+            image.convert("RGB").save(out_jpg, format="JPEG", quality=85, optimize=True, progressive=False)
         except Exception as exc:
             return False, f"PyAV/Pillow error: {exc}"
         return out_jpg.exists() and out_jpg.stat().st_size > 0, "PyAV"
@@ -908,8 +901,7 @@ class TIDALMusicClientUtils:
             if TIDALMusicClientUtils.hasmetaflacfrontcover(path): return (True, "Cover art already present in FLAC metadata") if report else True
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir); extracted = tmp_path / "extracted_art"; baseline = tmp_path / "cover.jpg"
-                have_art = TIDALMusicClientUtils.exportexistingpicture(path, extracted)
-                if not have_art:
+                if not (have_art := TIDALMusicClientUtils.exportexistingpicture(path, extracted)):
                     folder_cover = TIDALMusicClientUtils.findfoldercover(path.parent)
                     if folder_cover: extracted, have_art = folder_cover, True
                 if not have_art and fetch_cover is not None:
@@ -929,8 +921,7 @@ class TIDALMusicClientUtils:
     '''setmetadata'''
     @staticmethod
     def setmetadata(track: Track, album: Album, filepath: str, contributors: Optional[dict], lyrics: str, stream: Optional[StreamUrl]) -> None:
-        is_flac_file = filepath.lower().endswith(".flac")
-        obj = aigpy.tag.TagTool(filepath)
+        is_flac_file, obj = filepath.lower().endswith(".flac"), aigpy.tag.TagTool(filepath)
         obj.album, obj.title = track.album.title, track.title
         if not aigpy.string.isNull(track.version): obj.title += ' (' + track.version + ')'
         obj.artist = list(map(lambda artist: artist.name, track.artists))
@@ -939,27 +930,23 @@ class TIDALMusicClientUtils:
         obj.isrc, obj.date, obj.totaldisc, obj.lyrics = track.isrc, album.releaseDate, album.numberOfVolumes, lyrics
         obj.albumartist = list(map(lambda artist: artist.name, album.artists))
         if obj.totaldisc <= 1: obj.totaltrack = album.numberOfTracks
-        coverpath = TIDALMusicClientUtils.getcoverurl(album.cover, "1280", "1280")
-        obj.save(coverpath)
+        obj.save(TIDALMusicClientUtils.getcoverurl(album.cover, "1280", "1280"))
         if is_flac_file: TIDALMusicClientUtils.ensureflaccoverart(filepath, report=True, fetch_cover=TIDALMusicClientUtils.makecoverfetcher(album)); TIDALMusicClientUtils.updateflacmetadata(filepath, track, album, contributors, stream)
     '''downloadcoverbytes'''
     @staticmethod
     def downloadcoverbytes(url: str, album: Optional[Album]) -> Optional[bytes]:
         try: (resp := requests.get(url, timeout=30)).raise_for_status()
         except Exception: return None
-        if not resp.content: return None
-        return resp.content
+        return (resp.content if resp.content else None)
     '''makecoverfetcher'''
     @staticmethod
     def makecoverfetcher(album: Optional["Album"]) -> Optional[Callable[[Path], Optional[Path]]]:
-        cover_id = getattr(album, "cover", None) if album else None
-        if aigpy.string.isNull(cover_id): return None
+        if aigpy.string.isNull((cover_id := getattr(album, "cover", None) if album else None)): return None
         url, cache_key = TIDALMusicClientUtils.getcoverurl(cover_id, "1280", "1280"), str(cover_id)
         def fetch_func(tmp_path: Path) -> Optional[Path]:
             destination, cover_bytes = tmp_path / "fallback_cover.jpg", TIDALMusicClientUtils.ALBUM_COVER_CACHE.get(cache_key)
             if cover_bytes is None:
-                cover_bytes = TIDALMusicClientUtils.downloadcoverbytes(url, album)
-                if cover_bytes is None: return None
+                if (cover_bytes := TIDALMusicClientUtils.downloadcoverbytes(url, album)) is None: return None
                 TIDALMusicClientUtils.ALBUM_COVER_CACHE[cache_key] = cover_bytes
             try: destination.write_bytes(cover_bytes)
             except OSError: return None
@@ -980,175 +967,161 @@ class TIDALMusicClientUtils:
         return resp.json()
     '''getstreamurlofficialapi'''
     @staticmethod
-    def getstreamurlofficialapi(song_id, quality: str, request_overrides: dict = None):
+    def getstreamurlofficialapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         params, request_overrides = {"audioquality": quality, "playbackmode": "STREAM", "assetpresentation": "FULL"}, request_overrides or {}
         data = TIDALMusicClientUtils.tidalhifiapiget(f'tracks/{str(song_id)}/playbackinfopostpaywall', params, request_overrides=request_overrides)
-        resp = aigpy.model.dictToModel(data, StreamRespond())
-        if "vnd.tidal.bt" in resp.manifestMimeType:
-            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
-            ret = StreamUrl()
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
         elif "dash+xml" in resp.manifestMimeType:
-            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
-            ret = StreamUrl()
-            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
             audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
             if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
-            codec = (representation.codec or '').upper()
-            if codec.startswith('MP4A'): codec = 'AAC'
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlsquidapi'''
     @staticmethod
-    def getstreamurlsquidapi(song_id, quality: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+    def getstreamurlsquidapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         data = requests.get(f'https://triton.squid.wtf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-        resp = aigpy.model.dictToModel(data, StreamRespond())
-        if "vnd.tidal.bt" in resp.manifestMimeType:
-            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
-            ret = StreamUrl()
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
         elif "dash+xml" in resp.manifestMimeType:
-            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
-            ret = StreamUrl()
-            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
             audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
             if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
-            codec = (representation.codec or '').upper()
-            if codec.startswith('MP4A'): codec = 'AAC'
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlmonochromeapi'''
     @staticmethod
-    def getstreamurlmonochromeapi(song_id, quality: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+    def getstreamurlmonochromeapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         data = requests.get(f'https://api.monochrome.tf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-        resp = aigpy.model.dictToModel(data, StreamRespond())
-        if "vnd.tidal.bt" in resp.manifestMimeType:
-            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
-            ret = StreamUrl()
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
         elif "dash+xml" in resp.manifestMimeType:
-            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
-            ret = StreamUrl()
-            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
             audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
             if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
-            codec = (representation.codec or '').upper()
-            if codec.startswith('MP4A'): codec = 'AAC'
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlbinimumapi'''
     @staticmethod
-    def getstreamurlbinimumapi(song_id, quality: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+    def getstreamurlbinimumapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         data = requests.get(f'https://tidal-api.binimum.org/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-        resp = aigpy.model.dictToModel(data, StreamRespond())
-        if "vnd.tidal.bt" in resp.manifestMimeType:
-            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
-            ret = StreamUrl()
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
         elif "dash+xml" in resp.manifestMimeType:
-            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
-            ret = StreamUrl()
-            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
             audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
             if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
-            codec = (representation.codec or '').upper()
-            if codec.startswith('MP4A'): codec = 'AAC'
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
+            return ret, data
+        raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
+    '''getstreamurlgeekedapi'''
+    @staticmethod
+    def getstreamurlgeekedapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
+        data = requests.get(f'https://hifi.geeked.wtf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
+            ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
+            return ret, data
+        elif "dash+xml" in resp.manifestMimeType:
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
+            audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
+            if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
+            representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
+            ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlspotisaverapi'''
     @staticmethod
-    def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+    def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         for host in ['hifi-one.spotisaver.net', 'hifi-two.spotisaver.net']:
-            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-            except Exception: continue
-        resp = aigpy.model.dictToModel(data, StreamRespond())
-        if "vnd.tidal.bt" in resp.manifestMimeType:
-            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
-            ret = StreamUrl()
+            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
         elif "dash+xml" in resp.manifestMimeType:
-            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
-            ret = StreamUrl()
-            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
             audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
             if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
-            codec = (representation.codec or '').upper()
-            if codec.startswith('MP4A'): codec = 'AAC'
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlqqdlapi'''
     @staticmethod
-    def getstreamurlqqdlapi(song_id, quality: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+    def getstreamurlqqdlapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         for host in ['maus.qqdl.site', 'hund.qqdl.site', 'katze.qqdl.site', 'wolf.qqdl.site', 'vogel.qqdl.site']:
-            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-            except Exception: continue
-        resp = aigpy.model.dictToModel(data, StreamRespond())
-        if "vnd.tidal.bt" in resp.manifestMimeType:
-            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
-            ret = StreamUrl()
+            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
+            manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
         elif "dash+xml" in resp.manifestMimeType:
-            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
-            ret = StreamUrl()
-            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            manifest, ret = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest)), StreamUrl()
+            ret.trackid, ret.soundQuality = resp.trackid, resp.audioQuality; audio_reps: list[Representation] = []
             audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
             if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
-            codec = (representation.codec or '').upper()
-            if codec.startswith('MP4A'): codec = 'AAC'
+            if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurl'''
     @staticmethod
-    def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None):
-        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlmonochromeapi, TIDALMusicClientUtils.getstreamurlbinimumapi, TIDALMusicClientUtils.getstreamurlqqdlapi] if apply_thirdpart_apis else []
+    def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlqqdlapi, TIDALMusicClientUtils.getstreamurlgeekedapi, TIDALMusicClientUtils.getstreamurlmonochromeapi, TIDALMusicClientUtils.getstreamurlbinimumapi] if apply_thirdpart_apis else []
         for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
-            try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
-            except Exception: continue
+            with suppress(Exception): stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides)
+            if locals().get('stream_url') and locals().get('stream_resp') and stream_url.urls: break
         return stream_url, stream_resp
     '''downloadstreamwithnm3u8dlre'''
     @staticmethod
     def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
-        download_path_obj = Path(download_path)
-        download_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        (download_path_obj := Path(download_path)).parent.mkdir(parents=True, exist_ok=True)
         log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
-        cmd = [
-            "N_m3u8DL-RE", stream_url, "--binary-merge", "--ffmpeg-binary-path", shutil.which('ffmpeg'), "--save-name", download_path_obj.stem, "--save-dir", download_path_obj.parent, 
-            "--tmp-dir", download_path_obj.parent, "--log-file-path", log_file_path, "--auto-select", "--save-pattern", download_path_obj.name
-        ]
-        capture_output = True if silent else False
-        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path)
+        ret = subprocess.run(cmd, check=True, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)

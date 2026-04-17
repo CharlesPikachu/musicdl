@@ -11,13 +11,14 @@ import re
 import time
 import copy
 import hashlib
+from contextlib import suppress
 from .base import BaseMusicClient
 from rich.progress import Progress
 from pathvalidate import sanitize_filepath
 from urllib.parse import urlencode, urlparse
 from ..utils.hosts import QIANQIAN_MUSIC_HOSTS
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
 
 '''QianqianMusicClient'''
@@ -47,28 +48,22 @@ class QianqianMusicClient(BaseMusicClient):
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_addsignandtstoparams'''
-    def _addsignandtstoparams(self, params: dict):
-        secret = '0b50b02fd0d73a9c4c8c3a781c30845f'
+    def _addsignandtstoparams(self, params: dict, secret: str = '0b50b02fd0d73a9c4c8c3a781c30845f'):
         params['timestamp'] = str(int(time.time()))
-        keys = sorted(params.keys()); string = "&".join(f"{k}={params[k]}" for k in keys)
+        string = "&".join(f"{k}={params[k]}" for k in sorted(params.keys()))
         params['sign'] = hashlib.md5((string + secret).encode('utf-8')).hexdigest()
         return params
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
-        # search rules
-        default_rule = {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': QianqianMusicClient.APPID}
-        default_rule.update(rule)
-        # construct search urls based on search rules
-        base_url = 'https://music.91q.com/v1/search?'
-        search_urls, page_size, count = [], self.search_size_per_page, 0
+        (default_rule := {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': QianqianMusicClient.APPID}).update(rule)
+        # construct search urls
+        base_url, search_urls, page_size, count = 'https://music.91q.com/v1/search?', [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            page_rule = copy.deepcopy(default_rule)
-            page_rule['pageSize'] = page_size
+            (page_rule := copy.deepcopy(default_rule))['pageSize'] = page_size
             page_rule['pageNo'] = str(int(count // page_size) + 1)
-            page_rule = self._addsignandtstoparams(params=page_rule)
-            search_urls.append(base_url + urlencode(page_rule))
+            search_urls.append(base_url + urlencode(self._addsignandtstoparams(params=page_rule)))
             count += page_size
         # return
         return search_urls
@@ -77,33 +72,25 @@ class QianqianMusicClient(BaseMusicClient):
         # init
         song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
         if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('TSID'))): return song_info
-        # obtain basic song_info
+        # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
-            for rate in QianqianMusicClient.MUSIC_QUALITIES:
-                params = self._addsignandtstoparams(params={'TSID': song_id, 'appid': QianqianMusicClient.APPID, 'rate': rate})
-                try: (resp := self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)).raise_for_status()
-                except Exception: continue
+            for music_quality in QianqianMusicClient.MUSIC_QUALITIES:
+                params = self._addsignandtstoparams(params={'TSID': song_id, 'appid': QianqianMusicClient.APPID, 'rate': music_quality})
+                with suppress(Exception): (resp := self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)).raise_for_status()
+                if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
                 download_url = safeextractfromdict((download_result := resp2json(resp)), ['data', 'path'], '') or safeextractfromdict(download_result, ['data', 'trail_audio_info', 'path'], '')
                 if not download_url or not str(download_url).startswith('http'): continue
-                file_size_bytes, duration_in_secs = safeextractfromdict(download_result, ['data', 'size'], 0), safeextractfromdict(download_result, ['data', 'duration'], 0)
+                download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True); del resp
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist', []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                    album=legalizestring(search_result.get('albumTitle', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=byte2mb(file_size_bytes), identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('pic'), 
-                    download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(search_result.get('albumTitle')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                    file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0)), duration=SongInfoUtils.seconds2hms(int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))), lyric=None, cover_url=search_result.get('pic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
                 )
-                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-                if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
-                elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
-                if song_info.with_valid_download_url: break
-        if not song_info.with_valid_download_url: return song_info
+                if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
         # supplement lyric results
-        try: (resp := self.get(search_result['lyric'], **request_overrides)).raise_for_status(); resp.encoding = 'utf-8'; lyric, lyric_result = cleanlrc(resp.text) or 'NULL', dict(lyric=resp.text)
-        except Exception: lyric_result, lyric = dict(), 'NULL'
-        if (song_info.singers == 'NULL') and lyric and (song_info.lyric not in {'NULL'}): song_info.singers = (m.group(1) if (m := re.search(r'\[ar:(.*?)\]', lyric)) else 'NULL')
-        song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
-        song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
+        with suppress(Exception): (resp := self.get(search_result['lyric'], **request_overrides)).raise_for_status(); resp.encoding = 'utf-8'; song_info.lyric = cleanlrc(resp.text)
+        if (song_info.singers in {'NULL'}) and song_info.lyric and (song_info.lyric not in {'NULL'}): song_info.singers = (m.group(1) if (m := re.search(r'\[ar:(.*?)\]', song_info.lyric)) else 'NULL')
         # return
         return song_info
     '''_search'''
@@ -116,56 +103,54 @@ class QianqianMusicClient(BaseMusicClient):
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
             for search_result in resp2json(resp)['data']['typeTrack']:
+                # --init song info
+                song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --parse with official apis
-                try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
-                except Exception: song_info = SongInfo(source=self.source)
+                with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
                 # --append to song_infos
-                if not song_info.with_valid_download_url: continue
-                song_infos.append(song_info)
+                if song_info.with_valid_download_url: song_infos.append(song_info)
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
+            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
         # return
         return song_infos
     '''parseplaylist'''
     @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         # init
-        request_overrides = request_overrides or {}
-        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **(request_overrides := dict(request_overrides or {}))).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, QIANQIAN_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
         tracks_in_playlist, page, playlist_result_first = [], 1, None
         while True:
             params = {'pageNo': page, 'pageSize': 50, 'appid': QianqianMusicClient.APPID, 'id': playlist_id}
-            try: (resp := self.get(f"https://music.91q.com/v1/tracklist/info", params=self._addsignandtstoparams(params=params), **request_overrides)).raise_for_status()
-            except Exception: break
-            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'trackList'], [])): break
-            tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'trackList'], [])); page += 1
+            with suppress(Exception): (resp := self.get(f"https://music.91q.com/v1/tracklist/info", params=self._addsignandtstoparams(params=params), **request_overrides)).raise_for_status()
+            if not locals().get('resp') or not hasattr(locals().get('resp'), 'text') or (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'trackList'], [])): break
+            tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'trackList'], [])); page += 1; del resp
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
             if (float(safeextractfromdict(playlist_result, ['data', 'trackCount'], 0)) <= len(tracks_in_playlist)): break
         tracks_in_playlist = list({d["TSID"]: d for d in tracks_in_playlist}.values())
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
-            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks_in_playlist)})", total=len(tracks_in_playlist))
+            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed (0/{len(tracks_in_playlist)}) SongInfo", total=len(tracks_in_playlist))
             for idx, track_info in enumerate(tracks_in_playlist):
-                if idx > 0: main_process_context.advance(main_progress_id, 1)
-                main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks_in_playlist)})")
-                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
-                except Exception: song_info = SongInfo(source=self.source)
-                if song_info.with_valid_download_url: song_infos.append(song_info)
-            main_process_context.advance(main_progress_id, 1)
-            main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks_in_playlist)})")
+                if idx > 0: main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx}/{len(tracks_in_playlist)}) SongInfo")
+                song_info = SongInfo(source=self.source, raw_data={'search': track_info, 'download': {}, 'lyric': {}})
+                with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                if song_info.with_valid_download_url: song_infos.append(song_info); continue
+                self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
+            main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
-        playlist_name = safeextractfromdict(playlist_result_first, ['data', 'title'], None)
-        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
+        playlist_name = legalizestring(safeextractfromdict(playlist_result_first, ['data', 'title'], None) or f"playlist-{playlist_id}")
+        song_infos, work_dir = self._removeduplicates(song_infos=song_infos), self._constructuniqueworkdir(keyword=playlist_name)
         for song_info in song_infos:
-            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            song_info.work_dir, episodes = work_dir, song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, f"{song_info.song_name} - {song_info.singers}")); IOUtils.touchdir(eps_info.work_dir)
         # return results
         return song_infos

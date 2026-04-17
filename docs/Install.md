@@ -3,7 +3,7 @@
 #### Environment Requirements
 
 - Operating system: Linux, macOS, or Windows.
-- Python version: Python 3.9+ with requirements in [musicdl requirements.txt](https://github.com/CharlesPikachu/musicdl/blob/master/requirements.txt).
+- Python version: Python 3.10+ with requirements in [musicdl requirements.txt](https://github.com/CharlesPikachu/musicdl/blob/master/requirements.txt).
 
 #### Installation Instructions
 
@@ -20,49 +20,115 @@ cd musicdl
 python setup.py install
 ```
 
-Some of the music downloaders supported by musicdl require additional CLI tools to function properly, mainly for decrypting encrypted search/download requests and audio files.
-These CLI tools include,
+Certain music clients supported by musicdl require extra CLI tools to function correctly, mainly to decrypt encrypted search and download requests, as well as protected audio files. These tools include:
 
-- [FFmpeg](https://www.ffmpeg.org/): At the moment, only `TIDALMusicClient` and `AppleMusicClient` depends on FFmpeg for audio file decoding.
-  If you don’t need to use `TIDALMusicClient` and `AppleMusicClient` when working with musicdl, you don’t need to install FFmpeg.
-  After installing it, you should run the following command in a terminal (Command Prompt / PowerShell on Windows, Terminal on macOS/Linux) to check whether FFmpeg is on your system `PATH`:
+- [FFmpeg](https://www.ffmpeg.org/) is a cross-platform command-line tool for processing audio and video. The official FFmpeg site provides source code and links to ready-to-use builds for different platforms.
+  
+  Required By:
+
+  - [AppleMusicClient](https://music.apple.com/)
+  - [SoundCloudMusicClient](https://soundcloud.com/discover)
+  - [StreetVoiceMusicClient](https://www.streetvoice.cn/)
+  - [TIDALMusicClient](https://tidal.com/)
+  
+  Install Guidance:
+  
+  - Windows: Download a build from the [official site](https://ffmpeg.org/download.html), extract it, and add the "bin" directory to your `PATH`.
+  - macOS: `brew install ffmpeg`
+  - Ubuntu / Debian: `sudo apt install ffmpeg`
+  
+  Verify that the installation was successful:
+  
   ```bash
   ffmpeg -version
   ```
-  If FFmpeg is installed correctly and on your `PATH`, this command will print the FFmpeg version information (*e.g.*, a few lines starting with `ffmpeg version ...`).
-  If you see an error like `command not found` or `'ffmpeg' is not recognized as an internal or external command`, then FFmpeg is either not installed or not added to your `PATH`.
+  
+  If version information is shown, FFmpeg was installed successfully.
 
-- [Node.js](https://nodejs.org/en): Currently, only `YouTubeMusicClient` in musicdl depends on Node.js, so if you don’t need `YouTubeMusicClient`, you don’t have to install Node.js.
-  Similar to FFmpeg, after installing Node.js, you should run the following command to check whether Node.js is on your system `PATH`:
+- [Node.js](https://nodejs.org/en) is a cross-platform JavaScript runtime used to run JavaScript outside the browser.
+
+  Required By:
+  
+  - [YouTubeMusicClient](https://music.youtube.com/)
+  
+  Install Guidance:
+  
+  - Windows: Download and install it from the [official Node.js site](https://nodejs.org/en/download).
+  - macOS: Download and install it from the [official Node.js site](https://nodejs.org/en/download).
+  - Linux: Follow the installation guidance on the [official Node.js site](https://nodejs.org/en/download).
+  
+  Verify that the installation was successful:
+  
   ```bash
-  node -v (npm -v)
+  node -v
+  npm -v
   ```
-  If Node.js is installed correctly, `node -v` will print the Node.js version (*e.g.*, `v22.11.0`), and `npm -v` will print the npm version.
-  If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
+  
+  If both commands print version information, Node.js was installed successfully.
 
-- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): N_m3u8DL-RE is a powerful open-source command-line tool for downloading, decrypting, and muxing HLS/DASH (m3u8/mpd) streaming media into local video files.
-  In musicdl, this library is mainly used for handling `TIDALMusicClient` and `AppleMusicClient` audio streams, so if you don’t need `TIDALMusicClient` and `AppleMusicClient` support, you don’t need to install it.
-  After installing N_m3u8DL-RE, you need to make sure all of its executables are available in your system `PATH`.
-  A quick way to verify this is that you should be able to run
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE) is a cross-platform stream downloader for MPD, M3U8, and ISM.
+
+  Required By:
+  
+  - [AppleMusicClient](https://music.apple.com/)
+  - [SoundCloudMusicClient](https://soundcloud.com/discover)
+  - [TIDALMusicClient](https://tidal.com/)
+  
+  Install Guidance:
+  
+  - Windows: Download a prebuilt binary from the [official Releases page](https://github.com/nilaoda/N_m3u8DL-RE/releases).
+  - macOS: Download a prebuilt binary from the [official Releases page](https://github.com/nilaoda/N_m3u8DL-RE/releases).
+  - Linux: Download a prebuilt binary from the [official Releases page](https://github.com/nilaoda/N_m3u8DL-RE/releases).
+  - Arch Linux: `yay -Syu n-m3u8dl-re-bin` or `yay -Syu n-m3u8dl-re-git`
+  
+  Verify that the installation was successful:
+  
   ```bash
-  python -c "import shutil; print(shutil.which('N_m3u8DL-RE'))"
+  N_m3u8DL-RE --version
   ```
-  in Command Prompt and get the full path without an error. 
+  
+  If version information is shown, N_m3u8DL-RE was installed successfully.
 
-- [Bento4](https://www.bento4.com/downloads/): Bento4 is an open-source C++ toolkit for reading, writing, inspecting, and packaging MP4 files and related multimedia formats.
-  In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
-  After installing Bento4, you need to make sure all of its executables are available in your system `PATH`.
-  A quick way to verify this is that you should be able to run
+- [Bento4](https://www.bento4.com/downloads/) is a full-featured MP4 and MPEG-DASH toolkit. In this setup, its mp4decrypt tool is required by amdecrypt and N_m3u8DL-RE.
+
+  Required By:
+  
+  - [AppleMusicClient](https://music.apple.com/)
+  - [SoundCloudMusicClient](https://soundcloud.com/discover)
+  - [TIDALMusicClient](https://tidal.com/)
+  
+  Install Guidance:
+
+  - Windows: Download the binaries from the [official Bento4 downloads page](https://www.bento4.com/downloads/).
+  - macOS: Download the binaries from the [official Bento4 downloads page](https://www.bento4.com/downloads/), or install with `brew install bento4`.
+  - Linux: Download the binaries from the [official Bento4 downloads page](https://www.bento4.com/downloads/).
+  
+  Verify that the installation was successful:
+  
   ```bash
-  python -c "import shutil; print(shutil.which('mp4decrypt'))"
+  mp4decrypt
   ```
-  in Command Prompt and get the full path without an error. 
+  
+  If usage or version information is shown, Bento4 was installed successfully.
 
-- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools): amdecrypt is a command-line tool developed by AI that leverages Bento4's mp4decrypt to process Apple Music encrypted files into playable formats. 
-  You can obtain it from the [GitHub Releases](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools) of this repository.
-  After installing amdecrypt, you need to make sure all of its executables are available in your system `PATH`.
-  A quick way to verify this is that you should be able to run
+- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools) is a command-line tool for decrypting Apple Music songs in conjunction with a wrapper server.
+  
+  Required By:
+  
+  - [AppleMusicClient](https://music.apple.com/)
+  
+  Install Guidance:
+
+  - Prerequisite: Make sure [Bento4](https://www.bento4.com/downloads/) is installed first, and mp4decrypt is available in your `PATH`.
+  - Windows: Download the binary from the [musicdl clitools release](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools), extract it, and add it to your `PATH`.
+  - macOS: Download the binary from the [musicdl clitools release](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools), extract it, and add it to your `PATH`.
+  - Linux: Download the binary from the [musicdl clitools release](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools), extract it, and add it to your `PATH`.
+
+  Verify that the installation was successful:
+
   ```bash
   python -c "import shutil; print(shutil.which('amdecrypt'))"
   ```
-  in Command Prompt and get the full path without an error. 
+
+  If the command prints the full path of `amdecrypt` without an error, amdecrypt was installed successfully.
+

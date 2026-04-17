@@ -8,9 +8,12 @@ WeChat Official Account (微信公众号):
 '''
 from __future__ import annotations
 import os
+import uuid
+import hashlib
+from pathlib import Path
 from typing import Any, Dict, Optional
+from pathvalidate import sanitize_filepath
 from dataclasses import dataclass, field, fields
-from .misc import sanitize_filepath, safeextractfromdict, AudioLinkTester
 
 
 '''SongInfo'''
@@ -21,7 +24,7 @@ class SongInfo:
     # from which music client
     source: Optional[str] = None
     root_source: Optional[str] = None
-    # song information
+    # song meta infos
     song_name: Optional[str] = None
     singers: Optional[str] = None
     album: Optional[str] = None
@@ -44,31 +47,29 @@ class SongInfo:
     download_url: Optional[Any] = None
     download_url_status: Optional[Any] = None
     default_download_headers: Dict[str, Any] = field(default_factory=dict)
+    default_download_cookies: Dict[str, Any] = field(default_factory=dict)
     downloaded_contents: Optional[Any] = None
     chunk_size: Optional[int] = 1024 * 1024
     protocol: Optional[str] = 'HTTP' # should be in {'HTTP', 'HLS'}
     @property
     def with_valid_download_url(self) -> bool:
+        from ..utils.tidalutils import StreamUrl as TidalStreamObj
+        from ..utils.youtubeutils import Stream as YouTubeStreamObj
+        from ..utils.appleutils import DownloadItem as AppleStreamObj
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
-        if isinstance(self.download_url, str): is_valid_download_url_format = self.download_url and self.download_url.startswith('http')
-        else: is_valid_download_url_format = bool(self.download_url)
-        with_downloaded_contents = bool(self.downloaded_contents)
-        is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
-        if not is_downloadable and (safeextractfromdict(self.download_url_status, ['probe_status', 'ext'], None) in AudioLinkTester.VALID_AUDIO_EXTS): is_downloadable = True
-        return bool((is_valid_download_url_format or with_downloaded_contents) and is_downloadable)
+        is_valid_download_url_format = self.download_url.startswith('http') if isinstance(self.download_url, str) else isinstance(self.download_url, (TidalStreamObj, YouTubeStreamObj, AppleStreamObj))
+        is_downloadable, with_downloaded_contents = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok'), bool(self.downloaded_contents)
+        return bool(with_downloaded_contents or (is_valid_download_url_format and is_downloadable))
     # save info
     work_dir: Optional[str] = './'
     _save_path: Optional[str] = None
     @property
     def save_path(self) -> str:
-        if self._save_path is not None: return self._save_path
+        if self._save_path is not None: return self.legalizepathlength(self._save_path)
         sp, same_name_file_idx = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier}.{self.ext.removeprefix('.')}"), 1
-        while os.path.exists(sp):
-            sp = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier} ({same_name_file_idx}).{self.ext.removeprefix('.')}")
-            same_name_file_idx += 1
-        sp = sanitize_filepath(sp)
-        self._save_path = sp
-        return sp
+        while os.path.exists(sp): sp = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier} ({same_name_file_idx}).{self.ext.removeprefix('.')}"); same_name_file_idx += 1
+        self._save_path = sanitize_filepath(sp)
+        return self.legalizepathlength(self._save_path)
     # identifier
     identifier: Optional[str] = None
     '''fieldnames'''
@@ -78,11 +79,8 @@ class SongInfo:
     '''fromdict'''
     @classmethod
     def fromdict(cls, data: Dict[str, Any]) -> "SongInfo":
-        field_names = cls.fieldnames()
-        filtered = {k: v for k, v in data.items() if k in field_names}
-        if "episodes" in filtered and filtered["episodes"] and isinstance(filtered["episodes"], list):
-            episodes = [cls.fromdict(e) if isinstance(e, dict) else e for e in filtered["episodes"]]
-            filtered["episodes"] = episodes
+        filtered = {k: v for k, v in data.items() if k in cls.fieldnames()}
+        if filtered.get("episodes") and isinstance(filtered["episodes"], list): filtered["episodes"] = [cls.fromdict(e) if isinstance(e, dict) else e for e in filtered["episodes"]]
         return cls(**filtered)
     '''todict'''
     def todict(self) -> Dict[str, Any]:
@@ -91,21 +89,17 @@ class SongInfo:
         return converted_dict
     '''update'''
     def update(self, data: Dict[str, Any] = None, **kwargs: Any) -> "SongInfo":
-        if data is None: data = {}
+        if data is None or not isinstance(data, dict): data = {}
         merged: Dict[str, Any] = {**data, **kwargs}
-        field_names = self.fieldnames()
-        for k, v in merged.items():
-            if k in field_names: setattr(self, k, v)
+        [setattr(self, k, v) for k, v in merged.items() if k in self.fieldnames()]
         return self
     '''getitem'''
     def __getitem__(self, key: str) -> Any:
-        field_names = self.fieldnames()
-        if key not in field_names: raise KeyError(key)
+        if key not in self.fieldnames(): raise KeyError(key)
         return getattr(self, key)
     '''setitem'''
     def __setitem__(self, key: str, value: Any) -> None:
-        field_names = self.fieldnames()
-        if key not in field_names: raise KeyError(key)
+        if key not in self.fieldnames(): raise KeyError(key)
         setattr(self, key, value)
     '''contains'''
     def __contains__(self, key: object) -> bool:
@@ -126,3 +120,14 @@ class SongInfo:
         if not isinstance(file_size_b, (int, float)): file_size_b = 0.0
         # compare
         return bool(file_size_a > file_size_b)
+    '''legalizepathlength'''
+    def legalizepathlength(self, save_path: str | Path, max_path: int = 240, keep_ext: bool = True, with_hash_suffix: bool = False):
+        if (not (raw_path := str((save_path or "")).strip())) or (raw_path in {'NULL', 'null', 'None', 'none'}): return None
+        (output_dir := (src_path := Path(raw_path)).parent.resolve()).mkdir(parents=True, exist_ok=True)
+        ext, stem, digest = src_path.suffix if keep_ext else "", src_path.stem, hashlib.md5(str(src_path).encode("utf-8")).hexdigest()
+        for hash_len in (4, 6, 8, 10, 12):
+            hash_suffix = f"-{digest[:hash_len]}" if with_hash_suffix else ""
+            max_stem_len = max(1, max_path - (len(str(output_dir)) + 1 + len(hash_suffix) + len(ext)))
+            safe_stem = stem[:max_stem_len].rstrip(" .") or str(uuid.uuid4())[:hash_len]
+            if not os.path.exists((out_path := str(output_dir / f"{safe_stem}{hash_suffix}{ext}"))): break
+        return out_path

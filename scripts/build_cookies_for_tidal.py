@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of KugouMusicClient Cookies Builder
+    Implementation of TIDALMusicClient Cookies Builder
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):

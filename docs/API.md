@@ -1,62 +1,209 @@
 # Musicdl APIs
 
+This document describes the main public interfaces of `MusicClient`, `MusicClientCMD`, and `BaseMusicClient` based on the latest code version.
 
 ## `musicdl.musicdl.MusicClient`
 
-A unified interface encapsulated for all supported music platforms. Arguments supported when initializing this class include:
+`MusicClient` is the high-level entry point for end users. It manages multiple source-specific clients, sends search and download requests to the correct source, and provides both programmatic and interactive workflows.
 
-- **music_sources** (`list[str]`, optional):  A list of music client names to be enabled. 
-  Each name must be a key registered in `MusicClientBuilder.REGISTERED_MODULES`.  
-  If left empty, the following default sources are used:  
-  `['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient']`.
+Constructor:
 
-- **init_music_clients_cfg** (`dict[str, dict]`, optional): Per-client initialization configuration.  
-  The outer dict is keyed by music source name (*e.g.*, `"NeteaseMusicClient"`), and each value is a dict that overrides the default config:
+```python
+musicdl.musicdl.MusicClient(
+    music_sources: list = [],
+    init_music_clients_cfg: dict = {},
+    clients_threadings: dict = {},
+    requests_overrides: dict = {},
+    search_rules: dict = {},
+)
+```
+
+Arguments:
+
+- **`music_sources`**
+
+  A list of source client names to enable. You can pass a list such as `["NeteaseMusicClient", "QQMusicClient"]`.
+  You can also pass a single string, it will be converted into a one-item list internally.
+  If empty, the default sources are: 
+  ```python
+  ["MiguMusicClient", "NeteaseMusicClient", "QQMusicClient", "KuwoMusicClient", "QianqianMusicClient"]
+  ```
+
+- **`init_music_clients_cfg`**
+
+  Per-source initialization settings. The key is the source name, and the value is a config dictionary used when building that source client.
+  
+  Example:
+
   ```python
   {
-      "search_size_per_source": 5,
-      "auto_set_proxies": False,
-      "random_update_ua": False,
-      "enable_search_curl_cffi": False,
-      "enable_download_curl_cffi": False,
-      "enable_parse_curl_cffi": False,
-      "max_retries": 3,
-      "maintain_session": False,
-      "logger_handle": LoggerHandle(),
-      "disable_print": True,
-      "work_dir": "musicdl_outputs",
-      "freeproxy_settings": None,
-      "default_search_cookies": {},
-      "default_download_cookies": {},
-      "default_parse_cookies": {},
-      "type": music_source,
-      "search_size_per_page": 10,
-      "strict_limit_search_size_per_page": True,
-      "quark_parser_config": {},
+    "NeteaseMusicClient": {"work_dir": "outputs", "search_size_per_source": 10, "maintain_session": True},
+    "QQMusicClient": {"search_size_per_source": 5, "default_search_cookies": {"foo": "bar"}},
   }
   ```
-  Any keys you provide will overwrite the defaults for that specific source only.
+  
+  Common fields include:
 
-- **clients_threadings** (`dict[str, int]`, optional): Number of threads to use for each music client when searching/downloading.
-  Keys are music source names; values are integers.
-  If a source is missing from this dict, it defaults to `5` threads.
+  - `search_size_per_source`
+  - `auto_set_proxies`
+  - `random_update_ua`
+  - `max_retries`
+  - `maintain_session`
+  - `disable_print`
+  - `work_dir`
+  - `default_search_cookies`
+  - `default_download_cookies`
+  - `default_parse_cookies`
+  - `search_size_per_page`
+  - `strict_limit_search_size_per_page`
+  - `quark_parser_config`
+  - `freeproxy_settings`
+  - `enable_search_curl_cffi`
+  - `enable_download_curl_cffi`
+  - `enable_parse_curl_cffi`
 
-- **requests_overrides** (`dict[str, dict]`, optional): Per-client overrides for HTTP requests.
-  Keys are music source names; values are dicts that will be forwarded as `request_overrides` to the underlying clients’ `search` and `download` methods.
-  Typical usage is to pass `requests.get`-like kwargs such as custom `headers`, `proxies`, or `timeout`.
-  If a source is missing from this dict, it defaults to an empty dict `{}`.
+  Notes:
+  
+  - `logger_handle` is injected automatically by `MusicClient`.
+  - `type` is also set automatically to the current source name.
+  - Some sources use a smaller default `search_size_per_source` internally.
+  
+- **`clients_threadings`**
 
-- **search_rules** (`dict[str, dict]`, optional): Per-client search rules.
-  Keys are music source names; values are dicts passed as `rule` to the clients’ `search` method to control source-specific search behavior (*e.g.*, quality filters, sort rules, *etc.*, depending on the implementation of each client).
-  If a source is missing from this dict, it defaults to an empty dict `{}`.
+  Per-source thread counts used during search and download.
+  
+  Example:
+  
+  ```python
+  {"NeteaseMusicClient": 8, "QQMusicClient": 4}
+  ```
+  
+  If a source is not provided here, `MusicClient` uses its internal default thread count.
 
-Once initialized, `MusicClient` exposes high-level `search` and `download` methods that automatically dispatch requests to all configured music sources.
+- **`requests_overrides`**
+
+  Per-source request overrides forwarded to the underlying source client.
+  
+  Typical values include:
+  
+  - `headers`
+  - `cookies`
+  - `proxies`
+  - `timeout`
+  - `verify`
+  
+  Example:
+  
+  ```python
+  {"NeteaseMusicClient": {"timeout": (10, 30), "headers": {"User-Agent": "..."},}}
+  ```
+
+- **`search_rules`**
+
+  Per-source search rules passed into each source client’s `search()` implementation.
+  
+  Example:
+  
+  ```python
+  {"FiveSingMusicClient": {"sort": 1, "filter": 0, "type": 0}}
+  ```
+  
+  Use this when a source supports custom search filters or paging rules.
+  
+#### `MusicClient.search(keyword) -> dict[str, list[SongInfo]]`
+
+Searches all enabled music sources in parallel.
+
+What it does:
+
+- Starts one search task per enabled source.
+- Uses the per-source thread count from `clients_threadings`.
+- Passes `requests_overrides[source]` and `search_rules[source]` to each source client.
+- Returns a dictionary keyed by source name.
+
+Example:
+
+```python
+music_client = MusicClient(
+    music_sources=["NeteaseMusicClient", "QQMusicClient"]
+)
+
+results = music_client.search("Jay Chou")
+```
+
+Typical return shape:
+
+```python
+{
+    "NeteaseMusicClient": [SongInfo(...), SongInfo(...)],
+    "QQMusicClient": [SongInfo(...)]
+}
+```
+
+#### `MusicClient.download(song_infos) -> list[SongInfo]`
+
+Downloads songs by routing them to the correct underlying source client.
+
+Accepted input:
+
+- a flat list of `SongInfo`
+- or a dictionary like `dict[str, list[SongInfo]]`
+
+What it does:
+
+- Groups songs by `song_info.source`
+- Calls the matching source client’s `download()` method
+- Merges all successful downloads into one list
+
+Example with a flat list:
+
+```python
+results = music_client.search("Faded")
+selected = results["NeteaseMusicClient"][:2]
+downloaded = music_client.download(selected)
+```
+
+Example with the full search result dictionary:
+
+```python
+results = music_client.search("Faded")
+downloaded = music_client.download(results)
+```
+
+Return value:
+
+```python
+list[SongInfo]
+```
+
+Only successfully downloaded items are returned.
+
+#### `MusicClient.parseplaylist(playlist_url: str) -> list[SongInfo]`
+
+Tries to parse a playlist URL by asking enabled source clients one by one.
+
+What it does:
+
+- Iterates through all initialized clients
+- Calls each client’s `parseplaylist()`
+- Stops at the first client that returns a non-empty result
+
+Example:
+
+```python
+songs = music_client.parseplaylist(
+    "https://music.163.com/#/playlist?id=7583298906"
+)
+downloaded = music_client.download(songs)
+```
+
+This is useful when the caller does not want to manually determine which source owns the playlist URL.
 
 #### `MusicClient.startcmdui()`
 
-Start an interactive command-line interface for searching and downloading music.
+Starts the interactive terminal UI.
 
-This method:
+What it does:
 
 - Prints basic usage information (version, save paths, *etc.*.).
 - Prompts the user to input keywords for music search.
@@ -70,47 +217,125 @@ This method:
   - Press "Esc" or "q" to cancel selection
 - Collects the corresponding song info entries and calls `MusicClient.download()` to download them.
 
-Special commands (at the main prompt):
+Special inputs at the main prompt:
 
-- Enter `r` to **reinitialize** the program (*i.e.*, return to the main menu).
-- Enter `q` to **exit** the program.
+- `q`: quit the program
+- `r`: restart the interactive flow
 
-This method runs in a loop and blocks until the user quits.
+This method runs in a loop until the user exits.
 
-#### `MusicClient.search(keyword: str)`
+## `musicdl.musicdl.MusicClientCMD`
 
-Search for songs from all configured music platforms using a given `keyword`.
-The results from all sources are collected into a dictionary.
-Each per-source result is a list of song info dictionaries, which typically include: `singers`, `song_name`. `file_size`, `duration`, `album`, `source`, `ext` and other client-specific metadata.
+`MusicClientCMD` is the Click-based command-line entry point.
 
-- **Arguments**:
+It supports three modes:
 
-  - **keyword** (`str`): Search keyword, *e.g.*, song name, artist name, *etc.*.
+1. **Interactive mode**  
+   If both `keyword` and `playlist_url` are empty, it launches `startcmdui()`.
 
-- **Returns**:
+2. **Playlist mode**  
+   If `playlist_url` is provided, it parses the playlist and downloads all parsed tracks.
+
+3. **Keyword mode**  
+   If `keyword` is provided, it searches by keyword, opens the selection UI, and downloads the chosen tracks.
+
+Signature:
+
+```python
+musicdl.musicdl.MusicClientCMD(
+    keyword: str,
+    playlist_url: str,
+    music_sources: str,
+    init_music_clients_cfg: str,
+    requests_overrides: str,
+    clients_threadings: str,
+    search_rules: str,
+)
+```
+
+CLI Options:
+
+- **`-k, --keyword`**
+
+  Search keyword. If omitted and no playlist URL is given, the program enters interactive mode.
   
-  - `dict[str, list[SongInfo]]`: A mapping from music source name (*e.g.*, `"NeteaseMusicClient"`) to a list of song info dictionaries returned by that source.
-
-#### `MusicClient.download(song_infos: list[SongInfo])`
-
-Download one or more songs given a list of song info dictionaries.
-Thread settings and request overrides are automatically taken from `MusicClient.clients_threadings` and `MusicClient.requests_overrides`.
-
-- **Arguments**:
-
-  - **song_infos** (`list[SongInfo]`): A list of song info dictionaries, usually taken from the output of `MusicClient.search()`.
-    Each dictionary must contain a source key so that the method can route it to the appropriate client.
+  Example:
   
-- **Returns**:
-  
-  - `None`.
+  ```bash
+  musicdl -k "Taylor Swift"
+  ```
 
+- **`-p, --playlist-url, --playlist_url`**
+
+  Playlist URL to parse and download.
+  
+  Example:
+  
+  ```bash
+  musicdl -p "https://music.163.com/#/playlist?id=7583298906"
+  ```
+  
+- **`-m, --music-sources, --music_sources`**
+
+  Comma-separated list of source names.
+  
+  Example:
+  
+  ```bash
+  musicdl -k "Adele" -m "NeteaseMusicClient,QQMusicClient"
+  ```
+
+- **`-i, --init-music-clients-cfg, --init_music_clients_cfg`**
+
+  JSON string for per-source client initialization config.
+  
+  Example:
+  
+  ```bash
+  musicdl -k "Adele" -i '{"NeteaseMusicClient": {"work_dir": "outputs", "search_size_per_source": 10}}'
+  ```
+
+- **`-r, --requests-overrides, --requests_overrides`**
+
+  JSON string for per-source request overrides.
+  
+  Example:
+  
+  ```bash
+  musicdl -k "Adele" -r '{"NeteaseMusicClient": {"timeout": [10, 30]}}'
+  ```
+
+- **`-c, --clients-threadings, --clients_threadings`**
+
+  JSON string for per-source thread counts.
+  
+  Example:
+  
+  ```bash
+  musicdl -k "Adele" -c '{"NeteaseMusicClient": 8, "QQMusicClient": 4}'
+  ```
+
+- **`-s, --search-rules, --search_rules`**
+
+  JSON string for per-source search rules.
+  
+  Example:
+  
+  ```bash
+  musicdl -k "Adele" -s '{"FiveSingMusicClient": {"sort": 1, "type": 0}}'
+  ```
+
+Important Behavior:
+
+- `keyword` and `playlist_url` cannot be set at the same time.
+- The JSON-like CLI strings are parsed with `json_repair.loads`, which is more tolerant than strict `json.loads`.
+- `music_sources` is split by commas after removing extra spaces.
 
 ## `musicdl.modules.sources.BaseMusicClient`
 
-`BaseMusicClient` defines the common workflow for searching, downloading, and playlist parsing across different music sources.
-Concrete clients only need to implement the source-specific parsing and URL construction logic, while the base class handles concurrency, progress display, deduplication, working-directory creation, and result serialization.
-To put it simply, `BaseMusicClient` is the abstract base class for all concrete music clients, including,
+`BaseMusicClient` is the common base class for source-specific music clients.
+
+End users usually do not create this class directly. Instead, they use subclasses such as,
 
 - `musicdl.modules.sources.AppleMusicClient`
 - `musicdl.modules.sources.BilibiliMusicClient`
@@ -155,210 +380,167 @@ To put it simply, `BaseMusicClient` is the abstract base class for all concrete 
 - `musicdl.modules.audiobooks.QingtingMusicClient`
 - `musicdl.modules.audiobooks.XimalayaMusicClient`
 
-End users usually **do not** instantiate `BaseMusicClient` directly, but instead use one of the specific clients above.
-The methods documented here describe the common behavior of all these clients.
-Arguments supported when initializing this class include:
+For developers, this class provides the shared workflow for:
 
-- **search_size_per_source** (`int`, default `5`):  
-  Maximum number of search results to fetch per source.
+- search URL construction
+- concurrent searching
+- deduplication
+- work directory creation
+- progress display
+- downloading with HTTP or HLS
+- playlist parsing hooks
+- HTTP session / retry handling
+
+Constructor:
+
+```python
+musicdl.modules.sources.BaseMusicClient(
+    search_size_per_source: int = 5,
+    auto_set_proxies: bool = False,
+    random_update_ua: bool = False,
+    enable_search_curl_cffi: bool = False,
+    enable_parse_curl_cffi: bool = False,
+    enable_download_curl_cffi: bool = False,
+    maintain_session: bool = False,
+    logger_handle: LoggerHandle = None,
+    disable_print: bool = False,
+    work_dir: str = "musicdl_outputs",
+    max_retries: int = 3,
+    freeproxy_settings: dict = None,
+    default_search_cookies: dict | str = None,
+    default_download_cookies: dict | str = None,
+    default_parse_cookies: dict | str = None,
+    strict_limit_search_size_per_page: bool = True,
+    search_size_per_page: int = 10,
+    quark_parser_config: dict = None,
+)
+```
+
+Arguments:
+
+- `search_size_per_source`: maximum number of results to keep for this source
+- `search_size_per_page`: page size used when building paginated search requests
+- `strict_limit_search_size_per_page`: whether to strictly cap returned results
+- `maintain_session`: reuse one session across requests
+- `max_retries`: retry count for `get()` and `post()`
+- `random_update_ua`: randomly refresh `User-Agent`
+- `enable_search_curl_cffi`
+- `enable_parse_curl_cffi`
+- `enable_download_curl_cffi`
+- `auto_set_proxies`: auto-fetch proxies through `freeproxy`
+- `freeproxy_settings`: config for the proxy client
+- `default_search_cookies`
+- `default_download_cookies`
+- `default_parse_cookies`
+- `work_dir`: root output directory
+- `logger_handle`: logger instance
+- `disable_print`: disable supported logger prints
+- `quark_parser_config`: configuration used when a source needs Quark Netdisk cookies or related settings
+
+Methods Subclasses Usually Override:
+
+- **`_constructsearchurls(keyword, rule=None, request_overrides=None) -> list`**
+
+  Must be implemented by each subclass. This method should build the list of search URLs or search request targets for the given keyword.
   
-- **auto_set_proxies** (`bool`, default `False`):  
-  If `True`, randomly assign a free proxy fetched by `freeproxy.ProxiedSessionClient` (details refer to [FreeProxy](https://github.com/CharlesPikachu/freeproxy/tree/master)) for each request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
+  Example idea:
 
-- **random_update_ua** (`bool`, default `False`):  
-  If `True`, randomly refresh the `User-Agent` header on each request (not work for `AppleMusicClient`, `TIDALMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
+  ```python
+  def _constructsearchurls(self, keyword, rule=None, request_overrides=None):
+      return [f"https://example.com/search?q={keyword}&page=1"]
+  ```
 
-- **enable_search_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each search request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
+- **`_search(keyword="", search_url="", request_overrides=None, song_infos=[], progress=None, progress_id=0)`**
 
-- **enable_download_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each download request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
-
-- **enable_parse_curl_cffi** (`bool`, default `False`):  
-  If `True`, `curl_cffi.requests.Session` is used for each parseplaylist request (not work for `AppleMusicClient`, `TIDALMusicClient` and `YouTubeMusicClient`).
-
-- **max_retries** (`int`, default `3`):  
-  Maximum number of retry attempts for each HTTP request in `BaseMusicClient.get()` / `BaseMusicClient.post()`.
-
-- **maintain_session** (`bool`, default `False`):  
-  If `False`, a new `requests.Session` is created before each request;  
-  if `True`, the same session is reused across requests (not work for `AppleMusicClient`, `TIDALMusicClient`, `KugouMusicClient` and `YouTubeMusicClient`).
-
-- **logger_handle** (`LoggerHandle`, optional):  
-  Logger instance used for logging.  
-  If `None`, a new `LoggerHandle` is created.
-
-- **disable_print** (`bool`, default `False`):  
-  If `True`, suppress printing in `logger_handle` calls where supported.
-
-- **work_dir** (`str`, default `'musicdl_outputs'`):  
-  Root directory for saving search and download results.  
-  Each search will create its own subdirectory under this path.
-
-- **freeproxy_settings** (`dict` or `None`, default `None`):  
-  Arguments passed when instantiating `freeproxy.ProxiedSessionClient`.  
-  If `None`, defaults to `dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_tries=20, init_proxied_session_cfg={})` when `auto_set_proxies=True`.
-
-- **default_search_cookies** (`dict` or `None`, default `{}`):  
-  Default cookies used for `BaseMusicClient.search` requests.
-
-- **default_download_cookies** (`dict` or `None`, default `{}`):  
-  Default cookies used for `BaseMusicClient.download` requests.
-
-- **default_parse_cookies** (`dict` or `None`, default `{}`):  
-  Default cookies used for `BaseMusicClient.parseplaylist` requests.
-
-- **search_size_per_page** (`int`, default `10`):  
-  When searching for songs, if `search_size_per_source` is greater than `search_size_per_page`, 
-  the downloader will send paginated requests to the corresponding sites to retrieve the search results, 
-  with each page containing `search_size_per_page` songs.
-
-- **strict_limit_search_size_per_page** (`bool`, default `True`):  
-  Some sites do not allow `search_size_per_page` to control how many songs are returned per request, 
-  which may cause the final number of search results from that site to exceed `search_size_per_source`. 
-  Setting this parameter to `True` enforces that the total number of results is less than or equal to `search_size_per_source`.
-
-- **quark_parser_config** (`dict` or `None`, default `{}`):  
-  Some sites, such as `MituMusicClient`, `GequbaoMusicClient`, `YinyuedaoMusicClient`, and `BuguyyMusicClient`, 
-  store their lossless audio files on [Quark Netdisk](https://pan.quark.cn/). 
-  For these websites, if you want to download lossless-quality music files using musicdl, 
-  you need to configure `quark_parser_config` with the `cookies` from your Quark Netdisk web session after logging in, *e.g.*,
-  `quark_parser_config={'cookies': xxxxxx}`.
-
-#### `BaseMusicClient.search(keyword: str, num_threadings=5, request_overrides=None, rule=None, main_process_context=None, main_progress_id=None, main_progress_lock=None)`
-
-Search for audio resources from the current music source, such as Netease, Kugou, QQ, and others.
-This method delegates platform-specific logic to `_constructsearchurls()` and `_search()`, then merges and deduplicates the results.
-
-- **Arguments**:
-
-  - **keyword** (`str`)  
-  Search keyword, such as a song name, artist name, album title, or other query text.
+  Must be implemented by each subclass. This method should:
   
-  - **num_threadings** (`int`, default: `5`)  
-  Number of worker threads used to search across all constructed search URLs concurrently.
-
-  - **request_overrides** (`dict | None`, default: `None`)  
-  Extra request options forwarded to the underlying search requests, such as `headers`, `cookies`, `proxies`, `timeout`, or `verify`.  
-  If `None`, it is treated as an empty dictionary.
-
-  - **rule** (`dict | None`, default: `None`)  
-  Client-specific search options passed into `_constructsearchurls()`.  
-  This may include filters such as page rules, quality constraints, sort preferences, or other source-specific search parameters.  
-  If `None`, it is treated as an empty dictionary.
+  - fetch data from one search URL
+  - parse the source response
+  - create `SongInfo` objects
+  - append valid results into the provided `song_infos` list
+  - update progress text if needed
   
-  - **main_process_context** (`rich.progress.Progress | None`, default: `None`)  
-  Optional external Rich `Progress` instance. If provided, the search task is attached to that progress context instead of creating a new one internally.
-
-  - **main_progress_id** (`int | None`, default: `None`)  
-  Optional task ID in `main_process_context` used to update a shared global progress bar across multiple sources.
+- **`parseplaylist(playlist_url, request_overrides=None)`**
   
-  - **main_progress_lock** (`threading.Lock | None`, default: `None`)  
-  Optional lock used to synchronize progress updates when multiple clients share the same progress context.
+  Optional for subclasses. The base implementation raises `NotImplementedError`.
+  A subclass should override it if the source supports albums, playlists, episode collections, or other grouped URLs.
 
-- **Returns**:
+#### `BaseMusicClient.search(keyword, num_threadings=5, request_overrides=None, rule=None, main_process_context=None, main_progress_id=None, main_progress_lock=None) -> list[SongInfo]`
 
-  - **`list[SongInfo]`**  
-  A deduplicated list of `SongInfo` objects returned by the source-specific `_search()` implementation.
+Searches this source only. 
 
-After searching, this method also assigns a generated `work_dir` to each result. For episodic items, episode-level working directories may also be assigned.
+What it does:
 
-- **Behavior**
+1. Builds search URLs using `_constructsearchurls()`
+2. Searches those URLs concurrently with `_search()`
+3. Merges results from all worker threads
+4. Removes duplicates by `song_info.identifier`
+5. Creates a unique work directory for this search
+6. Assigns `work_dir` to returned songs
+7. Saves serialized results to `search_results.pkl`
 
-  - Logs the start and end of the search process.
-  - Calls `_constructsearchurls()` to generate one or more search URLs.
-  - Uses a thread pool to run `_search()` concurrently on all generated URLs.
-  - Merges results from all threads.
-  - Removes duplicates using the `SongInfo.identifier` field.
-  - Creates a unique working directory for the current search.
-  - Saves search results to `search_results.pkl` inside the corresponding working directory.
-  - Returns all valid `SongInfo` results.
+Example:
 
-- **Notes**
+```python
+client = SomeMusicClient(search_size_per_source=10)
+songs = client.search("Imagine Dragons")
+```
 
-  - Concrete subclasses must implement:
-    - `BaseMusicClient._constructsearchurls()`
-    - `BaseMusicClient._search()`
-  - Deduplication is based on `song_info.identifier`.
-  - The returned items are `SongInfo` objects, not plain dictionaries, although they are serialized as dictionaries when saved to disk.
+Return value:
 
-#### `BaseMusicClient.download(song_infos: list[SongInfo], num_threadings=5, request_overrides=None, auto_supplement_song=True)`
+```python
+list[SongInfo]
+```
 
-Download one or more audio items represented by `SongInfo` objects.
+Only valid downloadable items are kept in the final result.
 
-This method supports both standard HTTP downloads and HLS downloads, depending on `song_info.protocol`.
+#### `BaseMusicClient.download(song_infos, num_threadings=5, request_overrides=None, auto_supplement_song=True) -> list[SongInfo]`
 
-- **Arguments**:
-  
-  - **song_infos** (`list[SongInfo]`)  
-  A list of `SongInfo` objects to download, typically returned by `BaseMusicClient.search()` or `BaseMusicClient.parseplaylist()`.
-  
-  - **num_threadings** (`int`, default: `5`)  
-  Number of worker threads used for concurrent downloading.
-  
-  - **request_overrides** (`dict | None`, default: `None`)  
-  Extra request options forwarded to the underlying download request, such as `headers`, `cookies`, `proxies`, `timeout`, or `verify`.  
-  If `None`, it is treated as an empty dictionary.
-  
-  - **auto_supplement_song** (`bool`, default: `True`)  
-  Whether to post-process successfully downloaded items with `SongInfoUtils.supplsonginfothensavelyricsthenwritetags(...)`.  
-  When enabled, the downloader may supplement metadata, save lyrics, and write tags after download.
-  
-- **Returns**:
+Downloads songs from this source only.
 
-  - **`list[SongInfo]`**  
-  A list of successfully downloaded `SongInfo` objects.
+What it does:
 
-- **Behavior**
-  
-  - Logs the start and end of the download process.
-  - Shortens paths in `song_infos` before downloading.
-  - Creates a Rich progress display with:
-    - an overall audio progress bar
-    - per-song progress bars
-    - transfer speed and estimated remaining time
-  - Downloads items concurrently using a thread pool.
-  - Supports:
-    - *HLS* downloads through `HLSDownloader`
-    - *HTTP* downloads from in-memory `downloaded_contents`
-    - *HTTP* streamed downloads from `download_url`
-  - Saves successful results to `download_results.pkl` in the corresponding working directory.
+- filters invalid items before downloading
+- creates an overall progress bar and per-song progress bars
+- downloads with multiple threads
+- supports different download paths depending on protocol
+- saves serialized results to `download_results.pkl`
 
-- **Protocol-specific behavior**
+Example:
 
-  - If `song_info.protocol == "HLS"`:
-    - Uses `HLSDownloader`
-    - Downloads the best quality stream
-    - Removes temporary segments after completion
+```python
+songs = client.search("Imagine Dragons")
+downloaded = client.download(songs[:3])
+```
 
-  - If `song_info.protocol == "HTTP"` and `song_info.downloaded_contents` is already available:
-    - Writes the in-memory bytes directly to `song_info.save_path`
+Return value:
 
-  - If `song_info.protocol == "HTTP"` and `downloaded_contents` is not available:
-    - Streams the file from `song_info.download_url`
+```python
+list[SongInfo]
+```
 
-- **Notes**
+Only successful downloads are returned.
 
-  - Individual download failures do not stop the entire batch.
-  - Failed items are skipped from the returned list.
-  - Per-item headers may override global request headers if `song_info.default_download_headers` is set.
+When `auto_supplement_song=True`, each successful download is post-processed through:
 
-#### `BaseMusicClient.parseplaylist(playlist_url: str, request_overrides=None)`
+```python
+SongInfoUtils.supplsonginfothensavelyricsthenwritetags(...)
+```
 
-Parse a playlist URL and extract downloadable audio items from it.
+This may supplement metadata, save lyrics, and write tags.
 
-This method is intended for source-specific playlist parsing, such as album pages, playlist pages, episode collections, or shared links.
+#### `BaseMusicClient.get(url, **kwargs)`
 
-- **Arguments**
+A retry-aware wrapper around `session.get()`.
 
-  - **playlist_url** (`str`)  
-    URL of the playlist or collection page to parse.
+Features:
 
-  - **request_overrides** (`dict | None`, default: `None`)  
-    Extra request options forwarded to the underlying parsing requests, such as `headers`, `cookies`, `proxies`, `timeout`, or `verify`.  
-    If `None`, it is treated as an empty dictionary.
+- applies default cookies when not explicitly provided
+- optionally uses auto proxies
+- optionally uses `curl_cffi` impersonation
+- optionally refreshes `User-Agent`
+- retries up to `max_retries`
 
-- **Returns**
+#### `BaseMusicClient.post(url, **kwargs)`
 
-  - Usually **`list[SongInfo]`**  
-    A list of parsed `SongInfo` objects representing the items in the playlist.
+Same idea as `get()`, but for POST requests.

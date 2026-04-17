@@ -17,10 +17,10 @@ import random
 import base64
 import hashlib
 import requests
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 from .misc import safeextractfromdict
 from typing import Any, Dict, Optional
-from Crypto.Cipher import AES, PKCS1_v1_5
+from Cryptodome.Cipher import AES, PKCS1_v1_5
 
 
 '''settings'''
@@ -43,9 +43,8 @@ class KugouMusicClientUtils:
     '''md5hex'''
     @staticmethod
     def md5hex(data: Any) -> str:
-        if isinstance(data, (dict, list)): data = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
-        if isinstance(data, str): data = data.encode("utf-8")
-        return hashlib.md5(data).hexdigest()
+        data = json.dumps(data, separators=(",", ":"), ensure_ascii=False) if isinstance(data, (dict, list)) else data
+        return hashlib.md5((data.encode("utf-8") if isinstance(data, str) else data)).hexdigest()
     '''randomstring'''
     @staticmethod
     def randomstring(length=16) -> str:
@@ -68,11 +67,9 @@ class KugouMusicClientUtils:
     '''rsaencryptpkcs1'''
     @staticmethod
     def rsaencryptpkcs1(data: Any, public_key_pem: str = PUBLIC_RSA_KEY) -> str:
-        if isinstance(data, (dict, list)): data = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
-        if isinstance(data, str): data = data.encode("utf-8")
-        rsa_key = RSA.import_key(public_key_pem)
-        cipher = PKCS1_v1_5.new(rsa_key)
-        enc = cipher.encrypt(data)
+        data = json.dumps(data, separators=(",", ":"), ensure_ascii=False) if isinstance(data, (dict, list)) else data
+        data = data.encode("utf-8") if isinstance(data, str) else data
+        enc = PKCS1_v1_5.new(RSA.import_key(public_key_pem)).encrypt(data)
         return enc.hex()
     '''signatureandroid'''
     @staticmethod
@@ -96,46 +93,33 @@ class KugouMusicClientUtils:
     '''initdevice'''
     @staticmethod
     def initdevice(cookies: dict = None):
-        cookies = cookies or {}
-        guid = str(uuid.uuid4())
-        mid = KugouMusicClientUtils.calculatemid(guid)
-        cookies["KUGOU_API_GUID"] = guid
-        cookies["KUGOU_API_MID"] = mid
-        cookies["KUGOU_API_MAC"] = KugouMusicClientUtils.randomstring(12)
-        cookies["KUGOU_API_DEV"] = KugouMusicClientUtils.randomstring(16)
+        cookies, mid = cookies or {}, KugouMusicClientUtils.calculatemid((guid := str(uuid.uuid4())))
+        cookies["KUGOU_API_GUID"], cookies["KUGOU_API_MID"], cookies["KUGOU_API_MAC"], cookies["KUGOU_API_DEV"] = guid, mid, KugouMusicClientUtils.randomstring(12), KugouMusicClientUtils.randomstring(16)
         return cookies
     '''updatecookies'''
     @staticmethod
     def updatecookies(resp: requests.Response, cookies: dict):
-        for k, v in resp.cookies.items(): cookies[k] = v
+        cookies.update(resp.cookies.items())
         return cookies
     '''sendrequest'''
     @staticmethod
     def sendrequest(session: requests.Session, method: str, url: str, params: Optional[Dict[str, Any]] = None, data: Optional[Any] = None, headers: Optional[Dict[str, str]] = None, encrypt_type: str = "android", base_url: str = "https://gateway.kugou.com", encrypt_key: bool = False, not_sign: bool = False, response_type: Optional[str] = None, cookies: Optional[Dict[str, str]] = None, cookies_override: Optional[Dict[str, str]] = None, request_overrides: dict = None):
         # init
-        clienttime = int(time.time())
-        params, headers, used_cookies, request_overrides = params or {}, headers or {}, dict(cookies), request_overrides or {}
-        if cookies_override: used_cookies.update(cookies_override)
+        clienttime, params, headers, request_overrides = int(time.time()), params or {}, headers or {}, request_overrides or {}
+        (used_cookies := dict(cookies)).update(dict(cookies_override or {}))
         token, dfid, userid, mid = used_cookies.get("token", ""), used_cookies.get("dfid", "-"), used_cookies.get("userid", 0), used_cookies.get("KUGOU_API_MID", "-")
         # construct params
         default_params = {"dfid": dfid, "mid": mid, "uuid": "-", "appid": APPID, "clientver": CLIENTVER, "clienttime": clienttime}
-        if token: default_params["token"] = token
-        if userid: default_params["userid"] = userid
-        params = {**default_params, **params}
+        params = {**default_params, **({"token": token} if token else {}), **({"userid": userid} if userid else {}), **params}
         # encrypt key
         if encrypt_key: params["key"] = KugouMusicClientUtils.signkey(params["hash"], params["mid"], params.get("userid"), params["appid"])
         # signature
         data_str = json.dumps(data, separators=(",", ":"), ensure_ascii=False) if isinstance(data, (dict, list)) else (data or "")
-        if not_sign:
-            if "signature" in params: params.pop("signature", None)
-        else:
-            if "signature" not in params: params["signature"] = KugouMusicClientUtils.signatureweb(params) if encrypt_type == "web" else KugouMusicClientUtils.signatureandroid(params, data_str)
+        params.pop("signature", None) if not_sign and "signature" in params else (params.__setitem__("signature", KugouMusicClientUtils.signatureweb(params) if encrypt_type == "web" else KugouMusicClientUtils.signatureandroid(params, data_str)) if (not not_sign and "signature" not in params) else None)
         # construct headers
-        base_headers = {"User-Agent": "Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi", "dfid": dfid, "clienttime": str(params["clienttime"]), "mid": mid, "kg-rc": "1", "kg-thash": "5d816a0", "kg-rec": "1", "kg-rf": "B9EDA08A64250DEFFBCADDEE00F8F25F"}
-        final_headers = {**base_headers, **headers}
+        final_headers = {**{"User-Agent": "Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi", "dfid": dfid, "clienttime": str(params["clienttime"]), "mid": mid, "kg-rc": "1", "kg-thash": "5d816a0", "kg-rec": "1", "kg-rf": "B9EDA08A64250DEFFBCADDEE00F8F25F"}, **headers}
         # send request
-        resp = session.request(method, f"{base_url}{url}", params=params, json=data, headers=final_headers, **request_overrides) if isinstance(data, (dict, list)) else session.request(method, f"{base_url}{url}", params=params, data=data, headers=final_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.request(method, f"{base_url}{url}", params=params, json=data, headers=final_headers, **request_overrides) if isinstance(data, (dict, list)) else session.request(method, f"{base_url}{url}", params=params, data=data, headers=final_headers, **request_overrides)).raise_for_status()
         KugouMusicClientUtils.updatecookies(resp, cookies)
         # return
         if response_type == "arraybuffer": return resp.content
@@ -146,36 +130,28 @@ class KugouMusicClientUtils:
     def registerdevice(session: requests.Session, cookies: dict, request_overrides: dict = None):
         # construct
         data_map = {
-            "availableRamSize": 4983533568, "availableRomSize": 48114719, "availableSDSize": 48114717, "basebandVer": "", "batteryLevel": 100, "batteryStatus": 3, "brand": "Redmi", "buildSerial": "unknown", 
-            "device": "marble", "imei": cookies.get("KUGOU_API_GUID"), "imsi": "", "manufacturer": "Xiaomi", "uuid": cookies.get("KUGOU_API_GUID"), "accelerometer": False, "accelerometerValue": "", 
-            "gravity": False, "gravityValue": "", "gyroscope": False, "gyroscopeValue": "", "light": False, "lightValue": "", "magnetic": False, "magneticValue": "", "orientation": False, "orientationValue": "", 
-            "pressure": False, "pressureValue": "", "step_counter": False, "step_counterValue": "", "temperature": False, "temperatureValue": "",
+            "availableRamSize": 4983533568, "availableRomSize": 48114719, "availableSDSize": 48114717, "basebandVer": "", "batteryLevel": 100, "batteryStatus": 3, "brand": "Redmi", "buildSerial": "unknown", "device": "marble", "imei": cookies.get("KUGOU_API_GUID"), "imsi": "", "manufacturer": "Xiaomi", "uuid": cookies.get("KUGOU_API_GUID"), "accelerometerValue": "", 
+            "gravity": False, "gravityValue": "", "gyroscope": False, "gyroscopeValue": "", "light": False, "lightValue": "", "magnetic": False, "magneticValue": "", "orientation": False, "orientationValue": "", "pressure": False, "pressureValue": "", "step_counter": False, "step_counterValue": "", "temperature": False, "temperatureValue": "", "accelerometer": False, 
         }
         # aes
         aes_key = KugouMusicClientUtils.randomstring(6).lower(); encrypt_key = KugouMusicClientUtils.md5hex(aes_key)[:16]; encrypt_iv = KugouMusicClientUtils.md5hex(aes_key)[16: 32]
-        cipher = AES.new(encrypt_key.encode("utf-8"), AES.MODE_CBC, encrypt_iv.encode("utf-8"))
         raw = json.dumps(data_map, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        enc = cipher.encrypt(KugouMusicClientUtils.pad(raw))
-        aes_body = base64.b64encode(enc).decode("utf-8")
+        enc = AES.new(encrypt_key.encode("utf-8"), AES.MODE_CBC, encrypt_iv.encode("utf-8")).encrypt(KugouMusicClientUtils.pad(raw))
         p = KugouMusicClientUtils.rsaencryptpkcs1({"aes": aes_key, "uid": cookies.get("userid", 0), "token": cookies.get("token", "")})
         # send request and return result
-        resp_raw: bytes = KugouMusicClientUtils.sendrequest(session, "POST", "/risk/v2/r_register_dev", params={"part": 1, "platid": 1, "p": p}, data=aes_body, base_url="https://userservice.kugou.com", encrypt_type="android", response_type="arraybuffer", cookies=cookies, request_overrides=request_overrides)
-        try:
-            text: str = resp_raw.decode("utf-8"); result = json.loads(text) if text.startswith("{") else None
-            if result: return result
-        except Exception:
-            pass
+        resp_raw: bytes = KugouMusicClientUtils.sendrequest(session, "POST", "/risk/v2/r_register_dev", params={"part": 1, "platid": 1, "p": p}, data=base64.b64encode(enc).decode("utf-8"), base_url="https://userservice.kugou.com", encrypt_type="android", response_type="arraybuffer", cookies=cookies, request_overrides=request_overrides)
+        try: result = json.loads(text) if (text := resp_raw.decode("utf-8")).startswith("{") else None
+        except Exception: result = None
+        if result and isinstance(result, dict): return result
         dec_cipher = AES.new(encrypt_key.encode("utf-8"), AES.MODE_CBC, encrypt_iv.encode("utf-8"))
-        decrypted = KugouMusicClientUtils.unpad(dec_cipher.decrypt(resp_raw)).decode("utf-8")
-        result: dict = json.loads(decrypted)
+        result: dict = json.loads(KugouMusicClientUtils.unpad(dec_cipher.decrypt(resp_raw)).decode("utf-8"))
         if result.get("status") == 1 and safeextractfromdict(result, ['data', 'dfid'], None): cookies["dfid"] = result["data"]["dfid"]
         return result
     '''getsongurl'''
     @staticmethod
     def getsongurl(session: requests.Session, hash_value: str, album_id: int = 0, album_audio_id: int = 0, quality: str = "128", free_part: bool = False, cookies: dict = None, request_overrides: dict = None):
         params = {
-            "album_id": int(album_id), "area_code": 1, "hash": hash_value.lower(), "ssa_flag": "is_fromtrack", "version": 11436, "page_id": 151369488 if not IS_LITE else 967177915,
-            "quality": quality, "album_audio_id": int(album_audio_id), "behavior": "play", "pid": 2 if not IS_LITE else 411, "cmd": 26, "pidversion": 3001, "IsFreePart": 1 if free_part else 0,
-            "ppage_id": "463467626,350369493,788954147" if not IS_LITE else "356753938,823673182,967485191", "cdnBackup": 1, "kcard": 0, "module": "",
+            "album_id": int(album_id), "area_code": 1, "hash": hash_value.lower(), "ssa_flag": "is_fromtrack", "version": 11436, "page_id": 151369488 if not IS_LITE else 967177915, "quality": quality, "album_audio_id": int(album_audio_id), "behavior": "play", "pid": 2 if not IS_LITE else 411, 
+            "cmd": 26, "pidversion": 3001, "IsFreePart": 1 if free_part else 0, "ppage_id": "463467626,350369493,788954147" if not IS_LITE else "356753938,823673182,967485191", "cdnBackup": 1, "kcard": 0, "module": "",
         }
         return KugouMusicClientUtils.sendrequest(session, "GET", "/v5/url", params=params, headers={"x-router": "trackercdn.kugou.com"}, encrypt_type="android", encrypt_key=True, cookies=cookies, cookies_override={'dfid': KugouMusicClientUtils.randomstring(24)}, request_overrides=request_overrides)

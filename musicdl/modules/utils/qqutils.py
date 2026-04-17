@@ -27,11 +27,11 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
 '''settings'''
+SECRET = "ZdJqM15EeO2zWc08"
+APP_KEY = "0AND0HD6FE4HY80F"
 PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDEIxgwoutfwoJxcGQeedgP7FG9qaIuS0qzfR8gWkrkTZKM2iWHn2ajQpBRZjMSoSf6+KJGvar2ORhBfpDXyVtZCKpqLQ+FLkpncClKVIrBwv6PHyUvuCb0rIarmgDnzkfQAqVufEtR64iazGDKatvJ9y6B9NMbHddGSAUmRTCrHQIDAQAB
 -----END PUBLIC KEY-----"""
-SECRET = "ZdJqM15EeO2zWc08"
-APP_KEY = "0AND0HD6FE4HY80F"
 
 
 '''SongFileType'''
@@ -49,10 +49,7 @@ class SongFileType(Enum):
     ACC_192 = ("C600", ".m4a")
     ACC_96 = ("C400", ".m4a")
     ACC_48 = ("C200", ".m4a")
-    SORTED_QUALITIES = [
-        ("AI00", ".flac"), ("Q000", ".flac"), ("Q001", ".flac"), ("F000", ".flac"), ("O801", ".ogg"), ("O800", ".ogg"), ("O600", ".ogg"), ("O400", ".ogg"),
-        ("M800", ".mp3"), ("M500", ".mp3"), ("C600", ".m4a"), ("C400", ".m4a"), ("C200", ".m4a")
-    ]
+    SORTED_QUALITIES = [("AI00", ".flac"), ("Q000", ".flac"), ("Q001", ".flac"), ("F000", ".flac"), ("O801", ".ogg"), ("O800", ".ogg"), ("O600", ".ogg"), ("O400", ".ogg"), ("M800", ".mp3"), ("M500", ".mp3"), ("C600", ".m4a"), ("C400", ".m4a"), ("C200", ".m4a")]
 
 
 '''EncryptedSongFileType'''
@@ -65,9 +62,7 @@ class EncryptedSongFileType(Enum):
     OGG_320 = ("O800", ".mgg")
     OGG_192 = ("O6M0", ".mgg")
     OGG_96 = ("O4M0", ".mgg")
-    SORTED_QUALITIES = [
-        ("AIM0", ".mflac"), ("Q0M0", ".mflac"), ("Q0M1", ".mflac"), ("F0M0", ".mflac"), ("O801", ".mgg"), ("O800", ".mgg"), ("O6M0", ".mgg"), ("O4M0", ".mgg")
-    ]
+    SORTED_QUALITIES = [("AIM0", ".mflac"), ("Q0M0", ".mflac"), ("Q0M1", ".mflac"), ("F0M0", ".mflac"), ("O801", ".mgg"), ("O800", ".mgg"), ("O6M0", ".mgg"), ("O4M0", ".mgg")]
 
 
 '''ThirdPartVKeysAPISongFileType'''
@@ -84,11 +79,7 @@ class ThirdPartVKeysAPISongFileType(Enum):
     PREMIUM_MASTER_2_0 = (14,)
     AI_ACCOMPANIMENT_MODE_4TRACK = (15,)
     AI_5_1_QUALITY_6TRACK = (16,)
-    ID_TO_NAME = {
-        0: "TRIAL_LISTEN", 1: "LOSSY_QUALITY", 2: "LOSSY_QUALITY", 3: "LOSSY_QUALITY", 4: "STANDARD_QUALITY", 5: "STANDARD_QUALITY", 6: "STANDARD_QUALITY", 7: "STANDARD_QUALITY",
-        8: "HQ_QUALITY", 9: "HQ_QUALITY_ENHANCED", 10: "SQ_LOSSLESS_QUALITY", 11: "HI_RES_QUALITY", 12: "DOLBY_ATMOS", 13: "PREMIUM_SPATIAL_AUDIO", 14: "PREMIUM_MASTER_2_0",
-        15: "AI_ACCOMPANIMENT_MODE_4TRACK", 16: "AI_5_1_QUALITY_6TRACK",
-    }
+    ID_TO_NAME = {0: "TRIAL_LISTEN", 1: "LOSSY_QUALITY", 2: "LOSSY_QUALITY", 3: "LOSSY_QUALITY", 4: "STANDARD_QUALITY", 5: "STANDARD_QUALITY", 6: "STANDARD_QUALITY", 7: "STANDARD_QUALITY", 8: "HQ_QUALITY", 9: "HQ_QUALITY_ENHANCED", 10: "SQ_LOSSLESS_QUALITY", 11: "HI_RES_QUALITY", 12: "DOLBY_ATMOS", 13: "PREMIUM_SPATIAL_AUDIO", 14: "PREMIUM_MASTER_2_0", 15: "AI_ACCOMPANIMENT_MODE_4TRACK", 16: "AI_5_1_QUALITY_6TRACK"}
 
 
 '''SearchType'''
@@ -180,12 +171,7 @@ class Credential:
     '''fromcookiesdict'''
     @classmethod
     def fromcookiesdict(cls, cookies: dict[str, Any]):
-        return cls(
-            openid=cookies.get("openid") or cookies.get("psrf_qqopenid") or cookies.get("wxopenid"), refresh_token=cookies.get("refresh_token") or cookies.get("psrf_qqrefresh_token") or cookies.get("wxrefresh_token"),
-            access_token=cookies.get("access_token") or cookies.get("psrf_qqaccess_token") or cookies.get("wxaccess_token"), expired_at=cookies.get("expired_at") or cookies.get("psrf_access_token_expiresAt"), extra_fields=cookies,
-            musicid=int(cookies.get("musicid", 0) or cookies.get("uin", 0)), musickey=cookies.get("musickey") or cookies.get("qqmusic_key"), unionid=cookies.get("unionid") or cookies.get("psrf_qqunionid") or cookies.get("wxunionid"),
-            str_musicid=cookies.get("str_musicid") or cookies.get("musicid") or cookies.get("uin"), refresh_key=cookies.get("refresh_key"), encrypt_uin=cookies.get("encryptUin"), login_type=cookies.get("loginType") or cookies.get("tmeLoginType"), 
-        )
+        return cls(openid=cookies.get("openid") or cookies.get("psrf_qqopenid") or cookies.get("wxopenid"), refresh_token=cookies.get("refresh_token") or cookies.get("psrf_qqrefresh_token") or cookies.get("wxrefresh_token"), access_token=cookies.get("access_token") or cookies.get("psrf_qqaccess_token") or cookies.get("wxaccess_token"), expired_at=cookies.get("expired_at") or cookies.get("psrf_access_token_expiresAt"), extra_fields=cookies, musicid=int(cookies.get("musicid", 0) or cookies.get("uin", 0)), musickey=cookies.get("musickey") or cookies.get("qqmusic_key"), unionid=cookies.get("unionid") or cookies.get("psrf_qqunionid") or cookies.get("wxunionid"), str_musicid=cookies.get("str_musicid") or cookies.get("musicid") or cookies.get("uin"), refresh_key=cookies.get("refresh_key"), encrypt_uin=cookies.get("encryptUin"), login_type=cookies.get("loginType") or cookies.get("tmeLoginType"))
 
 
 '''QQMusicClientUtils'''
@@ -218,8 +204,7 @@ class QQMusicClientUtils(object):
         md5 = hashlib.md5()
         for item in strings:
             assert isinstance(item, (str, bytes))
-            if isinstance(item, bytes): md5.update(item)
-            elif isinstance(item, str): md5.update(item.encode())
+            if isinstance(item, (bytes, str)): md5.update(item if isinstance(item, bytes) else item.encode())
         return md5.hexdigest()
     '''hash33'''
     @staticmethod
@@ -254,35 +239,24 @@ class QQMusicClientUtils(object):
     def randompayloadbydevice(device: Device, version: str):
         fixed_rand = random.randint(0, 14400)
         reserved = {
-            "harmony": "0", "clone": "0", "containe": "", "oz": "UhYmelwouA+V2nPWbOvLTgN2/m8jwGB+yUB5v9tysQg=", "oo": "Xecjt+9S1+f8Pz2VLSxgpw==",
-            "kelong": "0", "uptimes": (datetime.now() - timedelta(seconds=fixed_rand)).strftime("%Y-%m-%d %H:%M:%S"), "multiUser": "0", "bod": device.brand, 
-            "dv": device.device, "firstLevel": "", "manufact": device.brand, "name": device.model, "host": "se.infra", "kernel": device.proc_version,
+            "harmony": "0", "oz": "UhYmelwouA+V2nPWbOvLTgN2/m8jwGB+yUB5v9tysQg=", "oo": "Xecjt+9S1+f8Pz2VLSxgpw==", "kelong": "0", "uptimes": (datetime.now() - timedelta(seconds=fixed_rand)).strftime("%Y-%m-%d %H:%M:%S"), 
+            "clone": "0", "containe": "", "multiUser": "0", "bod": device.brand, "dv": device.device, "firstLevel": "", "manufact": device.brand, "name": device.model, "host": "se.infra", "kernel": device.proc_version,
         }
         return {
-            "androidId": device.android_id, "platformId": 1, "appKey": APP_KEY, "appVersion": version, "beaconIdSrc": QQMusicClientUtils.randombeaconid(),
-            "brand": device.brand, "channelId": "10003505", "cid": "", "imei": device.imei, "imsi": "", "mac": "", "model": device.model, "networkType": "unknown",
-            "oaid": "", "osVersion": f"Android {device.version.release},level {device.version.sdk}", "qimei": "", "qimei36": "", "sdkVersion": "1.2.13.6",
-            "targetSdkVersion": "33", "audit": "", "userId": "{}", "packageId": "com.tencent.qqmusic", "deviceType": "Phone", "sdkName": "", "reserved": orjson.dumps(reserved).decode(),
+            "androidId": device.android_id, "platformId": 1, "appKey": APP_KEY, "appVersion": version, "beaconIdSrc": QQMusicClientUtils.randombeaconid(), "brand": device.brand, "channelId": "10003505", "cid": "", "imei": device.imei, "imsi": "", "mac": "", "model": device.model, "networkType": "unknown", "oaid": "", 
+            "osVersion": f"Android {device.version.release},level {device.version.sdk}", "qimei": "", "qimei36": "", "sdkVersion": "1.2.13.6", "targetSdkVersion": "33", "audit": "", "userId": "{}", "packageId": "com.tencent.qqmusic", "deviceType": "Phone", "sdkName": "", "reserved": orjson.dumps(reserved).decode(),
         }
     '''obtainqimei'''
     @staticmethod
-    def obtainqimei(version: str, device: Device):
+    def obtainqimei(version: str, device: Device) -> QimeiResult:
         try:
             payload, ts = QQMusicClientUtils.randompayloadbydevice(device, version), int(time.time())
             crypt_key, nonce = "".join(random.choices("adbcdef1234567890", k=16)), "".join(random.choices("adbcdef1234567890", k=16))
             key = base64.b64encode(QQMusicClientUtils.rsaencrypt(crypt_key.encode())).decode()
             params = base64.b64encode(QQMusicClientUtils.aesencrypt(crypt_key.encode(), orjson.dumps(payload))).decode()
-            extra = '{"appKey":"' + APP_KEY + '"}'
-            sign = QQMusicClientUtils.calcmd5(key, params, str(ts * 1000), nonce, SECRET, extra)
-            resp = requests.post("https://api.tencentmusic.com/tme/trpc/proxy",
-                headers={
-                    "Host": "api.tencentmusic.com", "method": "GetQimei", "service": "trpc.tme_datasvr.qimeiproxy.QimeiProxy", "appid": "qimei_qq_android",
-                    "sign": QQMusicClientUtils.calcmd5("qimei_qq_androidpzAuCmaFAaFaHrdakPjLIEqKrGnSOOvH", str(ts)), "user-agent": "QQMusic", "timestamp": str(ts),
-                },
-                json={"app": 0, "os": 1, "qimeiParams": {"key": key, "params": params, "time": str(ts), "nonce": nonce, "sign": sign, "extra": extra}},
-            )
-            data = orjson.loads(orjson.loads(resp.content)["data"])["data"]
-            device.qimei = data["q36"]
+            sign = QQMusicClientUtils.calcmd5(key, params, str(ts * 1000), nonce, SECRET, (extra := '{"appKey":"' + APP_KEY + '"}'))
+            (resp := requests.post("https://api.tencentmusic.com/tme/trpc/proxy", headers={"Host": "api.tencentmusic.com", "method": "GetQimei", "service": "trpc.tme_datasvr.qimeiproxy.QimeiProxy", "appid": "qimei_qq_android", "sign": QQMusicClientUtils.calcmd5("qimei_qq_androidpzAuCmaFAaFaHrdakPjLIEqKrGnSOOvH", str(ts)), "user-agent": "QQMusic", "timestamp": str(ts)}, json={"app": 0, "os": 1, "qimeiParams": {"key": key, "params": params, "time": str(ts), "nonce": nonce, "sign": sign, "extra": extra}})).raise_for_status()
+            device.qimei = (data := orjson.loads(orjson.loads(resp.content)["data"])["data"])["q36"]
             return QimeiResult(q16=data["q16"], q36=data["q36"])
         except:
             result = QimeiResult(q16="", q36="6c9d3cd110abca9b16311cee10001e717614")
@@ -293,22 +267,18 @@ class QQMusicClientUtils(object):
         return "".join(random.choices("abcdef1234567890", k=32))
     '''randomsearchid'''
     @staticmethod
-    def randomsearchid():
-        e = random.randint(1, 20)
-        t = e * 18014398509481984
+    def randomsearchid() -> str:
+        t = random.randint(1, 20) * 18014398509481984
         n = random.randint(0, 4194304) * 4294967296
-        a = time.time()
-        r = round(a * 1000) % (24 * 60 * 60 * 1000)
+        r = round(time.time() * 1000) % (24 * 60 * 60 * 1000)
         return str(t + n + r)
     '''buildcommonparams'''
     @staticmethod
     def buildcommonparams(credential: Credential = None, common_override: dict = None) -> dict[str, Any]:
-        common_override, credential = common_override or {}, credential or Credential()
-        qimei_result = QQMusicClientUtils().qimei
-        common = {"cv": QQMusicClientUtils.version_code, "v": QQMusicClientUtils.version_code, "QIMEI36": qimei_result['q36']}
-        common.update(QQMusicClientUtils.COMMON_DEFAULTS)
+        common_override, credential, qimei_result = common_override or {}, credential or Credential(), QQMusicClientUtils().qimei
+        (common := {"cv": QQMusicClientUtils.version_code, "v": QQMusicClientUtils.version_code, "QIMEI36": qimei_result['q36']}).update(QQMusicClientUtils.COMMON_DEFAULTS)
         if bool(credential.musicid) and bool(credential.musickey): common.update({"qq": str(credential.musicid), "authst": credential.musickey, "tmeLoginType": str(credential.login_type)})
-        common.update(common_override)
+        common_override and common.update(common_override)
         return common
     '''builddata'''
     @staticmethod

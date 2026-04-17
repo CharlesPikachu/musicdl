@@ -14,6 +14,7 @@ import base64
 import hashlib
 import requests
 import json_repair
+from contextlib import suppress
 from typing import Dict, List, Tuple
 from .misc import resp2json, safeextractfromdict
 
@@ -105,9 +106,7 @@ class SpotifyMusicClientPlaylistUtils():
             raw_hashes = resp.text; str_mapping, hash_mapping = SpotifyMusicClientPlaylistUtils.extractmappings(raw_hashes)
             chunks = SpotifyMusicClientPlaylistUtils.combinechunks(str_mapping, hash_mapping)
             for chunk in chunks:
-                chunk_url = f"https://open.spotifycdn.com/cdn/build/web-player/{chunk}"
-                try: raw_hashes += session.get(chunk_url, headers=SpotifyMusicClientUtils.COMMON_HEADERS, **request_overrides).text
-                except Exception: pass
+                with suppress(Exception): raw_hashes += session.get(f"https://open.spotifycdn.com/cdn/build/web-player/{chunk}", headers=SpotifyMusicClientUtils.COMMON_HEADERS, **request_overrides).text
             return (m.group(1) if (m := re.search(r'"fetchPlaylist","(?:query|mutation)","([^"]+)"', raw_hashes)) else fallback_hash)
         except Exception: return fallback_hash
     '''fetchplaylist'''

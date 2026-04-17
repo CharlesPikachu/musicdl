@@ -8,11 +8,12 @@ WeChat Official Account (微信公众号):
 '''
 import re
 import copy
+from itertools import chain
 from contextlib import suppress
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, SongInfo
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 
 
 '''LizhiMusicClient'''
@@ -30,36 +31,18 @@ class LizhiMusicClient(BaseMusicClient):
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
-        rule, request_overrides = rule or {}, request_overrides or {}
-        self.search_size_per_page = min(self.search_size_per_page, 20)
-        # construct search urls based on search rules
+        rule, request_overrides, self.search_size_per_page = rule or {}, request_overrides or {}, min(self.search_size_per_page, 20)
+        # construct search urls
         search_urls, page_size = [], self.search_size_per_page
         for search_type in LizhiMusicClient.ALLOWED_SEARCH_TYPES:
             if search_type not in self.allowed_search_types: continue
-            if search_type in {'track'}:
-                default_rule = {'deviceId': "h5-b6ef91a9-3dbb-c716-1fdd-43ba08851150", "keywords": keyword, "page": 1, "receiptData": ""}
-                default_rule.update(rule)
-                base_url, count = 'https://m.lizhi.fm/vodapi/search/voice?', 0
-                while self.search_size_per_source > count:
-                    page_rule = copy.deepcopy(default_rule)
-                    page_rule['page'] = str(int(count // page_size) + 1)
-                    if count > 0:
-                        with suppress(Exception): receipt_data = resp2json(self.get(search_urls[-1]['url'], **request_overrides)).get('receiptData', '')
-                        page_rule['receiptData'] = receipt_data
-                    search_urls.append({'url': base_url + urlencode(page_rule), 'type': search_type})
-                    count += page_size
-            elif search_type in ['album']:
-                default_rule = {'deviceId': "h5-b6ef91a9-3dbb-c716-1fdd-43ba08851150", "keywords": keyword, "page": 1, "receiptData": ""}
-                default_rule.update(rule)
-                base_url, count = 'https://m.lizhi.fm/vodapi/search/voice?', 0
-                while self.search_size_per_source > count:
-                    page_rule = copy.deepcopy(default_rule)
-                    page_rule['page'] = str(int(count // page_size) + 1)
-                    if count > 0:
-                        with suppress(Exception): receipt_data = resp2json(self.get(search_urls[-1]['url'], **request_overrides)).get('receiptData', '')
-                        page_rule['receiptData'] = receipt_data
-                    search_urls.append({'url': base_url + urlencode(page_rule), 'type': search_type})
-                    count += page_size
+            (default_rule := {'deviceId': "h5-b6ef91a9-3dbb-c716-1fdd-43ba08851150", "keywords": keyword, "page": 1, "receiptData": ""}).update(rule)
+            base_url, count = 'https://m.lizhi.fm/vodapi/search/voice?', 0
+            while self.search_size_per_source > count:
+                (page_rule := copy.deepcopy(default_rule))['page'] = str(int(count // page_size) + 1)
+                if count > 0: page_rule['receiptData'] = resp2json(self.get(search_urls[-1]['url'], **request_overrides)).get('receiptData', '')
+                search_urls.append({'url': base_url + urlencode(page_rule), 'type': search_type})
+                count += page_size
         # return
         return search_urls
     '''_parsewithofficialapiv1'''
@@ -68,137 +51,122 @@ class LizhiMusicClient(BaseMusicClient):
         request_overrides, song_id, song_info = request_overrides or {}, safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], ''), SongInfo(source=self.source)
         # parse
         (resp := self.get(f'https://m.lizhi.fm/vodapi/voice/info/{song_id}', **request_overrides)).raise_for_status()
-        download_result = resp2json(resp=resp)
-        download_url = safeextractfromdict(download_result, ['data', 'userVoice', 'voicePlayProperty', 'trackUrl'], '')
-        if not download_url or not str(download_url).startswith('http'):
-            image_url = safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], "") or ""
-            m = re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url))
-            if not m: return song_info
-            download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{song_id}_sd.m4a' # cdn101 is better than cdn5
+        download_url = safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'userVoice', 'voicePlayProperty', 'trackUrl'], '')
+        image_url = safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], "") or ""
+        if (not download_url or not str(download_url).startswith('http')) and (not (m := re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url)))): return song_info
+        if not download_url or not str(download_url).startswith('http'): download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{song_id}_sd.m4a' # cdn101 is faster than cdn5
         for quality in LizhiMusicClient.MUSIC_QUALITIES:
             download_url: str = (download_url[:-7] + quality).replace('//cdn5.lizhi.fm/audio/', '//cdn101.lizhi.fm/audio/')
             duration_in_secs = safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'duration'], 0) or 0
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], None)), 
-                ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], None)), ext=download_url_status['ext'], 
+                file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
             )
-            if not song_info.with_valid_download_url: song_info.update(dict(download_url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), download_url_status=self.audio_link_tester.test(download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides)))
-            if song_info.with_valid_download_url: break
-        if not song_info.with_valid_download_url: return song_info
-        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            if not song_info.with_valid_download_url: download_url_status: dict = self.audio_link_tester.test(url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides=request_overrides, renew_session=True)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], None)), ext=download_url_status['ext'], 
+                file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         # return
         return song_info
     '''_parsebytrack'''
-    def _parsebytrack(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
-        request_overrides = request_overrides or {}
-        for search_result in search_results:
-            if not isinstance(search_result, dict) or not safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], ''): continue
-            song_info, song_id = SongInfo(source=self.source), safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], '')
-            download_url = safeextractfromdict(search_result, ['voicePlayProperty', 'trackUrl'], '')
-            if not download_url or not str(download_url).startswith('http'):
-                image_url = safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], "") or ""
-                m = re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url))
-                if not m: continue
-                download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{song_id}_sd.m4a' # cdn101 is better than cdn5
+    def _parsebytrack(self, search_results: list[dict], song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
+        # init
+        request_overrides, progress, song_info = dict(request_overrides or {}), progress, SongInfo(source=self.source)
+        # parse one by one
+        for search_result in (search_results or []):
+            if not isinstance(search_result, dict) or not (song_id := safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], '')): continue
+            song_info, download_url, image_url = SongInfo(source=self.source), safeextractfromdict(search_result, ['voicePlayProperty', 'trackUrl'], ''), safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], '')
+            if (not download_url or not str(download_url).startswith('http')) and (not (m := re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url)))): continue
+            if not download_url or not str(download_url).startswith('http'): download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{song_id}_sd.m4a' # cdn101 is faster than cdn5
             for quality in LizhiMusicClient.MUSIC_QUALITIES:
                 download_url: str = (download_url[:-7] + quality).replace('//cdn5.lizhi.fm/audio/', '//cdn101.lizhi.fm/audio/')
                 duration_in_secs = safeextractfromdict(search_result, ['voiceInfo', 'duration'], 0)
+                download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), 
-                    album=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs or 0, duration=seconds2hms(duration_in_secs),
-                    lyric=None, cover_url=safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), ext=download_url_status['ext'], 
+                    file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
                 )
-                if not song_info.with_valid_download_url: song_info.update(dict(download_url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), download_url_status=self.audio_link_tester.test(download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides)))
-                if song_info.with_valid_download_url: break
-            if not song_info.with_valid_download_url: continue
-            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-            song_infos.append(song_info)
+                if not song_info.with_valid_download_url: download_url_status: dict = self.audio_link_tester.test(url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides=request_overrides, renew_session=True)
+                song_info = SongInfo(
+                    raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), ext=download_url_status['ext'], 
+                    file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+                )
+                if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+            if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
+            if song_info.with_valid_download_url: song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
+        # return
         return song_infos
     '''_parsebyalbum'''
     def _parsebyalbum(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
+        # init
         request_overrides, unique_album_ids = request_overrides or {}, set()
-        for search_result in search_results:
-            if not isinstance(search_result, dict) or not safeextractfromdict(search_result, ['userInfo', 'userId'], ''): continue
-            album_id = safeextractfromdict(search_result, ['userInfo', 'userId'], '')
-            if album_id in unique_album_ids: continue
-            unique_album_ids.add(album_id)
-            download_results, page_size, page_no, track_idx, unique_track_ids = [], 1000, 1, 0, set()
+        # parse one by one
+        for search_result in (search_results or []):
+            if not isinstance(search_result, dict) or not (album_id := safeextractfromdict(search_result, ['userInfo', 'userId'], '')) or (album_id in unique_album_ids): continue
+            unique_album_ids.add(album_id); download_results, page_size, page_no, track_idx, unique_track_ids = [], 1000, 1, 0, set()
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_results, 'lyric': {}}, source=self.source, song_name=album_id, singers=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], '')), 
-                album=f"{safeextractfromdict(search_result, ['userInfo', 'audioNum'], 0) or 0} Episodes", ext=None, file_size_bytes=None, file_size=None, identifier=album_id, duration_s=None, duration='-:-:-', lyric=None, 
-                cover_url=safeextractfromdict(search_result, ['userInfo', 'photo'], None), download_url=None, download_url_status={}, episodes=[],
+                raw_data={'search': search_result, 'download': download_results, 'lyric': {}}, source=self.source, song_name=album_id, singers=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], None)), album=f"{safeextractfromdict(search_result, ['userInfo', 'audioNum'], 0) or 0} Episodes",
+                ext=None, file_size_bytes=None, file_size=None, identifier=album_id, duration_s=None, duration='-:-:-', lyric=None, cover_url=safeextractfromdict(search_result, ['userInfo', 'photo'], None), download_url=None, download_url_status={}, episodes=[],
             )
-            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/0) pages downloaded in album {album_id}", total=0)
+            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/0) pages downloaded in album {album_id}", total=None)
             while True:
-                try: (resp := self.get(f'https://m.lizhi.fm/vodapi/user/{album_id}?pageNo={page_no}&pageSize={page_size}', **request_overrides)).raise_for_status()
-                except Exception: break
-                download_result = resp2json(resp=resp)
-                if not download_result.get('data'): break
-                download_results.append(download_result)
-                page_no += 1
-                progress.update(download_album_pid, total=page_no, completed=page_no)
+                with suppress(Exception): (album_resp := self.get(f'https://m.lizhi.fm/vodapi/user/{album_id}?pageNo={page_no}&pageSize={page_size}', **request_overrides)).raise_for_status()
+                if not locals().get('album_resp') or not hasattr(locals().get('album_resp'), 'text'): break
+                if not (download_result := resp2json(resp=album_resp)).get('data'): break
+                del album_resp; download_results.append(download_result); progress.update(download_album_pid, total=(page_no := page_no + 1), completed=page_no)
                 progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({page_no}/{page_no}) pages downloaded in album {album_id}")
             total_episodes = sum([len(safeextractfromdict(download_result, ['data'], []) or []) for download_result in download_results])
             download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/{total_episodes}) episodes completed in album {album_id}", total=total_episodes)
-            for download_result in download_results:
-                for track in (safeextractfromdict(download_result, ['data'], []) or []):
-                    track_idx += 1
-                    progress.advance(download_album_pid, 1)
-                    progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{total_episodes}) episodes completed in album {album_id}")
-                    if not isinstance(track, dict) or not safeextractfromdict(track, ['voiceInfo', 'voiceId'], ''): continue
-                    eps_info, eps_id = SongInfo(source=self.source), safeextractfromdict(track, ['voiceInfo', 'voiceId'], '')
-                    if eps_id in unique_track_ids: continue
-                    unique_track_ids.add(eps_id)
-                    download_url = safeextractfromdict(track, ['voicePlayProperty', 'trackUrl'], '')
-                    if not download_url or not str(download_url).startswith('http'):
-                        image_url = safeextractfromdict(track, ['voiceInfo', 'imageUrl'], "") or ""
-                        m = re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url))
-                        if not m: continue
-                        download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{eps_id}_sd.m4a' # cdn101 is better than cdn5
-                    for quality in LizhiMusicClient.MUSIC_QUALITIES:
-                        download_url: str = (download_url[:-7] + quality).replace('//cdn5.lizhi.fm/audio/', '//cdn101.lizhi.fm/audio/')
-                        duration_in_secs = safeextractfromdict(track, ['voiceInfo', 'duration'], 0) or 0
-                        eps_info = SongInfo(
-                            raw_data={'search': search_result, 'download': track, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(track, ['voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(track, ['userInfo', 'name'], None)),
-                            album=legalizestring(safeextractfromdict(track, ['userInfo', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=eps_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), 
-                            lyric=None, cover_url=safeextractfromdict(track, ['voiceInfo', 'imageUrl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                        )
-                        if not eps_info.with_valid_download_url: eps_info.update(dict(download_url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), download_url_status=self.audio_link_tester.test(download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides)))
-                        if eps_info.with_valid_download_url: break
-                    if not eps_info.with_valid_download_url: continue
-                    eps_info.download_url_status['probe_status'] = self.audio_link_tester.probe(eps_info.download_url, request_overrides)
-                    eps_info.file_size = eps_info.download_url_status['probe_status']['file_size']
-                    song_info.episodes.append(eps_info)
-            if not song_info.with_valid_download_url: continue
-            try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = seconds2hms(song_info.duration_s)
-            except Exception: pass
-            try: song_info.file_size = str(round(sum([float(eps.file_size.removesuffix('MB').strip()) for eps in song_info.episodes]), 2)) + ' MB'
-            except Exception: pass
-            song_info.album = f"{len(song_info.episodes)} Episodes"
-            song_infos.append(song_info)
+            for track in chain.from_iterable(safeextractfromdict(download_result, ['data'], []) or [] for download_result in download_results):
+                track_idx += 1; progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{total_episodes}) episodes completed in album {album_id}")
+                if not isinstance(track, dict) or not (eps_id := safeextractfromdict(track, ['voiceInfo', 'voiceId'], '')) or (eps_id in unique_track_ids): continue
+                unique_track_ids.add(eps_id); download_url, eps_info, image_url = safeextractfromdict(track, ['voicePlayProperty', 'trackUrl'], ''), SongInfo(source=self.source), safeextractfromdict(track, ['voiceInfo', 'imageUrl'], '')
+                if (not download_url or not str(download_url).startswith('http')) and (not (m := re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url)))): continue
+                if not download_url or not str(download_url).startswith('http'): download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{eps_id}_sd.m4a' # cdn101 is faster than cdn5
+                for quality in LizhiMusicClient.MUSIC_QUALITIES:
+                    download_url: str = (download_url[:-7] + quality).replace('//cdn5.lizhi.fm/audio/', '//cdn101.lizhi.fm/audio/')
+                    duration_in_secs = safeextractfromdict(track, ['voiceInfo', 'duration'], 0) or 0
+                    download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+                    eps_info = SongInfo(
+                        raw_data={'search': search_result, 'download': track, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(track, ['voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(track, ['userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(track, ['userInfo', 'name'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                        file_size=download_url_status['file_size'], identifier=eps_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(track, ['voiceInfo', 'imageUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.default_download_headers
+                    )
+                    if not eps_info.with_valid_download_url: download_url_status: dict = self.audio_link_tester.test(url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides=request_overrides, renew_session=True)
+                    eps_info = SongInfo(
+                        raw_data={'search': search_result, 'download': track, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(track, ['voiceInfo', 'name'], None)), singers=legalizestring(safeextractfromdict(track, ['userInfo', 'name'], None)), album=legalizestring(safeextractfromdict(track, ['userInfo', 'name'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                        file_size=download_url_status['file_size'], identifier=eps_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(track, ['voiceInfo', 'imageUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.default_download_headers
+                    )
+                    if eps_info.with_valid_download_url and eps_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+                if not eps_info.with_valid_download_url or eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
+                if eps_info.with_valid_download_url: song_info.episodes.append(eps_info)
+            if len(song_info.episodes) == 0 or not song_info.with_valid_download_url: continue
+            with suppress(Exception): song_info.duration_s = sum([float(eps.duration_s) for eps in song_info.episodes]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
+            with suppress(Exception): song_info.file_size_bytes = sum([float(eps.file_size_bytes) for eps in song_info.episodes]); song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
+            if song_info.with_valid_download_url: song_info.album = f"{len(song_info.episodes)} Episodes"; song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
+        # return
         return song_infos            
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: dict = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides = request_overrides or {}
-        search_type, search_url = search_url['type'], search_url['url']
+        request_overrides, search_type, search_url = request_overrides or {}, search_url['type'], search_url['url']
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            search_results = resp2json(resp)['data']
             # --parse based on search type
             parsers = {'album': self._parsebyalbum, 'track': self._parsebytrack}
-            parsers[search_type](search_results, song_infos=song_infos, request_overrides=request_overrides, progress=progress)
+            parsers[search_type](resp2json(resp)['data'], song_infos=song_infos, request_overrides=request_overrides, progress=progress)
             # --update progress
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
+            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
         # return
         return song_infos

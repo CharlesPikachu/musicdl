@@ -10,6 +10,9 @@ import re
 import math
 import zlib
 import base64
+from operator import or_
+from functools import reduce
+from itertools import accumulate
 
 
 '''settings'''
@@ -60,64 +63,35 @@ class KuwoMusicClientUtils:
     '''bittransform'''
     @staticmethod
     def bittransform(arr_int, n, l):
-        l2 = 0
-        for i in HelperFunctions.rangen(n):
-            idx = arr_int[i]
-            if idx < 0: continue
-            if (l & ARRAYMASK[idx]) == 0: continue
-            l2 |= ARRAYMASK[i]
-        return HelperFunctions.u64(l2)
+        return HelperFunctions.u64(reduce(or_, (ARRAYMASK[i] for i in HelperFunctions.rangen(n) if (idx := arr_int[i]) >= 0 and (l & ARRAYMASK[idx]) != 0), 0))
     '''des64'''
     @staticmethod
     def des64(longs, l):
-        p_r, p_source, out = [0] * 8, [0, 0], KuwoMusicClientUtils.bittransform(ARRAYIP2, 64, l)
-        p_source[0], p_source[1] = HelperFunctions.u32(out), HelperFunctions.u32((out & 0xFFFFFFFF00000000) >> 32)
+        p_r, p_source = [0] * 8, [HelperFunctions.u32(out := KuwoMusicClientUtils.bittransform(ARRAYIP2, 64, l)), HelperFunctions.u32((out & 0xFFFFFFFF00000000) >> 32)]
         for i in HelperFunctions.rangen(16):
-            s_out, R = 0, KuwoMusicClientUtils.bittransform(ARRAYE, 64, p_source[1])
-            R ^= longs[i]
-            for j in HelperFunctions.rangen(8): p_r[j] = (R >> (j * 8)) & 0xFF
-            for sbi in reversed(HelperFunctions.rangen(8)): s_out = (s_out << 4) | (MATRIXNSBOX[sbi][p_r[sbi]] & 0xF)
-            R, L = KuwoMusicClientUtils.bittransform(ARRAYP, 32, s_out), p_source[0]
-            p_source[0] = p_source[1]
-            p_source[1] = HelperFunctions.u32(L ^ R)
-        p_source.reverse()
-        out = ((p_source[1] << 32) & 0xFFFFFFFF00000000) | (p_source[0] & 0xFFFFFFFF)
-        out = KuwoMusicClientUtils.bittransform(ARRAYIP1, 64, out)
-        return HelperFunctions.u64(out)
+            s_out, R = 0, (KuwoMusicClientUtils.bittransform(ARRAYE, 64, p_source[1]) ^ longs[i])
+            p_r[:] = [((R >> (j * 8)) & 0xFF) for j in HelperFunctions.rangen(8)]
+            s_out = reduce(lambda acc, sbi: (acc << 4) | (MATRIXNSBOX[sbi][p_r[sbi]] & 0xF), reversed(HelperFunctions.rangen(8)), s_out)
+            p_source[0], p_source[1] = p_source[1], HelperFunctions.u32(p_source[0] ^ KuwoMusicClientUtils.bittransform(ARRAYP, 32, s_out))
+        p_source.reverse(); out = ((p_source[1] << 32) & 0xFFFFFFFF00000000) | (p_source[0] & 0xFFFFFFFF)
+        return HelperFunctions.u64(KuwoMusicClientUtils.bittransform(ARRAYIP1, 64, out))
     '''subkeys'''
     @staticmethod
     def subkeys(l, longs, mode):
         l2 = KuwoMusicClientUtils.bittransform(ARRAYPC1, 56, l)
-        for i in HelperFunctions.rangen(16):
-            r = ARRAYLS[i]
-            mask = ARRAYLSMASK[r]
-            not_mask = HelperFunctions.u64(~mask)
-            part1, part2 = HelperFunctions.u64((l2 & mask) << (28 - r)), (l2 & not_mask) >> r
-            l2 = HelperFunctions.u64(part1 | part2)
-            longs[i] = KuwoMusicClientUtils.bittransform(ARRAYPC2, 64, l2)
-        if mode == 1:
-            for j in HelperFunctions.rangen(8): longs[j], longs[15 - j] = longs[15 - j], longs[j]
+        states = list(accumulate((ARRAYLS[i] for i in HelperFunctions.rangen(16)), lambda x, r: HelperFunctions.u64(HelperFunctions.u64((x & (mask := ARRAYLSMASK[r])) << (28 - r)) | ((x & HelperFunctions.u64(~mask)) >> r)), initial=l2))
+        longs[:16], l2 = [KuwoMusicClientUtils.bittransform(ARRAYPC2, 64, x) for x in states[1:]], states[-1]
+        longs[:] = longs[::-1] if mode == 1 else longs
     '''crypt'''
     @staticmethod
     def crypt(msg: bytes, key: bytes, mode: int) -> bytes:
-        l = 0
-        for i in HelperFunctions.rangen(8): l |= (key[i] & 0xFF) << (i * 8)
-        l, j, arr_long1 = HelperFunctions.u64(l), len(msg) // 8, [0] * 16
-        KuwoMusicClientUtils.subkeys(l, arr_long1, mode)
-        arr_long2 = [0] * j
-        for m in HelperFunctions.rangen(j):
-            v = 0
-            for n in HelperFunctions.rangen(8): v |= (msg[n + m * 8] & 0xFF) << (n * 8)
-            arr_long2[m] = HelperFunctions.u64(v)
-        arr_long3 = [0] * ((1 + 8 * (j + 1)) // 8)
-        for i1 in HelperFunctions.rangen(j): arr_long3[i1] = KuwoMusicClientUtils.des64(arr_long1, arr_long2[i1])
-        arr_byte1, l2 = msg[j * 8:], 0
-        for i1 in HelperFunctions.rangen(len(msg) % 8): l2 |= (arr_byte1[i1] & 0xFF) << (i1 * 8)
-        l2 = HelperFunctions.u64(l2)
-        if len(arr_byte1) != 0 or mode == 0: arr_long3[j] = KuwoMusicClientUtils.des64(arr_long1, l2)
-        out_bytes, i4 = bytearray(8 * len(arr_long3)), 0
-        for l3 in arr_long3:
-            for i6 in HelperFunctions.rangen(8): out_bytes[i4] = (l3 >> (i6 * 8)) & 0xFF; i4 += 1
+        l, j = sum((key[i] & 0xFF) << (i * 8) for i in HelperFunctions.rangen(8)), len(msg) // 8
+        KuwoMusicClientUtils.subkeys((l := HelperFunctions.u64(l)), (arr_long1 := [0] * 16), mode)
+        arr_long2 = [HelperFunctions.u64(int.from_bytes(bytes(msg[n + m * 8] & 0xFF for n in HelperFunctions.rangen(8)), 'little')) for m in HelperFunctions.rangen(j)]
+        arr_long3 = [KuwoMusicClientUtils.des64(arr_long1, arr_long2[i1]) for i1 in HelperFunctions.rangen(j)] + [0]
+        arr_byte1, l2 = msg[j * 8:], int.from_bytes(bytes(x & 0xFF for x in msg[j * 8: j * 8 + (len(msg) % 8)]), 'little')
+        l2 = HelperFunctions.u64(l2); arr_long3[j] = KuwoMusicClientUtils.des64(arr_long1, l2) if len(arr_byte1) != 0 or mode == 0 else arr_long3[j]
+        out_bytes = bytearray((l3 >> (i6 * 8)) & 0xFF for l3 in arr_long3 for i6 in HelperFunctions.rangen(8))
         return bytes(out_bytes)
     '''encrypt'''
     @staticmethod
@@ -134,16 +108,13 @@ class KuwoMusicClientUtils:
     '''xorencrypt'''
     @staticmethod
     def xorencrypt(data: bytes, key: bytes) -> bytes:
-        key_len = len(key)
-        output = bytearray(len(data))
-        for i in range(len(data)): output[i] = data[i] ^ key[i % key_len]
+        output = bytearray(data[i] ^ key[i % len(key)] for i in range(len(data)))
         return bytes(output)
     '''buildlyricsparams'''
     @staticmethod
     def buildlyricsparams(music_id, is_get_lyricx: bool = True):
         params_str = f"user=12345,web,web,web&requester=localhost&req=1&rid=MUSIC_{music_id}"
-        if is_get_lyricx: params_str += '&lrcx=1'
-        buf_str = params_str.encode('utf-8')
+        buf_str = (params_str + '&lrcx=1' if is_get_lyricx else params_str).encode('utf-8')
         encrypted_bytes = KuwoMusicClientUtils.xorencrypt(buf_str, SECRET_KEY_LYRIC)
         final_params = base64.b64encode(encrypted_bytes).decode('utf-8')
         return final_params
@@ -151,43 +122,26 @@ class KuwoMusicClientUtils:
     @staticmethod
     def decodelyrics(buf: bytes, is_get_lyricx: bool):
         if buf[:10] != b'tp=content': return ''
-        try: split_index = buf.index(b'\r\n\r\n') + 4; compressed_data = buf[split_index:]
-        except ValueError: return ''
-        try: lrc_data = zlib.decompress(compressed_data)
-        except zlib.error: return ''
+        try: split_index = buf.index(b'\r\n\r\n') + 4; lrc_data = zlib.decompress(buf[split_index:])
+        except (ValueError, zlib.error): return ''
         if not is_get_lyricx: return lrc_data.decode('gb18030', errors='ignore')
-        base64_str = lrc_data.decode('utf-8')
-        buf_str = base64.b64decode(base64_str)
+        buf_str = base64.b64decode(lrc_data.decode('utf-8'))
         decrypted_buffer = KuwoMusicClientUtils.xorencrypt(buf_str, SECRET_KEY_LYRIC)
-        final_lrc = decrypted_buffer.decode('gb18030', errors='ignore')
-        return final_lrc
+        return decrypted_buffer.decode('gb18030', errors='ignore')
     '''formatlyricstime'''
     @staticmethod
     def formatlyricstime(ms):
-        if math.isnan(ms) or ms < 0: ms = 0
-        total_seconds = ms / 1000
-        minutes = math.floor(total_seconds / 60)
-        seconds = math.floor(total_seconds % 60)
-        milliseconds = round((ms % 1000))
-        return f"[{minutes:02}:{seconds:02}.{milliseconds:03}]"
+        ms = 0 if math.isnan(ms) or ms < 0 else ms
+        return f"[{math.floor(ms / 60000):02}:{math.floor(ms / 1000 % 60):02}.{round(ms % 1000):03}]"
     '''convertrawlrc'''
     @staticmethod
     def convertrawlrc(raw_lrc: str) -> str:
-        out, i = [], 0
-        lines, rx_line, rx_word, rx_zh = re.split(r"\r\n|\r|\n", raw_lrc), re.compile(r"^\[(\d{2}:\d{2}\.\d{3})\](.*)$"), re.compile(r"<(-?\d+),(-?\d+)>([^<]*)"), re.compile(r"[\u4e00-\u9fa5]")
+        out, i, lines, rx_line, rx_word, rx_zh = [], 0, re.split(r"\r\n|\r|\n", raw_lrc), re.compile(r"^\[(\d{2}:\d{2}\.\d{3})\](.*)$"), re.compile(r"<(-?\d+),(-?\d+)>([^<]*)"), re.compile(r"[\u4e00-\u9fa5]")
         while i < len(lines):
-            line = lines[i]
-            m = rx_line.match(line)
-            if not m: out.append(line); i += 1; continue
-            ts, payload = m.group(1), m.group(2)
-            if not payload.replace("<0,0>", "").strip(): i += 1; continue
+            if not (m := rx_line.match(lines[i])): out.append(lines[i]); i += 1; continue
+            if not (payload := m.group(2)).replace("<0,0>", "").strip(): i += 1; continue
             if payload.startswith("<0,0>") and rx_zh.search(payload): i += 1; continue
-            words = list(rx_word.finditer(payload))
-            lyric = "".join(w.group(3) for w in words) if words else payload.replace("<0,0>", "").strip(); trans = ""
-            if i + 1 < len(lines) and (nm := rx_line.match(lines[i + 1])):
-                next_payload = nm.group(2)
-                if next_payload.startswith("<0,0>") and rx_zh.search(next_payload): trans = next_payload.replace("<0,0>", "").strip(); i += 1
-            out.append(f"[{ts}]{lyric}")
-            if trans: out.append(f"[{ts}]{trans}")
-            i += 1
+            lyric = "".join(w.group(3) for w in words) if (words := list(rx_word.finditer(payload))) else payload.replace("<0,0>", "").strip(); trans = ""
+            if i + 1 < len(lines) and (nm := rx_line.match(lines[i + 1])) and (next_payload := nm.group(2)).startswith("<0,0>") and rx_zh.search(next_payload): trans, i = next_payload.replace("<0,0>", "").strip(), i + 1
+            out.extend([f"[{(ts := m.group(1))}]{lyric}"] + ([f"[{ts}]{trans}"] if trans else [])); i += 1
         return "\n".join(out)

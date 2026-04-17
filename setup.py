@@ -37,8 +37,8 @@ setup(
     license_files=("LICENSE",),
     include_package_data=True,
     packages=find_packages(),
-    package_data={"musicdl": ["modules/js/youtube/*.js"]},
+    package_data={"musicdl": ["modules/wvds/*.wvd", "modules/js/youtube/*.js"]},
     entry_points={'console_scripts': ['musicdl = musicdl.musicdl:MusicClientCMD']},
-    install_requires=[lab.strip('\n') for lab in list(open('requirements.txt', 'r').readlines())],
+    install_requires=[lab.strip('\n') for lab in list(open('requirements.txt', 'r').readlines()) if lab.strip('\n')],
     zip_safe=True,
 )

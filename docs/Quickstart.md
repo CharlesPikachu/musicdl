@@ -1,44 +1,59 @@
 # Quick Start
 
-#### Typical Examples
+This guide explains the most common ways to use musicdl in both the command line and Python.
+It is written for practical, day-to-day usage, so the focus is on the workflows most users need first: searching songs, choosing music sources, downloading playlists, saving files to custom folders, and passing cookies or request settings when needed.
 
-Here, we provide some common musicdl use cases to help you quickly get started with the tool.
+#### Typical Usage
 
-If you want the quickest way to run musicdl to verify that your environment meets its basic requirements and that musicdl has been installed successfully, you can write and run the following code,
+(1) Run Musicdl in Interactive Mode
+
+The quickest way to verify that musicdl is installed correctly is to start the interactive terminal UI.
 
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient'])
+music_client = musicdl.MusicClient(
+    music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient']
+)
 music_client.startcmdui()
 ```
 
-The above code runs musicdl using `MiguMusicClient`, `NeteaseMusicClient`, `QQMusicClient`, `KuwoMusicClient` and `QianqianMusicClient` as both the search sources and download sources.
-
-Of course, you can also run musicdl by entering the following equivalent command directly in the command line,
+Equivalent command-line usage:
 
 ```bash
-musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient,KuwoMusicClient,QianqianMusicClient
+musicdl -m MiguMusicClient,NeteaseMusicClient,QQMusicClient,KuwoMusicClient,QianqianMusicClient
 ```
 
-Please note that musicdl uses five Mainland China music sources by default for searching. 
-If you need to use overseas music sources, you must manually specify the music platform each time you run the program. 
-For example:
+By default, musicdl uses five Mainland China sources for search and download:
+
+```python
+MiguMusicClient, NeteaseMusicClient, QQMusicClient, KuwoMusicClient, QianqianMusicClient
+```
+
+If you want overseas sources, specify them explicitly each time, for example:
 
 ```bash
-musicdl -m GDStudioMusicClient,JamendoMusicClient
+musicdl -m QobuzMusicClient,JamendoMusicClient,YouTubeMusicClient
 ```
 
-In addition, searching and downloading from many music sources simultaneously may be relatively slow. 
-Each run may take about 10–30 seconds. 
-If you are confident that your song can be found on a specific platform or a few platforms, for example, `NeteaseMusicClient`, `QQMusicClient` or `KuwoMusicClient`,
-it is recommended to directly specify those platforms:
+If you already know where a song is likely to be available, it is usually better to search a small number of sources:
 
 ```bash
-musicdl -m NeteaseMusicClient,QQMusicClient,KuwoMusicClient
+musicdl -m NeteaseMusicClient,QQMusicClient
 ```
 
-The demonstration is as follows,
+Interactive selection keys:
+
+- `↑` / `↓`: move cursor
+- `Space`: toggle selection
+- `a`: select all
+- `i`: invert selection
+- `Enter`: confirm and download
+- `Esc` or `q`: cancel selection
+- `r`: restart the program
+- `q` at the main prompt: exit
+
+The demonstration is as follows:
 
 <div align="center">
   <div>
@@ -50,7 +65,54 @@ The demonstration is as follows,
 </div>
 <br />
 
-You can also use `musicdl --help` to see the detailed usage of the musicdl command-line tool, as follows:
+(2) Search Directly from The Command Line
+
+Use `-k` / `--keyword` when you already know the query text.
+This still opens the selection UI before downloading.
+
+```bash
+musicdl -k "Jay Chou"
+```
+
+Use a specific set of sources if needed:
+
+```bash
+musicdl -k "Jay Chou" -m NeteaseMusicClient,QQMusicClient
+```
+
+(3) Parse and Download A Playlist
+
+Use `-p` / `--playlist-url` to parse a supported playlist URL and download all recognized tracks.
+
+```bash
+musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
+```
+
+In Python:
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'])
+song_infos = music_client.parseplaylist("https://music.163.com/#/playlist?id=7583298906")
+music_client.download(song_infos=song_infos)
+```
+
+Note:
+
+- `--keyword` and `--playlist-url` cannot be used at the same time.
+
+#### CLI Help
+
+You can always inspect the full command-line interface with:
+
+```bash
+musicdl --help
+```
+
+<details style="margin-bottom: 24px;">
+<summary><em>Show CLI help output</em></summary>
+<br>
 
 ```bash
 Usage: musicdl [OPTIONS]
@@ -68,7 +130,8 @@ Options:
   -m, --music-sources, --music_sources TEXT
                                   The music search and download sources.
                                   [default: MiguMusicClient,NeteaseMusicClient
-                                  ,QQMusicClient,KuwoMusicClient,QianqianMusicClient]
+                                  ,QQMusicClient,KuwoMusicClient,QianqianMusic
+                                  Client]
   -i, --init-music-clients-cfg, --init_music_clients_cfg TEXT
                                   Config such as `work_dir` for each music
                                   client as a JSON string.
@@ -85,122 +148,252 @@ Options:
   --help                          Show this message and exit.
 ```
 
-If you want to change the download path for the music files, you can write the following code:
+</details>
+
+#### Common Configuration
+
+(1) Save Files to Custom Folders
+
+Python:
 
 ```python
 from musicdl import musicdl
 
-init_music_clients_cfg = dict()
-init_music_clients_cfg['MiguMusicClient'] = {'work_dir': 'migu'}
-init_music_clients_cfg['NeteaseMusicClient'] = {'work_dir': 'netease'}
-init_music_clients_cfg['QQMusicClient'] = {'work_dir': 'qq'}
-music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient'])
+init_music_clients_cfg = {
+    'MiguMusicClient': {'work_dir': 'migu'},
+    'NeteaseMusicClient': {'work_dir': 'netease'},
+    'QQMusicClient': {'work_dir': 'qq'},
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient'],
+    init_music_clients_cfg=init_music_clients_cfg,
+)
 music_client.startcmdui()
 ```
 
-Alternatively, you can equivalently run the following command directly in the command line:
+Command line:
 
 ```bash
-musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient -i "{'MiguMusicClient': {'work_dir': 'migu'}, {'NeteaseMusicClient': {'work_dir': 'netease'}, {'QQMusicClient': {'work_dir': 'qq'}}"
+musicdl -m MiguMusicClient,NeteaseMusicClient,QQMusicClient \
+  -i '{"MiguMusicClient": {"work_dir": "migu"}, "NeteaseMusicClient": {"work_dir": "netease"}, "QQMusicClient": {"work_dir": "qq"}}'
 ```
 
-If you are a VIP user on a particular music platform, you can pass the cookies from your logged-in web session on that platform to musicdl to improve the quality of song search and downloads. 
-Specifically, for example, if you have a membership on `QQMusicClient`, your code can be written as follows:
+(2) Pass Cookies for VIP or Logged-in Access
+
+If a source works better when logged in, provide cookies from that platform's web session, *e.g.*, `QQMusicClient`:
 
 ```python
 from musicdl import musicdl
 
 your_vip_cookies_with_str_or_dict_format = ""
-init_music_clients_cfg = dict()
-init_music_clients_cfg['QQMusicClient'] = {'default_search_cookies': your_vip_cookies_with_str_or_dict_format, 'default_download_cookies': your_vip_cookies_with_str_or_dict_format}
-music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient', 'QQMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
 
-Of course, you can also achieve the same effect by running the following command directly in the command line:
-
-```bash
-musicdl -m NeteaseMusicClient,QQMusicClient -i "{'QQMusicClient': {'default_search_cookies': your_vip_cookies_with_str_or_dict_format, 'default_download_cookies': your_vip_cookies_with_str_or_dict_format}}"
-```
-
-If you want to search for more songs on a specific music platform (*e.g.*, `QQMusicClient`), you can do the following:
-
-```python
-from musicdl import musicdl
-
-init_music_clients_cfg = dict()
-init_music_clients_cfg['QQMusicClient'] = {'search_size_per_source': 20}
-music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient', 'QQMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-Or enter the following in the command line:
-
-```bash
-musicdl -m NeteaseMusicClient,QQMusicClient -i "{'QQMusicClient': {'search_size_per_source': 20}}"
-```
-
-In this way, you can see up to 20 search results from `QQMusicClient`.
-
-If you want to use the [pyfreeproxy](https://github.com/CharlesPikachu/freeproxy) library to automatically leverage free online proxies for music search and download, you can do it as follows:
-
-```python
-from musicdl import musicdl
-
-init_music_clients_cfg = dict()
-init_music_clients_cfg['NeteaseMusicClient'] = {
-    'search_size_per_source': 1000, 'auto_set_proxies': True, 
-    'freeproxy_settings': dict(
-        proxy_sources=["ProxyScrapeProxiedSession", "ProxylistProxiedSession"], 
-        init_proxied_session_cfg={"max_pages": 2, "filter_rule": {"country_code": ["CN"], "anonymity": ["elite"], "protocol": ["http", "https"]}}, 
-        disable_print=True, 
-        max_tries=20
-    )
+init_music_clients_cfg = {
+    'QQMusicClient': {
+        'default_search_cookies': your_vip_cookies_with_str_or_dict_format,
+        'default_download_cookies': your_vip_cookies_with_str_or_dict_format,
+    }
 }
-music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+
+music_client = musicdl.MusicClient(
+    music_sources=['NeteaseMusicClient', 'QQMusicClient'],
+    init_music_clients_cfg=init_music_clients_cfg,
+)
 music_client.startcmdui()
 ```
 
-The command-line usage is similar:
+Command line:
 
 ```bash
-musicdl -m NeteaseMusicClient -i "{'NeteaseMusicClient': {'search_size_per_source': 1000, 'auto_set_proxies': True, 'freeproxy_settings': {'proxy_sources':['ProxyScrapeProxiedSession','ProxylistProxiedSession'],'init_proxied_session_cfg':{'max_pages':2,'filter_rule':{'country_code':['CN'],'anonymity':['elite'],'protocol':['http','https']}},'disable_print':True,'max_tries':20}}}"
+musicdl -m NeteaseMusicClient,QQMusicClient \
+  -i '{"QQMusicClient": {"default_search_cookies": "YOUR_COOKIES", "default_download_cookies": "YOUR_COOKIES"}}'
 ```
 
-#### Separating Search and Download Results
-
-You can also call the `.search` and `.download` interfaces of musicdl separately to inspect its intermediate results or perform secondary development,
+(3) Increase The Number of Search Results from One Source
 
 ```python
 from musicdl import musicdl
 
-# instance
+init_music_clients_cfg = {
+    'QQMusicClient': {'search_size_per_source': 20}
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['NeteaseMusicClient', 'QQMusicClient'],
+    init_music_clients_cfg=init_music_clients_cfg,
+)
+music_client.startcmdui()
+```
+
+Equivalent command:
+
+```bash
+musicdl -m NeteaseMusicClient,QQMusicClient \
+  -i '{"QQMusicClient": {"search_size_per_source": 20}}'
+```
+
+(4) Use Free Proxies Automatically
+
+If you want to use the [pyfreeproxy](https://github.com/CharlesPikachu/freeproxy) library to fetch free proxies automatically:
+
+```python
+from musicdl import musicdl
+
+init_music_clients_cfg = {
+    'NeteaseMusicClient': {
+        'search_size_per_source': 1000,
+        'auto_set_proxies': True,
+        'freeproxy_settings': {
+            'proxy_sources': ["ProxyScrapeProxiedSession", "ProxylistProxiedSession"],
+            'init_proxied_session_cfg': {
+                'max_pages': 2,
+                'filter_rule': {
+                    'country_code': ["CN"],
+                    'anonymity': ["elite"],
+                    'protocol': ["http", "https"],
+                },
+            },
+            'disable_print': True,
+            'max_tries': 20,
+        },
+    }
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['NeteaseMusicClient'],
+    init_music_clients_cfg=init_music_clients_cfg,
+)
+music_client.startcmdui()
+```
+
+Command line:
+
+```bash
+musicdl -m NeteaseMusicClient \
+  -i '{"NeteaseMusicClient": {"search_size_per_source": 1000, "auto_set_proxies": true, "freeproxy_settings": {"proxy_sources": ["ProxyScrapeProxiedSession", "ProxylistProxiedSession"], "init_proxied_session_cfg": {"max_pages": 2, "filter_rule": {"country_code": ["CN"], "anonymity": ["elite"], "protocol": ["http", "https"]}}, "disable_print": true, "max_tries": 20}}}'
+```
+
+(5) Override Request Settings Per Source
+
+Use `requests_overrides` when you need to pass extra request options such as `proxies`, `timeout`, or `verify`.
+
+```python
+from musicdl import musicdl
+
+requests_overrides = {
+    'NeteaseMusicClient': {
+        'timeout': (10, 30),
+        'verify': False,
+        'headers': {'User-Agent': 'Mozilla/5.0'},
+    }
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['NeteaseMusicClient'],
+    requests_overrides=requests_overrides,
+)
+
+search_results = music_client.search(keyword='tail ring')
+music_client.download(song_infos=search_results)
+```
+
+Command line:
+
+```bash
+musicdl -k "tail ring" -m NeteaseMusicClient \
+  -r '{"NeteaseMusicClient": {"timeout": [10, 30], "verify": false, "headers": {"User-Agent": "Mozilla/5.0"}}}'
+```
+
+(6) Pass Source-Specific Search Rules
+
+Use `search_rules` when a source supports extra search options.
+Behavior is implementation-specific.
+
+```python
+from musicdl import musicdl
+
+search_rules = {
+    'FiveSingMusicClient': {
+        'sort': 1,
+        'filter': 0,
+        'type': 0,
+    }
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['FiveSingMusicClient'],
+    search_rules=search_rules,
+)
+music_client.startcmdui()
+```
+
+Command line:
+
+```bash
+musicdl -m FiveSingMusicClient \
+  -s '{"FiveSingMusicClient": {"sort": 1, "filter": 0, "type": 0}}'
+```
+
+(7) Adjust Thread Counts Per Source
+
+```python
+from musicdl import musicdl
+
+clients_threadings = {
+    'NeteaseMusicClient': 8,
+    'QQMusicClient': 4,
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['NeteaseMusicClient', 'QQMusicClient'],
+    clients_threadings=clients_threadings,
+)
+music_client.startcmdui()
+```
+
+Command line:
+
+```bash
+musicdl -m NeteaseMusicClient,QQMusicClient \
+  -c '{"NeteaseMusicClient": 8, "QQMusicClient": 4}'
+```
+
+#### Separate Search and Download
+
+You can call `.search()` and `.download()` separately to inspect intermediate results or build custom workflows.
+
+```python
+from musicdl import musicdl
+
 music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'])
-# search
+
 search_results = music_client.search(keyword='尾戒')
 print(search_results)
+
 song_infos = []
-for song_infos_per_source in list(search_results.values()):
+for song_infos_per_source in search_results.values():
     song_infos.extend(song_infos_per_source)
-# download
+
 music_client.download(song_infos=song_infos)
 ```
 
-You can also choose not to use the unified `MusicClient` interface and instead directly import the definition class for a specific music platform for secondary development. 
-Take `NeteaseMusicClient` as an example:
+#### Secondary Development
+
+You can also bypass the unified `MusicClient` and use a specific client directly.
+For example:
 
 ```python
 from musicdl.modules.sources import NeteaseMusicClient
 
 netease_music_client = NeteaseMusicClient()
-# search
+
 search_results = netease_music_client.search(keyword='那些年')
 print(search_results)
-# download
+
 netease_music_client.download(song_infos=search_results)
 ```
 
-All supported classes can be obtained by printing `MusicClientBuilder.REGISTERED_MODULES`, *e.g*,
+To inspect all registered client classes:
 
 ```python
 from musicdl.modules import MusicClientBuilder
@@ -210,27 +403,16 @@ print(MusicClientBuilder.REGISTERED_MODULES)
 
 #### Download Playlist Items
 
-From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
+From musicdl v2.9.0 onward, support for playlist parsing and downloading is being added gradually, now including,
 
-- [AppleMusicClient | 苹果音乐](https://music.apple.com/)
-- [DeezerMusicClient | Deezer (法国音乐平台)](https://www.deezer.com/us/)
-- [FiveSingMusicClient | 5SING音乐](https://5sing.kugou.com/index.html)
-- [JamendoMusicClient | 简音乐 (欧美流行音乐)](https://www.jamendo.com/)
-- [JooxMusicClient | QQ音乐海外版](https://www.joox.com/hk)
-- [KuwoMusicClient | 酷我音乐](http://www.kuwo.cn/)
-- [KugouMusicClient | 酷狗音乐](https://www.kugou.com/)
-- [MiguMusicClient | 咪咕音乐](https://music.migu.cn/v5/#/musicLibrary)
-- [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
-- [QQMusicClient | QQ音乐](https://y.qq.com/)
-- [QianqianMusicClient | 千千音乐](https://music.91q.com/)
-- [QobuzMusicClient | Qobuz (提供CD质量的流媒体平台)](https://play.qobuz.com/discover)
-- [SoundCloudMusicClient | 声云](https://soundcloud.com/discover)
-- [StreetVoiceMusicClient | 街声](https://www.streetvoice.cn/)
-- [SodaMusicClient | 汽水音乐](https://www.douyin.com/qishui/)
-- [SpotifyMusicClient | Spotify (思播)](https://open.spotify.com/)
-- [TIDALMusicClient | TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)
+```python
+AppleMusicClient,      DeezerMusicClient,       FiveSingMusicClient,    JamendoMusicClient,      JooxMusicClient,
+KuwoMusicClient,       KugouMusicClient,        MiguMusicClient,        NeteaseMusicClient,      QQMusicClient,
+QianqianMusicClient,   QobuzMusicClient,        SoundCloudMusicClient,  StreetVoiceMusicClient,  SodaMusicClient,
+SpotifyMusicClient,    TIDALMusicClient
+```
 
-Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
+You can download a supported playlist directly from the terminal:
 
 ```sh
 # Parse and Download Apple Music Playlist
@@ -272,31 +454,115 @@ musicdl -p "https://open.spotify.com/playlist/37i9dQZF1E8NWHOpySOxQd" -m Spotify
 musicdl -p "https://tidal.com/playlist/a94e7dce-da66-413d-81a5-990328afa3c9" -m TIDALMusicClient -i "{'TIDALMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 ```
 
-Alternatively, use the following code to invoke it,
+Alternatively, in Python:
 
 ```python
 from musicdl import musicdl
 
-init_music_clients_cfg = {'NeteaseMusicClient': {'default_parse_cookies': YOUR_VIP_COOKIES}}
-music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+init_music_clients_cfg = {
+    'NeteaseMusicClient': {'default_parse_cookies': YOUR_VIP_COOKIES}
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['NeteaseMusicClient'],
+    init_music_clients_cfg=init_music_clients_cfg,
+)
+
 song_infos = music_client.parseplaylist("https://music.163.com/#/playlist?id=7583298906")
 music_client.download(song_infos=song_infos)
 ```
 
-Common Issues and Solutions (FQA):
+#### WhisperLRC
+
+On some music platforms, it is not possible to obtain lyric files directly, for example `XimalayaMusicClient`, `LizhiMusicClient`, `LRTSMusicClient`, `QingtingMusicClient` and `MituMusicClient`.
+To handle this, musicdl provides a faster-whisper-based interface that can generate lyrics automatically.
+
+Generate lyrics from a local file:
+
+```python
+from musicdl.modules import WhisperLRC
+
+your_local_music_file_path = 'xxx.flac'
+print(WhisperLRC(model_size_or_path='base').fromfilepath(your_local_music_file_path))
+```
+
+Available `model_size_or_path` values:
+
+```python
+tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.en, distil-medium.en, large-v1, large-v2, large-v3, large, distil-large-v2, distil-large-v3, large-v3-turbo, turbo
+```
+
+In general, larger models generate better lyrics but take longer to run.
+
+Use the environment variable `ENABLE_WHISPERLRC=True` to toggle on-the-fly lyric generation for all music downloads.
+For example:
+
+```bash
+export ENABLE_WHISPERLRC=True
+```
+
+This is usually *not recommended* for normal downloading workflows, because it can make one run take a very long time unless you keep `search_size_per_source=1` and use a very small Whisper model such as `tiny`.
+
+You can also generate lyrics from a direct audio URL:
+
+```python
+from musicdl.modules import WhisperLRC
+
+music_link = ''
+print(WhisperLRC(model_size_or_path='base').fromurl(music_link))
+```
+
+#### Scenarios Where Quark Netdisk Login Cookies Are Required
+
+Some websites share high-quality or lossless music through [Quark Netdisk](https://pan.quark.cn/) links, for example:
+
+```python
+MituMusicClient, GequbaoMusicClient, YinyuedaoMusicClient, BuguyyMusicClient
+```
+
+If you want to download high-quality or lossless files from these sources, provide the cookies from your logged-in Quark Netdisk web session.
+
+```python
+from musicdl import musicdl
+
+init_music_clients_cfg = {
+    'YinyuedaoMusicClient': {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}},
+    'GequbaoMusicClient': {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}},
+    'MituMusicClient': {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}},
+    'BuguyyMusicClient': {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}},
+}
+
+music_client = musicdl.MusicClient(
+    music_sources=['MituMusicClient', 'YinyuedaoMusicClient', 'GequbaoMusicClient', 'BuguyyMusicClient'],
+    init_music_clients_cfg=init_music_clients_cfg,
+)
+music_client.startcmdui()
+```
+
+Please note:
+
+- musicdl does not provide any speed-limit bypass for Quark Netdisk.
+- If the cookies belong to a non-VIP Quark account, the download speed may be only a few hundred KB/s.
+- Quark may first save the file into your own account before downloading it.
+- If your Quark storage is insufficient, the download may fail.
+
+#### Common Issues and Solutions (FAQ)
 
 <details style="margin-bottom: 24px;">
 <summary><em>How to Parse New Kugou Web Playlist URLs?</em></summary>
 <br>
 
-If you have a new playlist link (*e.g.*, `https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/`), you need to manually extract the `special ID` via your browser. Follow these steps:
+If you have a new playlist link, for example,
+`https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/`,
+you need to manually extract the `special ID` via your browser.
 
-1. *Open & Login*: Open the playlist link in your browser and ensure you are already logged into KuGou Music.
-2. *Inspect Network*: Open your browser's Developer Tools (F12) and use network traffic capture to inspect the returned HTML page.
-3. *Find the ID*: Search for the keyword `"specialid"` in the response. The number immediately following it is your special ID.
-4. *Construct the URL*: Replace `{YOUR_SPECIAL_ID}` in the format below with the number you found:
-   - `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
-5. *Run*: Use this newly constructed link as the playlist input for musicdl.
+1. Open the playlist link in your browser and make sure you are logged into Kugou Music.
+2. Open Developer Tools (`F12`) and inspect the returned HTML page in the Network panel.
+3. Search for the keyword `"specialid"`.
+4. The number immediately after it is the special ID.
+5. Construct a new URL in the form:
+   `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
+6. Use that new URL as the playlist input for musicdl.
 
 </details>
 
@@ -304,632 +570,9 @@ If you have a new playlist link (*e.g.*, `https://www.kugou.com/songlist/gcid_3z
 <summary><em>Why is The Downloaded Apple Music Playlist Incomplete?</em></summary>
 <br>
 
-musicdl currently only supports parsing playlists with a maximum of 300 tracks. 
+musicdl currently only supports parsing Apple Music playlists with a maximum of 300 tracks.
 
-If your playlist exceeds this limit, please manually split the large playlist into several smaller ones, and then use musicdl to parse and download them individually.
+If your playlist exceeds this limit, split it into several smaller playlists and download them separately.
 
 </details>
 
-#### WhisperLRC
-
-On some music platforms, it’s not possible to obtain the lyric files corresponding to the audio, *e.g*, `XimalayaMusicClient` and `MituMusicClient`. 
-To handle this, we provide a faster-whisper interface that can automatically generate lyrics for tracks whose lyrics are unavailable for download.
-
-For audio files that have already been downloaded, you can use the following invocation to automatically generate lyrics for the local file,
-
-```python
-from musicdl.modules import WhisperLRC
-
-your_local_music_file_path = 'xxx.flac'
-WhisperLRC(model_size_or_path='base').fromfilepath(your_local_music_file_path)
-```
-
-The available `model_size_or_path`, ordered from smallest to largest, are:
-
-```python
-tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.en, distil-medium.en, large-v1, large-v2, large-v3, large, distil-large-v2, distil-large-v3, large-v3-turbo, turbo
-```
-
-In general, the larger the model, the better the generated lyrics (transcription/translation) will be, but this also means it will take longer to run.
-
-If you want to automatically generate lyric files during the download process, 
-you can set the environment variable `ENABLE_WHISPERLRC=True` (for example, by running `export ENABLE_WHISPERLRC=True`). 
-However, this is generally not recommended, as it may cause a single run of the program to take a very long time,
-unless you set `search_size_per_source` to `1` and `model_size_or_path` to `tiny`.
-
-Of course, you can also directly call `.fromurl` to generate a lyrics file for a song given by a direct URL:
-
-```python
-from musicdl.modules import WhisperLRC
-
-music_file_link = ''
-WhisperLRC(model_size_or_path='base').fromurl(music_link)
-```
-
-#### Scenarios Where Quark Netdisk Login Cookies Are Required
-
-Some websites share high-quality or lossless music files via [Quark Netdisk](https://pan.quark.cn/) links, for example, `MituMusicClient`, `GequbaoMusicClient`, `YinyuedaoMusicClient`, and `BuguyyMusicClient`.
-
-If you want to download high-quality or lossless audio files from these music platforms, you need to provide the cookies from your logged-in Quark Netdisk web session when calling musicdl. 
-For example, you can do the following: 
-
-```python
-from musicdl import musicdl
-
-init_music_clients_cfg = dict()
-init_music_clients_cfg['YinyuedaoMusicClient'] = {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}}
-init_music_clients_cfg['GequbaoMusicClient'] = {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}}
-init_music_clients_cfg['MituMusicClient'] = {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}}
-init_music_clients_cfg['BuguyyMusicClient'] = {'quark_parser_config': {'cookies': your_cookies_with_str_or_dict_format}}
-
-music_client = musicdl.MusicClient(music_sources=['MituMusicClient', 'YinyuedaoMusicClient', 'GequbaoMusicClient', 'BuguyyMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-Please note that musicdl does not provide any speed-limit bypass for Quark Netdisk.
-If the cookies you supply belong to a non-VIP Quark account, the download speed may be limited to only a few hundred KB/s.
-
-Also note that Quark Drive will first save the music file to your own Quark account (usually in the "From: Shares (来自: 分享)" folder) and then start the download.
-Therefore, if your Quark storage is insufficient, the download may fail.
-
-#### Kugou Music Download
-
-Musicdl currently supports searching and downloading from KuGou Music, and it is used in the same way as other music clients. 
-The only thing to note is that if you need to configure member cookies to download purchased albums/singles or member-exclusive audio quality, the cookies must be in the following format:
-
-```python
-{
-  'KUGOU_API_GUID': 'xxxx', 
-  'KUGOU_API_MID': 'xxxx', 
-  'KUGOU_API_MAC': 'xxxx', 
-  'KUGOU_API_DEV': 'xxxx', 
-  'token': 'xxxx', 
-  'userid': 'xxxx', 
-  'dfid': 'xxxx'
-}
-```
-
-You can either use the [build_cookies_for_kugou.py](https://github.com/CharlesPikachu/musicdl/blob/master/scripts/build_cookies_for_kugou.py) script provided in the repo to obtain them directly, 
-or capture the above arguments yourself via network packet capture on the KuGou app or the web client, and then configure musicdl as follows:
-
-```python
-from musicdl import musicdl
-
-cookies = {'KUGOU_API_GUID': 'xxxx', 'KUGOU_API_MID': 'xxxx', 'KUGOU_API_MAC': 'xxxx', 'KUGOU_API_DEV': 'xxxx', 'token': 'xxxx', 'userid': 'xxxx', 'dfid': 'xxxx'}
-init_music_clients_cfg = {'KugouMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
-music_client = musicdl.MusicClient(music_sources=['KugouMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-Keep in mind that cookie names captured from network traffic may not match the cookie names required by musicdl.
-You need to map them correctly to construct valid cookies, otherwise, member-only music downloads won’t work.
-
-#### LizhiFM and XimalayaFM Track/Album Download
-
-Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
-By default, both modes start simultaneously, and the top few search results for each mode are shown based on the input keyword.
-
-A simple usage example is shown below,
-
-```python
-from musicdl import musicdl
-
-init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2}}
-music_client = musicdl.MusicClient(music_sources=['XimalayaMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-The result of running the code above looks like this,
-
-<div align="center">
-  <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/ximalayascreenshot.gif" width="600"/>
-  </div>
-</div>
-<br />
-
-You can also choose the search type yourself by setting `allowed_search_types`, for example:
-
-```python
-from musicdl import musicdl
-
-# only search by track
-init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track']}}
-# only search by album
-init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
-# instance music_client
-music_client = musicdl.MusicClient(music_sources=['XimalayaMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-# start
-music_client.startcmdui()
-```
-
-Please note that the code above only supports downloading free albums and audio. 
-If you need to download paid audio, please configure cookies in `init_music_clients_cfg`, just as you would with other music clients.
-
-#### LanRenTingShu Book/Album Download
-
-Musicdl currently supports searching and downloading books (书籍) and albums (节目) from LanRenTingShu. Example usage:
-
-```python
-from musicdl import musicdl
-
-# only search by book
-init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['book']}}
-# only search by album
-init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
-# search by album and book
-init_music_clients_cfg = {'LRTSMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album', 'book']}}
-# instance music_client
-music_client = musicdl.MusicClient(music_sources=['LRTSMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-# start
-music_client.startcmdui()
-```
-
-By default, this example only downloads free albums and tracks. To access paid content, you must configure your user cookies in `init_music_clients_cfg`.
-
-#### QingtingFM Track/Album Download
-
-The usage for searching and downloading on the QingTing FM website is similar to Ximalaya and Lizhi FM. 
-The only thing to watch out for is how cookies are set, it differs from typical music client objects.
-
-Specifically, without logging in (*i.e.*, when you don’t need to download paid audio), you can invoke it by running `musicdl -m QingtingMusicClient` in the command line, or by calling it via the following code:
-
-```python
-from musicdl import musicdl
-
-# only search by track
-init_music_clients_cfg = {'QingtingMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track']}}
-# only search by album
-init_music_clients_cfg = {'QingtingMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
-# search by album and track
-init_music_clients_cfg = {'QingtingMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album', 'track']}}
-# instance music_client
-music_client = musicdl.MusicClient(music_sources=['QingtingMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-# start
-music_client.startcmdui()
-```
-
-When you need to download paid audio, you’ll have to capture the network traffic yourself on the [QingTing FM web client](https://www.qtfm.cn/).
-Look for an AJAX request with the keyword `auth`, its response data will look like:
-
-```python
-{
-  "errorno": 0,
-  "errormsg": "",
-  "data": {
-    "qingting_id": "xxxx",
-    "access_token": "xxx",
-    "refresh_token": "xxx",
-    "expires_in": 7200
-  }
-}
-```
-
-Or, use the script [build_cookies_for_qingtingfm.py](https://github.com/CharlesPikachu/musicdl/tree/master/scripts/build_cookies_for_qingtingfm) in this repository to retrieve it.
-
-Once you’ve obtained this data, you can configure cookies for `QingtingMusicClient` as follows:
-
-```python
-from musicdl import musicdl
-
-cookies = {"qingting_id": "xxxx", "access_token": "xxx", "refresh_token": "xxx"}
-init_music_clients_cfg = {'QingtingMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 3}}
-music_client = musicdl.MusicClient(music_sources=['QingtingMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-Of course, it’s worth noting that another prerequisite for downloading paid audio is that your account must already have permission to access (listen to) that audio.
-
-#### Apple Music Download
-
-Before using `AppleMusicClient`, please ensure that the following command-line tools are installed and available in your environment,
-
-- [FFmpeg](https://www.ffmpeg.org/)
-- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE)
-- [Bento4](https://www.bento4.com/downloads/)
-- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools)
-
-Apple Music is like TIDAL, only users with a paid Apple Music subscription can download Apple Music tracks, otherwise, you can only download an approximately 30-90 second preview clip.
-Specifically, for paid Apple Music users, musicdl supports downloading music files in the following formats,
-
-- `aac-legacy`
-- `aac-he-legacy`
-- `aac`
-- `aac-he`
-- `aac-binaural`
-- `aac-downmix`
-- `aac-he-binaural`
-- `aac-he-downmix`
-- `atmos`
-- `ac3`
-- `alac`
-
-Specifically, if you only need to download tracks in the `aac-legacy` and `aac-he-legacy` quality tiers, you just need to make sure that [FFmpeg](https://www.ffmpeg.org/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE) are already installed and available in your environment variables.
-Then, set the `media-user-token` argument you obtained by capturing network traffic from the Apple Music website as follows:
-
-```python
-from musicdl import musicdl
-from musicdl.modules.sources.apple import SongCodec
-
-cookies = {'media-user-token': xxx}
-init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 10, 'language': 'en-US', 'codec': SongCodec.AAC_LEGACY}}
-music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-However, if you need to download higher-quality audio (*e.g.*, `alac`), the setup is relatively more complex. 
-First, follow the [wrapper](https://github.com/WorldObservationLog/wrapper) guide and start the wrapper server (❗ **note that Windows users need to download and install WSL first, followed by installing Ubuntu on WSL, and finally start the wrapper server within Ubuntu, otherwise, decryption will most likely fail** ❗).
-Then, in addition to [FFmpeg](https://www.ffmpeg.org/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE), you also need to install [Bento4](https://www.bento4.com/downloads/) and [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools).
-Finally, configure your musicdl as follows:
-
-```python
-from musicdl import musicdl
-from musicdl.modules.sources.apple import SongCodec
-
-init_music_clients_cfg = {'AppleMusicClient': {
-    'search_size_per_source': 10, 
-    'language': 'en-US', 
-    'codec': SongCodec.ALAC, 
-    'use_wrapper': True, 
-    'wrapper_account_url': 'http://127.0.0.1:30020/',
-    'wrapper_decrypt_ip': '127.0.0.1:10020',
-}}
-music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-Note that the `wrapper_account_url` and `wrapper_decrypt_ip` settings must match the corresponding arguments configured in your [wrapper server](https://github.com/WorldObservationLog/wrapper).
-
-#### Deezer Music Download
-
-musicdl now supports searching for and downloading music from the Deezer Music Client, as well as parsing playlists. Specifically, there are three possible scenarios.
-
-The first is using musicdl directly for music search, download, or playlist parsing without configuring login cookies. 
-In this case, you will most likely only be able to download song preview clips, usually around 30 seconds long (musicdl occasionally shares some shared Deezer premium accounts. Therefore, you might sometimes be able to download lossless music directly using musicdl, even without configuring any Deezer premium cookies).
-A simple usage example is as follows:
-
-```python
-from musicdl import musicdl
-
-music_client = musicdl.MusicClient(music_sources=['DeezerMusicClient'])
-music_client.startcmdui()
-```
-
-The second is configuring login cookies, but the logged-in account is not a Deezer Premium subscriber. 
-In this case, you will only be able to download songs at 128 kbps.
-A simple example of how to use it is shown below:
-
-```python
-from musicdl import musicdl
-
-# cookies must contain "arl"
-# >>> example1: cookies = {'arl': xxx, ...}
-# >>> example2: cookies = arl=xxx; key1=value1; key2=value2; ...
-cookies = YOUR_COOKIES_IN_DICT_OR_STR_FORMAT
-init_music_clients_cfg = {'DeezerMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
-music_client = musicdl.MusicClient(music_sources=['DeezerMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-The third is configuring login cookies, with the logged-in account being a Deezer Premium subscriber. 
-In this case, you can download music in Deezer’s highest-quality FLAC lossless format.
-The invocation code is entirely identical to that used in the second scenario.
-
-#### Qobuz Music Download
-
-Qobuz is the world leader in 24-bit Hi-Res downloads, offering more than 100 million tracks for streaming in unequalled sound quality (FLAC 16 Bits / 44.1kHz).
-
-To use musicdl to download songs from Qobuz, you must have a paid Qobuz membership account. 
-Otherwise, musicdl will automatically call some third-party APIs that use shared Qobuz member accounts to try to resolve the song you need. 
-Since the long-term reliability and stability of these third-party APIs cannot be guaranteed, if they become unavailable and you do not have a valid paid Qobuz membership account yourself, you will only be able to access roughly 30-second preview clips.
-
-Specifically, if you have a valid paid Qobuz membership account, first, you need to obtain the member cookies yourself by capturing network traffic on [Qobuz’s official website](https://play.qobuz.com/discover). 
-The cookies format should be as follows:
-
-```python
-{"x-user-auth-token": "xxx", ...} OR "x-user-auth-token=xxx;..."
-```
-
-Of course, you can also directly use the script [build_cookies_for_qobuz.py](https://github.com/CharlesPikachu/musicdl/blob/master/scripts/build_cookies_for_qobuz.py) provided in musicdl to build the member cookies required by musicdl.
-
-A simple example of the download code is as follows:
-
-```python
-from musicdl import musicdl
-
-cookies = {'x-user-auth-token': 'xxx'}
-init_music_clients_cfg = {'QobuzMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
-music_client = musicdl.MusicClient(music_sources=['QobuzMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-Notably, for non-member users, setting cookies can only improve the audio quality, but the downloadable content is still limited to a 30-second preview clip.
-
-#### SoundCloud Music Download
-
-Musicdl lets you search for and download your favorite songs from SoundCloud. Specifically, you only need to run the following command:
-
-```
-musicdl -m SoundCloudMusicClient
-```
-
-Or you can invoke it with the following code:
-
-```python
-from musicdl import musicdl
-
-music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'])
-music_client.startcmdui()
-```
-
-The only thing to note is that `SoundCloudMusicClient` handles login cookies for downloading subscriber-only tracks slightly differently from the other music clients. 
-You need to capture packets (*i.e.*, sniff the network requests) from [SoundCloud’s official website](https://soundcloud.com/) yourself to obtain the *Authorization* field in the request headers, then fill it in as follows:
-
-```python
-from musicdl import musicdl
-
-cookies = {'oauth_token': 'OAuth x-xxxxxx-xxxxxxxxx-xxxxxxx'}
-init_music_clients_cfg = {'SoundCloudMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 5}}
-music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-#### Spotify Music Download
-
-
-
-#### TIDAL High-Quality Music Download
-
-Prior to using `TIDALMusicClient`, verify that the following command-line tools are correctly installed and available in your environment,
-
-- [PyAV](https://github.com/PyAV-Org/PyAV)
-- [FFmpeg](https://www.ffmpeg.org/)
-- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE)
-
-If you plan to use musicdl to download high-quality lossless audio from TIDAL, you must have an active TIDAL subscription. 
-Otherwise, musicdl may fall back to third-party sources, and stable access to the highest-quality lossless files cannot be guaranteed.
-
-After you have a TIDAL membership account, you need to manually capture the cookies of your account from the TIDAL website using network packet capturing. 
-The format is as follows:
-
-```python
-{
-  "access_token": "xxx", 
-  "refresh_token": "xxx", 
-  "expires": "2026-02-10T07:32:18.102233",
-  "user_id": xxx, 
-  "country_code": "SG", 
-  "client_id": "7m7Ap0JC9j1cOM3n", 
-  "client_secret": "vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY="
-}
-```
-
-Of course, musicdl also provides a script [build_cookies_for_tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/scripts/build_cookies_for_tidal.py) to automatically obtain your TIDAL membership cookies. 
-You can simply run the script and follow the prompts to retrieve the cookies mentioned above.
-
-Once you have successfully obtained your membership cookies, you can use musicdl to download lossless music from TIDAL using the following method,
-
-```python
-from musicdl import musicdl
-
-cookies = "YOUR_VIP_COOKIES"
-init_music_clients_cfg = {'TIDALMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
-music_client = musicdl.MusicClient(music_sources=['TIDALMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-#### YouTube Music Download
-
-If you want to use musicdl to search for and download music from `YouTubeMusicClient`, you must have [Node.js](https://nodejs.org/en) installed, *e.g.*, on Linux, you can install Node.js using the following script:
-
-```bash
-#!/usr/bin/env bash
-set -e
-
-# Install nvm (Node Version Manager)
-curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-
-# Load nvm for this script
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-# Install and use latest LTS Node.js
-nvm install --lts
-nvm use --lts
-
-# Print versions
-node -v
-npm -v
-```
-
-On macOS, you can install Node.js using the following script:
-
-```bash
-#!/usr/bin/env bash
-set -e
-
-# Install nvm (Node Version Manager)
-curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-
-# Load nvm for this script
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-# Install and use latest LTS Node.js
-nvm install --lts
-nvm use --lts
-
-# Print versions
-node -v
-npm -v
-```
-
-On Windows (PowerShell), you can install Node.js using the following script:
-
-```bash
-# Install Node.js LTS via winget
-winget install --id OpenJS.NodeJS.LTS -e --source winget
-
-# Print hint for version check
-Write-Output ""
-Write-Output "Please reopen PowerShell and run:"
-Write-Output "  node -v"
-Write-Output "  npm -v"
-```
-
-A simple example of searching for and downloading music from `YouTubeMusicClient` is as follows,
-
-```python
-from musicdl import musicdl
-
-music_client = musicdl.MusicClient(music_sources=['YouTubeMusicClient'])
-music_client.startcmdui()
-```
-
-#### GD Studio Music Download
-
-We’ve added `GDStudioMusicClient` to musicdl as a practical solution for users who are on a tight budget or who find it difficult to configure extra command-line tools/arguments for musicdl. 
-With only the basic installation of musicdl, you can search for and download high-quality music files from the following music platforms:
-
-| Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
-| -----------------       | -------------------                | -----------------------------------   | -------------------          |
-| Spotify                 | Spotify                            | https://www.spotify.com               | `spotify`                    |
-| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `tencent`                    |
-| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
-| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`                       |
-| TIDAL                   | TIDAL                              | https://tidal.com                     | `tidal`                      |
-| Qobuz                   | Qobuz                              | https://www.qobuz.com                 | `qobuz`                      |
-| JOOX                    | JOOX                               | https://www.joox.com                  | `joox`                       |
-| Bilibili                | 哔哩哔哩                           | https://www.bilibili.com              | `bilibili`                   |
-| Apple Music             | 苹果音乐                           | https://www.apple.com/apple-music/    | `apple`                      |
-| YouTube Music           | 油管音乐                           | https://music.youtube.com             | `ytmusic`                    |
-
-Specifically, you just need to write and run a few lines of code like this 
-(song retrieval from YouTube and Tencent is unstable, so musicdl disables these two sources by default. 
-You can manually enable them by setting `allowed_music_sources`.):
-
-```python
-from musicdl import musicdl
-
-music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'])
-music_client.startcmdui()
-```
-
-Or, equivalently, run the following command in the command line:
-
-```bash
-musicdl -m GDStudioMusicClient
-```
-
-By default, the above code will search for and download music from eight music platforms, excluding YouTube and Tencent Music (as using `GDStudioMusicClient` for search and download on both platforms seems to be unstable).
-The screenshot of the running result is as follows:
-
-<div align="center">
-  <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/gdstudioscreenshot.png" width="600"/>
-  </div>
-</div>
-<br />
-
-However, please note that this way of running is not very stable (*e.g.*, some sources may fail to find any valid songs) and is likely to exceed the limit on the number of requests per minute allowed for a single IP by `GDStudioMusicClient`. 
-If you still wish to perform a full-platform search, we recommend modifying the default arguments as follows:
-
-```python
-from musicdl import musicdl
-
-init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 1}}
-music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-The equivalent command in the command line is:
-
-```bash
-musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 1}}"
-```
-
-Or, an even better option is to manually specify a few platforms where you believe your desired music files are likely to be found, for example:
-
-```python
-from musicdl import musicdl
-
-# allowed_music_sources can be set to any subset (i.e., any combination) of ['spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic']
-init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}
-music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-The way to run it from the command line is similar:
-
-```bash
-musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}"
-```
-
-#### JBSou Music Download
-
-`JBSouMusicClient`’s functionality is similar to `TuneHubMusicClient`’s. 
-Both are third-party APIs that consolidate music search and download functions from multiple platforms into a single interface.
-The key difference is that `JBSouMusicClient` focuses on searching and downloading 320 kbps MP3 audio files. 
-The list of music platforms it currently supports is as follows:
-
-| Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
-| -----------------       | -------------------                | -----------------------------------   | -------------------          |
-| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `qq`                         |
-| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
-| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`                       |
-| Kugou                   | 酷狗音乐                           | https://www.kugou.com/                | `kugou`                      |
-
-More specifically, its invocation is as follows,
-
-```python
-from musicdl import musicdl
-
-init_music_clients_cfg = {'JBSouMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['qq', 'netease', 'kuwo', 'kugou']}}
-music_client = musicdl.MusicClient(music_sources=['JBSouMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-music_client.startcmdui()
-```
-
-The screenshot of the running result is as follows:
-
-<div align="center">
-  <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/jbsouscreenshot.png" width="600"/>
-  </div>
-</div>
-<br />
-
-#### TuneHub Music Download
-
-`TuneHubMusicClient` is actually quite similar to `GDStudioMusicClient`, as it allows music search and download from multiple music platforms. 
-However, it primarily supports music platforms in Mainland China and offers fewer music sources compared to `GDStudioMusicClient`. 
-Specifically, the list of platforms it currently supports is as follows:
-
-| Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
-| -----------------       | -------------------                | -----------------------------------   | -------------------          |
-| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `qq`                         |
-| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
-| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`                       |
-
-Specifically, you can call it using the following code:
-
-```python
-from musicdl import musicdl
-
-music_client = musicdl.MusicClient(music_sources=['TuneHubMusicClient'])
-music_client.startcmdui()
-```
-
-Alternatively, you can directly run the following command in the terminal:
-
-```python
-musicdl -m TuneHubMusicClient
-```
-
-The screenshot of the running result is as follows:
-
-<div align="center">
-  <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/tunehubscreenshot.png" width="600"/>
-  </div>
-</div>
-<br />

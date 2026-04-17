@@ -1,1 +1,2 @@
-recursive-include musicdl/modules/js/youtube *.js
+recursive-include musicdl/modules/js *.js *.json *.wasm
+recursive-include musicdl/modules/wvds *.wvd

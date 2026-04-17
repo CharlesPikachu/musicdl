@@ -13,7 +13,6 @@ import m3u8
 import uuid
 import json
 import base64
-import shutil
 import datetime
 import requests
 import subprocess
@@ -29,6 +28,7 @@ from pywidevine import PSSH, Cdm, Device
 from urllib.parse import parse_qs, urlparse
 from .misc import safeextractfromdict, resp2json
 from pywidevine.license_protocol_pb2 import WidevinePsshData
+from .cmd import NM3U8DLREDownloadCommand, MP4BoxAddCommand, FFmpegDecryptRemuxCommand, AmdecryptCommand, Mp4DecryptCommand
 
 
 '''settings'''
@@ -64,26 +64,16 @@ ITUNES_LOOKUP_API_URL = "https://itunes.apple.com/lookup"
 WEBPLAYBACK_API_URL = "https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/webPlayback"
 LICENSE_API_URL = "https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/acquireWebPlaybackLicense"
 STOREFRONT_IDS = {
-    "AE": "143481-2,32", "AG": "143540-2,32", "AI": "143538-2,32", "AL": "143575-2,32", "AM": "143524-2,32", "AO": "143564-2,32", "AR": "143505-28,32", "AT": "143445-4,32",
-    "AU": "143460-27,32", "AZ": "143568-2,32", "BB": "143541-2,32", "BE": "143446-2,32", "BF": "143578-2,32", "BG": "143526-2,32", "BH": "143559-2,32", "BJ": "143576-2,32",
-    "BM": "143542-2,32", "BN": "143560-2,32", "BO": "143556-28,32", "BR": "143503-15,32", "BS": "143539-2,32", "BT": "143577-2,32", "BW": "143525-2,32", "BY": "143565-2,32",
-    "BZ": "143555-2,32", "CA": "143455-6,32", "CG": "143582-2,32", "CH": "143459-57,32", "CM": "143574-2,32", "CL": "143483-28,32", "CN": "143465-19,32", "CO": "143501-28,32",
-    "CR": "143495-28,32", "CV": "143580-2,32", "CY": "143557-2,32", "CZ": "143489-2,32", "DE": "143443-4,32", "DK": "143458-2,32", "DM": "143545-2,32", "DO": "143508-28,32",
-    "DZ": "143563-2,32", "EC": "143509-28,32", "EE": "143518-2,32", "EG": "143516-2,32", "ES": "143454-8,32", "FI": "143447-2,32", "FJ": "143583-2,32", "FM": "143591-2,32",
-    "FR": "143442-3,32", "GB": "143444-2,32", "GD": "143546-2,32", "GH": "143573-2,32", "GM": "143584-2,32", "GR": "143448-2,32", "GT": "143504-28,32", "GW": "143585-2,32",
-    "GY": "143553-2,32", "HK": "143463-45,32", "HN": "143510-28,32", "HR": "143494-2,32", "HU": "143482-2,32", "ID": "143476-2,32", "IE": "143449-2,32", "IL": "143491-2,32",
-    "IN": "143467-2,32", "IS": "143558-2,32", "IT": "143450-7,32", "JM": "143511-2,32", "JO": "143528-2,32", "JP": "143462-9,32", "KE": "143529-2,32", "KG": "143586-2,32",
-    "KH": "143579-2,32", "KN": "143548-2,32", "KR": "143466-13,32", "KW": "143493-2,32", "KY": "143544-2,32", "KZ": "143517-2,32", "LA": "143587-2,32", "LB": "143497-2,32",
-    "LC": "143549-2,32", "LK": "143486-2,32", "LR": "143588-2,32", "LT": "143520-2,32", "LU": "143451-2,32", "LV": "143519-2,32", "MD": "143523-2,32", "MG": "143531-2,32",
-    "MK": "143530-2,32", "ML": "143532-2,32", "MN": "143592-2,32", "MO": "143515-45,32", "MR": "143590-2,32", "MS": "143547-2,32", "MT": "143521-2,32", "MU": "143533-2,32",
-    "MW": "143589-2,32", "MX": "143468-28,32", "MY": "143473-2,32", "MZ": "143593-2,32", "NA": "143594-2,32", "NE": "143534-2,32", "NG": "143561-2,32", "NI": "143512-28,32",
-    "NL": "143452-10,32", "NO": "143457-2,32", "NP": "143484-2,32", "NZ": "143461-27,32", "OM": "143562-2,32", "PA": "143485-28,32", "PE": "143507-28,32", "PG": "143597-2,32",
-    "PH": "143474-2,32", "PK": "143477-2,32", "PL": "143478-2,32", "PT": "143453-24,32", "PW": "143595-2,32", "PY": "143513-28,32", "QA": "143498-2,32", "RO": "143487-2,32",
-    "RU": "143469-16,32", "SA": "143479-2,32", "SB": "143601-2,32", "SC": "143599-2,32", "SE": "143456-17,32", "SG": "143464-19,32", "SI": "143499-2,32", "SK": "143496-2,32",
-    "SL": "143600-2,32", "SN": "143535-2,32", "SR": "143554-2,32", "ST": "143598-2,32", "SV": "143506-28,32", "SZ": "143602-2,32", "TC": "143552-2,32", "TD": "143581-2,32",
-    "TH": "143475-2,32", "TJ": "143603-2,32", "TM": "143604-2,32", "TN": "143536-2,32", "TR": "143480-2,32", "TT": "143551-2,32", "TW": "143470-18,32", "TZ": "143572-2,32",
-    "UA": "143492-2,32", "UG": "143537-2,32", "US": "143441-1,32", "UY": "143514-2,32", "UZ": "143566-2,32", "VC": "143550-2,32", "VE": "143502-28,32", "VG": "143543-2,32", 
-    "VN": "143471-2,32", "YE": "143571-2,32", "ZA": "143472-2,32", "ZW": "143605-2,32",
+    "AE": "143481-2,32", "AG": "143540-2,32", "AI": "143538-2,32", "AL": "143575-2,32", "AM": "143524-2,32", "AO": "143564-2,32", "AR": "143505-28,32", "AT": "143445-4,32", "AU": "143460-27,32", "AZ": "143568-2,32", "BB": "143541-2,32", "BE": "143446-2,32", "BF": "143578-2,32", "BG": "143526-2,32", "BH": "143559-2,32", "BJ": "143576-2,32",
+    "BM": "143542-2,32", "BN": "143560-2,32", "BO": "143556-28,32", "BR": "143503-15,32", "BS": "143539-2,32", "BT": "143577-2,32", "BW": "143525-2,32", "BY": "143565-2,32", "BZ": "143555-2,32", "CA": "143455-6,32", "CG": "143582-2,32", "CH": "143459-57,32", "CM": "143574-2,32", "CL": "143483-28,32", "CN": "143465-19,32", "CO": "143501-28,32",
+    "CR": "143495-28,32", "CV": "143580-2,32", "CY": "143557-2,32", "CZ": "143489-2,32", "DE": "143443-4,32", "DK": "143458-2,32", "DM": "143545-2,32", "DO": "143508-28,32", "DZ": "143563-2,32", "EC": "143509-28,32", "EE": "143518-2,32", "EG": "143516-2,32", "ES": "143454-8,32", "FI": "143447-2,32", "FJ": "143583-2,32", "FM": "143591-2,32",
+    "FR": "143442-3,32", "GB": "143444-2,32", "GD": "143546-2,32", "GH": "143573-2,32", "GM": "143584-2,32", "GR": "143448-2,32", "GT": "143504-28,32", "GW": "143585-2,32", "GY": "143553-2,32", "HK": "143463-45,32", "HN": "143510-28,32", "HR": "143494-2,32", "HU": "143482-2,32", "ID": "143476-2,32", "IE": "143449-2,32", "IL": "143491-2,32",
+    "IN": "143467-2,32", "IS": "143558-2,32", "IT": "143450-7,32", "JM": "143511-2,32", "JO": "143528-2,32", "JP": "143462-9,32", "KE": "143529-2,32", "KG": "143586-2,32", "KH": "143579-2,32", "KN": "143548-2,32", "KR": "143466-13,32", "KW": "143493-2,32", "KY": "143544-2,32", "KZ": "143517-2,32", "LA": "143587-2,32", "LB": "143497-2,32",
+    "LC": "143549-2,32", "LK": "143486-2,32", "LR": "143588-2,32", "LT": "143520-2,32", "LU": "143451-2,32", "LV": "143519-2,32", "MD": "143523-2,32", "MG": "143531-2,32", "MK": "143530-2,32", "ML": "143532-2,32", "MN": "143592-2,32", "MO": "143515-45,32", "MR": "143590-2,32", "MS": "143547-2,32", "MT": "143521-2,32", "MU": "143533-2,32",
+    "MW": "143589-2,32", "MX": "143468-28,32", "MY": "143473-2,32", "MZ": "143593-2,32", "NA": "143594-2,32", "NE": "143534-2,32", "NG": "143561-2,32", "NI": "143512-28,32", "NL": "143452-10,32", "NO": "143457-2,32", "NP": "143484-2,32", "NZ": "143461-27,32", "OM": "143562-2,32", "PA": "143485-28,32", "PE": "143507-28,32", "PG": "143597-2,32",
+    "PH": "143474-2,32", "PK": "143477-2,32", "PL": "143478-2,32", "PT": "143453-24,32", "PW": "143595-2,32", "PY": "143513-28,32", "QA": "143498-2,32", "RO": "143487-2,32", "RU": "143469-16,32", "SA": "143479-2,32", "SB": "143601-2,32", "SC": "143599-2,32", "SE": "143456-17,32", "SG": "143464-19,32", "SI": "143499-2,32", "SK": "143496-2,32",
+    "SL": "143600-2,32", "SN": "143535-2,32", "SR": "143554-2,32", "ST": "143598-2,32", "SV": "143506-28,32", "SZ": "143602-2,32", "TC": "143552-2,32", "TD": "143581-2,32", "TH": "143475-2,32", "TJ": "143603-2,32", "TM": "143604-2,32", "TN": "143536-2,32", "TR": "143480-2,32", "TT": "143551-2,32", "TW": "143470-18,32", "TZ": "143572-2,32",
+    "UA": "143492-2,32", "UG": "143537-2,32", "US": "143441-1,32", "UY": "143514-2,32", "UZ": "143566-2,32", "VC": "143550-2,32", "VE": "143502-28,32", "VG": "143543-2,32", "VN": "143471-2,32", "YE": "143571-2,32", "ZA": "143472-2,32", "ZW": "143605-2,32",
 }
 
 
@@ -222,21 +212,13 @@ class MediaTags:
     '''asmp4tags'''
     def asmp4tags(self, date_format: str = None):
         disc_mp4 = [self.disc if self.disc is not None else 0, self.disc_total if self.disc_total is not None else 0]
-        if disc_mp4[0] == 0 and disc_mp4[1] == 0: disc_mp4 = None
+        disc_mp4 = None if disc_mp4 == [0, 0] else disc_mp4
         track_mp4 = [self.track if self.track is not None else 0, self.track_total if self.track_total is not None else 0]
-        if track_mp4[0] == 0 and track_mp4[1] == 0: track_mp4 = None
-        if isinstance(self.date, datetime.date):
-            if date_format is None: date_mp4 = self.date.isoformat()
-            else: date_mp4 = self.date.strftime(date_format)
-        elif isinstance(self.date, str):
-            date_mp4 = self.date
-        else:
-            date_mp4 = None
+        track_mp4 = None if track_mp4 == [0, 0] else track_mp4
+        date_mp4 = (self.date.isoformat() if isinstance(self.date, datetime.date) and date_format is None else self.date.strftime(date_format) if isinstance(self.date, datetime.date) else self.date if isinstance(self.date, str) else None)
         mp4_tags = {
-            "\xa9alb": self.album, "aART": self.album_artist, "plID": self.album_id, "soal": self.album_sort, "\xa9ART": self.artist, "atID": self.artist_id, "soar": self.artist_sort, "\xa9cmt": self.comment, "xid": self.xid,
-            "cpil": bool(self.compilation) if self.compilation is not None else None, "\xa9wrt": self.composer, "cmID": self.composer_id, "soco": self.composer_sort, "cprt": self.copyright, "\xa9day": date_mp4, "trkn": track_mp4, 
-            "disk": disc_mp4, "pgap": bool(self.gapless) if self.gapless is not None else None, "\xa9lyr": self.lyrics, "geID": self.genre_id, "stik": int(self.media_type) if self.media_type is not None else None, "\xa9nam": self.title,
-            "\xa9gen": self.genre, "rtng": int(self.rating) if self.rating is not None else None, "sfID": self.storefront, "cnID": self.title_id, "sonm": self.title_sort, 
+            "\xa9alb": self.album, "aART": self.album_artist, "plID": self.album_id, "soal": self.album_sort, "\xa9ART": self.artist, "atID": self.artist_id, "soar": self.artist_sort, "\xa9cmt": self.comment, "xid": self.xid, "cpil": bool(self.compilation) if self.compilation is not None else None, "\xa9wrt": self.composer, "cmID": self.composer_id, "soco": self.composer_sort, "cprt": self.copyright, "\xa9day": date_mp4, 
+            "trkn": track_mp4, "disk": disc_mp4, "pgap": bool(self.gapless) if self.gapless is not None else None, "\xa9lyr": self.lyrics, "geID": self.genre_id, "stik": int(self.media_type) if self.media_type is not None else None, "\xa9nam": self.title, "\xa9gen": self.genre, "rtng": int(self.rating) if self.rating is not None else None, "sfID": self.storefront, "cnID": self.title_id, "sonm": self.title_sort, 
         }
         return {k: ([v] if not isinstance(v, bool) else v) for k, v in mp4_tags.items() if v is not None}
 
@@ -335,28 +317,24 @@ class AppleMusicClientAPIUtils:
     '''createfromnetscapecookies'''
     @classmethod
     def createfromnetscapecookies(cls, cookies: dict, request_overrides: dict = None, *args, **kwargs) -> "AppleMusicClientAPIUtils":
-        request_overrides = request_overrides or {}
-        media_user_token = cookies.get('media-user-token')
+        request_overrides, media_user_token = request_overrides or {}, cookies.get('media-user-token')
         if not media_user_token: raise ValueError('"media-user-token" is not configured in cookies.')
         return cls.create(storefront=None, media_user_token=media_user_token, developer_token=None, request_overrides=request_overrides, *args, **kwargs)
     '''createfromwrapper'''
     @classmethod
     def createfromwrapper(cls, wrapper_account_url: str = "http://127.0.0.1:30020/", request_overrides: dict = None, *args, **kwargs) -> "AppleMusicClientAPIUtils":
-        request_overrides = request_overrides or {}
-        wrapper_account_response = requests.get(wrapper_account_url)
-        wrapper_account_response.raise_for_status()
+        (wrapper_account_response := requests.get(wrapper_account_url)).raise_for_status()
         wrapper_account_info = wrapper_account_response.json()
-        return cls.create(storefront=None, media_user_token=wrapper_account_info["music_token"], developer_token=wrapper_account_info["dev_token"], request_overrides=request_overrides, *args, **kwargs)
+        return cls.create(storefront=None, media_user_token=wrapper_account_info["music_token"], developer_token=wrapper_account_info["dev_token"], request_overrides=(request_overrides or {}), *args, **kwargs)
     '''create'''
     @classmethod
     def create(cls, storefront: str | None = "us", language: str = "en-US", media_user_token: str | None = None, developer_token: str | None = None, request_overrides: dict = None) -> "AppleMusicClientAPIUtils":
-        request_overrides = request_overrides or {}
         api = cls(storefront=storefront, language=language, media_user_token=media_user_token, developer_token=developer_token)
-        api.initialize(request_overrides=request_overrides)
+        api.initialize(request_overrides=(request_overrides or {}))
         return api
     '''initialize'''
     def initialize(self, request_overrides: dict = None) -> None:
-        request_overrides = request_overrides or {}
+        request_overrides = dict(request_overrides or {})
         self.initializeclient(); self.initializetoken(request_overrides=request_overrides); self.initializeaccountinfo(request_overrides=request_overrides)
     '''initializeclient'''
     def initializeclient(self) -> None:
@@ -367,16 +345,12 @@ class AppleMusicClientAPIUtils:
         })
     '''gettoken'''
     def gettoken(self, request_overrides: dict = None) -> str:
-        request_overrides = request_overrides or {}
+        request_overrides = dict(request_overrides or {})
         (resp := self.client.get(APPLE_MUSIC_HOMEPAGE_URL, params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        index_js_uri_match = re.search(r"/(assets/index-legacy[~-][^/\"]+\.js)", resp.text)
-        if not index_js_uri_match: raise Exception("index.js URI not found in Apple Music homepage")
-        index_js_uri = index_js_uri_match.group(1)
-        (resp := self.client.get(f"{APPLE_MUSIC_HOMEPAGE_URL}/{index_js_uri}", params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        token_match = re.search('(?=eyJh)(.*?)(?=")', resp.text)
-        if not token_match: raise Exception("Token not found in index.js page")
-        token = token_match.group(1)
-        return token
+        if not (index_js_uri_match := re.search(r"/(assets/index-legacy[~-][^/\"]+\.js)", resp.text)): raise Exception("index.js URI not found in Apple Music homepage")
+        (resp := self.client.get(f"{APPLE_MUSIC_HOMEPAGE_URL}/{index_js_uri_match.group(1)}", params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
+        if not (token_match := re.search('(?=eyJh)(.*?)(?=")', resp.text)): raise Exception("Token not found in index.js page")
+        return token_match.group(1)
     '''initializetoken'''
     def initializetoken(self, request_overrides: dict = None) -> None:
         request_overrides = request_overrides or {}
@@ -391,105 +365,75 @@ class AppleMusicClientAPIUtils:
         self.storefront = safeextractfromdict(self.account_info, ['meta', 'subscription', 'storefront'], 'us')
     '''getaccountinfo'''
     def getaccountinfo(self, meta: str | None = "subscription", request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/me/account", params={**({"meta": meta} if meta else {}), **{"l": self.language}}, allow_redirects=True, **request_overrides)).raise_for_status()
-        account_info = resp2json(resp=resp)
-        if not "data" in account_info or (meta and "meta" not in account_info): raise Exception("Error getting account info: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/me/account", params={**({"meta": meta} if meta else {}), **{"l": self.language}}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if ("data" not in (account_info := resp2json(resp=resp))) or (meta and "meta" not in account_info): raise Exception("Error getting account info: ", resp.text)
         return account_info
     '''getsong'''
     def getsong(self, song_id: str, extend: str = "extendedAssetUrls", include: str = "lyrics,albums", request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/songs/{song_id}", params={"extend": extend, "include": include, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        song = resp2json(resp=resp)
-        if not ("data" in song): raise Exception("Error getting song: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/songs/{song_id}", params={"extend": extend, "include": include, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (song := resp2json(resp=resp))): raise Exception("Error getting song: ", resp.text)
         return song
     '''getmusicvideo'''
     def getmusicvideo(self, music_video_id: str, include: str = "albums", request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/music-videos/{music_video_id}", params={"include": include, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        music_video = resp2json(resp=resp)
-        if not ("data" in music_video): raise Exception("Error getting music video: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/music-videos/{music_video_id}", params={"include": include, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (music_video := resp2json(resp=resp))): raise Exception("Error getting music video: ", resp.text)
         return music_video
     '''getuploadedvideo'''
     def getuploadedvideo(self, post_id: str, request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/uploaded-videos/{post_id}", params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        uploaded_video = resp2json(resp=resp)
-        if not ("data" in uploaded_video): raise Exception("Error getting uploaded video: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/uploaded-videos/{post_id}", params={"l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (uploaded_video := resp2json(resp=resp))): raise Exception("Error getting uploaded video: ", resp.text)
         return uploaded_video
     '''getalbum'''
     def getalbum(self, album_id: str, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        album = resp2json(resp=resp)
-        if not ("data" in album): raise Exception("Error getting album: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (album := resp2json(resp=resp))): raise Exception("Error getting album: ", resp.text)
         return album
     '''getplaylist'''
     def getplaylist(self, playlist_id: str, limit_tracks: int = 300, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/playlists/{playlist_id}", params={"limit[tracks]": limit_tracks, "extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        playlist = resp2json(resp=resp)
-        if not ("data" in playlist): raise Exception("Error getting playlist: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/playlists/{playlist_id}", params={"limit[tracks]": limit_tracks, "extend": extend, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (playlist := resp2json(resp=resp))): raise Exception("Error getting playlist: ", resp.text)
         return playlist
     '''getartist'''
     def getartist(self, artist_id: str, include: str = "albums,music-videos", limit: int = 100, request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/artists/{artist_id}", params={"include": include, "l": self.language, **{f"limit[{_include}]": limit for _include in include.split(",")}}, allow_redirects=True, **request_overrides)).raise_for_status()
-        artist = resp2json(resp=resp)
-        if not ("data" in artist): raise Exception("Error getting artist:", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/artists/{artist_id}", params={"include": include, "l": self.language, **{f"limit[{_include}]": limit for _include in include.split(",")}}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (artist := resp2json(resp=resp))): raise Exception("Error getting artist:", resp.text)
         return artist
     '''getlibraryalbum'''
     def getlibraryalbum(self, album_id: str, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/me/library/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        album = resp2json(resp=resp)
-        if not ("data" in album): raise Exception("Error getting library album: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/me/library/albums/{album_id}", params={"extend": extend, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (album := resp2json(resp=resp))): raise Exception("Error getting library album: ", resp.text)
         return album
     '''getlibraryplaylist'''
     def getlibraryplaylist(self, playlist_id: str, include: str = "tracks", limit: int = 100, extend: str = "extendedAssetUrls", request_overrides: dict = None) -> dict | None:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/me/library/playlists/{playlist_id}", params={"include": include, **{f"limit[{_include}]": limit for _include in include.split(",")}, "extend": extend, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        playlist = resp2json(resp=resp)
-        if not ("data" in playlist): raise Exception("Error getting library playlist: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/me/library/playlists/{playlist_id}", params={"include": include, **{f"limit[{_include}]": limit for _include in include.split(",")}, "extend": extend, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (playlist := resp2json(resp=resp))): raise Exception("Error getting library playlist: ", resp.text)
         return playlist
     '''getsearchresults'''
     def getsearchresults(self, term: str, types: str = "songs,music-videos,albums,playlists,artists", limit: int = 50, offset: int = 0, request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/search", params={"term": term, "types": types, "limit": limit, "offset": offset, "l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        search_results = resp2json(resp=resp)
-        if not ("results" in search_results): raise Exception("Error searching: ", resp.text)
+        (resp := self.client.get(f"{AMP_API_URL}/v1/catalog/{self.storefront}/search", params={"term": term, "types": types, "limit": limit, "offset": offset, "l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("results" in (search_results := resp2json(resp=resp))): raise Exception("Error searching: ", resp.text)
         return search_results
     '''extendapidata'''
     def extendapidata(self, api_response: dict, extend: str = "extendedAssetUrls", request_overrides: dict = None):
-        request_overrides = request_overrides or {}
-        next_uri: str = api_response.get("next")
-        if not next_uri: return
-        next_uri_params = parse_qs(urlparse(next_uri).query)
-        limit = int(next_uri_params["offset"][0])
+        if not (next_uri := api_response.get("next")): return
+        limit = int(parse_qs(urlparse(str(next_uri)).query)["offset"][0])
         while next_uri:
-            extended_api_data = self.getextendedapidata(next_uri, limit, extend, request_overrides)
-            yield extended_api_data
+            yield (extended_api_data := self.getextendedapidata(next_uri, limit, extend, request_overrides))
             next_uri = extended_api_data.get("next")
     '''getextendedapidata'''
     def getextendedapidata(self, next_uri: str, limit: int, extend: str, request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(AMP_API_URL + next_uri, params={"limit": limit, "extend": extend, "l": self.language, **parse_qs(urlparse(next_uri).query)}, allow_redirects=True, **request_overrides)).raise_for_status()
-        extended_api_data = resp2json(resp=resp)
-        if not ("data" in extended_api_data): raise Exception("Error getting extended API data: ", resp.text)
+        (resp := self.client.get(AMP_API_URL + next_uri, params={"limit": limit, "extend": extend, "l": self.language, **parse_qs(urlparse(next_uri).query)}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("data" in (extended_api_data := resp2json(resp=resp))): raise Exception("Error getting extended API data: ", resp.text)
         return extended_api_data
     '''getwebplayback'''
     def getwebplayback(self, track_id: str, request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.post(WEBPLAYBACK_API_URL, json={"salableAdamId": track_id, "language": self.language}, params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        webplayback = resp2json(resp=resp)
-        if not ("songList" in webplayback): raise Exception("Error getting webplayback: ", resp.text)
+        (resp := self.client.post(WEBPLAYBACK_API_URL, json={"salableAdamId": track_id, "language": self.language}, params={"l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("songList" in (webplayback := resp2json(resp=resp))): raise Exception("Error getting webplayback: ", resp.text)
         return webplayback
     '''getlicenseexchange'''
     def getlicenseexchange(self, track_id: str, track_uri: str, challenge: str, key_system: str = "com.widevine.alpha", request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.post(LICENSE_API_URL, json={"challenge": challenge, "key-system": key_system, "uri": track_uri, "adamId": track_id, "isLibrary": False, "user-initiated": True}, params={"l": self.language}, allow_redirects=True, **request_overrides)).raise_for_status()
-        license_exchange = resp2json(resp=resp)
-        if not ("license" in license_exchange): raise Exception("Error getting license exchange: ", resp.text)
+        (resp := self.client.post(LICENSE_API_URL, json={"challenge": challenge, "key-system": key_system, "uri": track_uri, "adamId": track_id, "isLibrary": False, "user-initiated": True}, params={"l": self.language}, allow_redirects=True, **(request_overrides or {}))).raise_for_status()
+        if not ("license" in (license_exchange := resp2json(resp=resp))): raise Exception("Error getting license exchange: ", resp.text)
         return license_exchange
 
 
@@ -513,17 +457,13 @@ class AppleMusicClientItunesApiUtils:
         self.client.headers.update({"X-Apple-Store-Front": f"{self.storefront_id} t:music31"})
     '''getlookupresult'''
     def getlookupresult(self, media_id: str, entity: str = "album", request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(ITUNES_LOOKUP_API_URL, params={"id": media_id, "entity": entity, "country": self.storefront, "lang": self.language}, **request_overrides)).raise_for_status()
-        lookup_result = resp2json(resp)
-        if ("results" not in lookup_result): raise Exception("Error getting lookup result: ", resp.text)
+        (resp := self.client.get(ITUNES_LOOKUP_API_URL, params={"id": media_id, "entity": entity, "country": self.storefront, "lang": self.language}, **(request_overrides or {}))).raise_for_status()
+        if ("results" not in (lookup_result := resp2json(resp))): raise Exception("Error getting lookup result: ", resp.text)
         return lookup_result
     '''getitunespage'''
     def getitunespage(self, media_type: str, media_id: str, request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        (resp := self.client.get(f"{ITUNES_PAGE_API_URL}/{media_type}/{media_id}", params={"country": self.storefront, "lang": self.language}, **request_overrides)).raise_for_status()
-        itunes_page = resp2json(resp)
-        if ("storePlatformData" not in itunes_page): raise Exception("Error getting iTunes page: ", resp.text)
+        (resp := self.client.get(f"{ITUNES_PAGE_API_URL}/{media_type}/{media_id}", params={"country": self.storefront, "lang": self.language}, **(request_overrides or {}))).raise_for_status()
+        if ("storePlatformData" not in (itunes_page := resp2json(resp))): raise Exception("Error getting iTunes page: ", resp.text)
         return itunes_page
 
 
@@ -540,13 +480,13 @@ class AppleMusicClientDownloadSongUtils:
     '''fixkeyid'''
     @staticmethod
     def fixkeyid(input_path: str):
-        count = 0
-        with open(input_path, "rb+") as f:
-            while (data := f.read(4096)):
-                pos, i = f.tell(), 0
+        assert os.path.exists(input_path); count = 0
+        with open(input_path, "rb+") as file_obj:
+            while (data := file_obj.read(4096)):
+                pos, i = file_obj.tell(), 0
                 while (tenc := max(0, data.find(b"tenc", i))):
-                    kid = tenc + 12; f.seek(max(0, pos - 4096) + kid, 0); f.write(bytes.fromhex(f"{count:032}")); count += 1; i = kid + 1
-                f.seek(pos, 0)
+                    kid = tenc + 12; file_obj.seek(max(0, pos - 4096) + kid, 0); file_obj.write(bytes.fromhex(f"{count:032}")); count += 1; i = kid + 1
+                file_obj.seek(pos, 0)
     '''getmediaidoflibrarymedia'''
     @staticmethod
     def getmediaidoflibrarymedia(library_media_metadata: dict) -> str:
@@ -563,73 +503,50 @@ class AppleMusicClientDownloadSongUtils:
         get_lyrics_line_lrc_func = lambda element: ((lambda ts, text: (lambda ms_new: f"[{((ts + (datetime.timedelta(milliseconds=((int(ms_new[:2]) + 1) * 10))) - datetime.timedelta(microseconds=ts.microsecond)) if int(ms_new[-1]) >= 5 else ts).strftime('%M:%S.%f')[:-4]}]{text}")(ts.strftime("%f")[:-3]))(parse_ttml_timestamp_func(element.attrib.get("begin")), element.text))
         # re-fetch lyrics if need
         if ("relationships" not in song_metadata or "lyrics" not in song_metadata["relationships"]): song_metadata = (apple_music_api.getsong(AppleMusicClientDownloadSongUtils.getmediaidoflibrarymedia(song_metadata), request_overrides=request_overrides))["data"][0]
-        lyrics_ttml = safeextractfromdict(song_metadata, ['relationships', 'lyrics', 'data', 0, 'attributes', 'ttml'], None)
-        if not lyrics_ttml: return None
+        if not (lyrics_ttml := safeextractfromdict(song_metadata, ['relationships', 'lyrics', 'data', 0, 'attributes', 'ttml'], None)): return None
         # refactor lyrics
         lyrics_ttml_et, unsynced_lyrics, synced_lyrics, index = ElementTree.fromstring(lyrics_ttml), [], [], 1
         for div in lyrics_ttml_et.iter("{http://www.w3.org/ns/ttml}div"):
-            stanza = []; unsynced_lyrics.append(stanza)
+            unsynced_lyrics.append((stanza := []))
             for p in div.iter("{http://www.w3.org/ns/ttml}p"):
-                if p.text is not None: stanza.append(p.text)
-                if p.attrib.get("begin"):
-                    if synced_lyrics_format == SyncedLyricsFormat.LRC: synced_lyrics.append(get_lyrics_line_lrc_func(p))
-                    if synced_lyrics_format == SyncedLyricsFormat.SRT: synced_lyrics.append(get_lyrics_line_srt_func(index, p))
-                    if synced_lyrics_format == SyncedLyricsFormat.TTML:
-                        if not synced_lyrics: synced_lyrics.append(minidom.parseString(lyrics_ttml).toprettyxml())
-                        continue
-                    index += 1
+                p.text is not None and stanza.append(p.text)
+                p.attrib.get("begin") and ((synced_lyrics_format == SyncedLyricsFormat.LRC and synced_lyrics.append(get_lyrics_line_lrc_func(p))) or (synced_lyrics_format == SyncedLyricsFormat.SRT and synced_lyrics.append(get_lyrics_line_srt_func(index, p))) or (synced_lyrics_format == SyncedLyricsFormat.TTML and (synced_lyrics or synced_lyrics.append(minidom.parseString(lyrics_ttml).toprettyxml()))))
+                p.attrib.get("begin") and synced_lyrics_format != SyncedLyricsFormat.TTML and (index := index + 1)
         # return
         return Lyrics(synced="\n".join(synced_lyrics + ["\n"]) if synced_lyrics else None, unsynced=("\n\n".join(["\n".join(lyric_group) for lyric_group in unsynced_lyrics]) if unsynced_lyrics else None))
     '''getmediadate'''
     @staticmethod
     def getmediadate(media_id: str, itunes_api: AppleMusicClientItunesApiUtils, request_overrides: dict = None) -> datetime.datetime | None:
-        lookup_result = itunes_api.getlookupresult(media_id, request_overrides=request_overrides)
-        if not lookup_result["results"]: return None
-        release_date = safeextractfromdict(lookup_result, ['results', 0, 'releaseDate'], None)
-        if not release_date: return None
-        parsed_date = AppleMusicClientDownloadSongUtils.parsedate(release_date)
-        return parsed_date
+        if not (lookup_result := itunes_api.getlookupresult(media_id, request_overrides=request_overrides))["results"]: return None
+        if not (release_date := safeextractfromdict(lookup_result, ['results', 0, 'releaseDate'], None)): return None
+        return AppleMusicClientDownloadSongUtils.parsedate(release_date)
     '''gettags'''
     @staticmethod
     def gettags(webplayback: dict, lyrics: str | None = None, use_album_date: bool = False, itunes_api: AppleMusicClientItunesApiUtils = None, request_overrides: dict = None) -> MediaTags:
         webplayback_metadata = safeextractfromdict(webplayback, ['songList', 0, 'assets', 0, 'metadata'], {})
         tags = MediaTags(
-            album=webplayback_metadata["playlistName"], album_artist=webplayback_metadata["playlistArtistName"], album_id=int(webplayback_metadata["playlistId"]), album_sort=webplayback_metadata["sort-album"], disc=webplayback_metadata["discNumber"], track_total=webplayback_metadata["trackCount"], 
-            artist=webplayback_metadata["artistName"], artist_id=int(webplayback_metadata["artistId"]), artist_sort=webplayback_metadata["sort-artist"], comment=webplayback_metadata.get("comments"), rating=MediaRating(webplayback_metadata["explicit"]), lyrics=lyrics if lyrics else None,
-            compilation=webplayback_metadata["compilation"], composer=webplayback_metadata.get("composerName"), composer_id=(int(webplayback_metadata.get("composerId")) if webplayback_metadata.get("composerId") else None), genre=webplayback_metadata.get("genre"), media_type=MediaType.SONG,
-            composer_sort=webplayback_metadata.get("sort-composer"), copyright=webplayback_metadata.get("copyright"), disc_total=webplayback_metadata["discCount"], gapless=webplayback_metadata["gapless"], genre_id=int(webplayback_metadata["genreId"]), xid=webplayback_metadata.get("xid"), 
-            date=(AppleMusicClientDownloadSongUtils.getmediadate(webplayback_metadata["playlistId"], itunes_api, request_overrides) if use_album_date else (AppleMusicClientDownloadSongUtils.parsedate(webplayback_metadata["releaseDate"]) if webplayback_metadata.get("releaseDate") else None)),
-            track=webplayback_metadata["trackNumber"], storefront=webplayback_metadata["s"], title=webplayback_metadata["itemName"], title_id=int(webplayback_metadata["itemId"]), title_sort=webplayback_metadata["sort-name"],
+            album=webplayback_metadata["playlistName"], album_artist=webplayback_metadata["playlistArtistName"], album_id=int(webplayback_metadata["playlistId"]), album_sort=webplayback_metadata["sort-album"], disc=webplayback_metadata["discNumber"], track_total=webplayback_metadata["trackCount"], artist=webplayback_metadata["artistName"], artist_id=int(webplayback_metadata["artistId"]), artist_sort=webplayback_metadata["sort-artist"], comment=webplayback_metadata.get("comments"), rating=MediaRating(webplayback_metadata["explicit"]), lyrics=lyrics if lyrics else None, compilation=webplayback_metadata["compilation"], composer=webplayback_metadata.get("composerName"), composer_id=(int(webplayback_metadata.get("composerId")) if webplayback_metadata.get("composerId") else None), genre=webplayback_metadata.get("genre"), 
+            media_type=MediaType.SONG, composer_sort=webplayback_metadata.get("sort-composer"), copyright=webplayback_metadata.get("copyright"), disc_total=webplayback_metadata["discCount"], gapless=webplayback_metadata["gapless"], genre_id=int(webplayback_metadata["genreId"]), xid=webplayback_metadata.get("xid"), date=(AppleMusicClientDownloadSongUtils.getmediadate(webplayback_metadata["playlistId"], itunes_api, request_overrides) if use_album_date else (AppleMusicClientDownloadSongUtils.parsedate(webplayback_metadata["releaseDate"]) if webplayback_metadata.get("releaseDate") else None)), track=webplayback_metadata["trackNumber"], storefront=webplayback_metadata["s"], title=webplayback_metadata["itemName"], title_id=int(webplayback_metadata["itemId"]), title_sort=webplayback_metadata["sort-name"],
         )
         return tags
     '''getextratags'''
     @staticmethod
     def getextratags(song_metadata: dict, request_overrides: dict = None) -> dict:
-        request_overrides = request_overrides or {}
-        previews = safeextractfromdict(song_metadata, ['attributes', 'previews'], []) or []
-        if not previews: return {}
-        preview_url = previews[0]["url"]
-        preview_response = requests.get(preview_url, **request_overrides)
-        preview_bytes = preview_response.content
-        preview_tags = dict(MP4(io.BytesIO(preview_bytes)).tags)
+        if not (previews := safeextractfromdict(song_metadata, ['attributes', 'previews'], []) or []): return {}
+        preview_response = requests.get(previews[0]["url"], **dict(request_overrides or {}))
+        preview_tags = dict(MP4(io.BytesIO(preview_response.content)).tags)
         return preview_tags
     '''getplaylisttags'''
     @staticmethod
     def getplaylisttags(playlist_metadata: dict, media_metadata: dict) -> PlaylistTags:
-        playlist_track = (safeextractfromdict(playlist_metadata, ['relationships', 'tracks', 'data'], '').index(media_metadata) + 1)
-        return PlaylistTags(
-            playlist_artist=safeextractfromdict(playlist_metadata, ['attributes', 'curatorName'], 'Unknown'), playlist_id=playlist_metadata["attributes"]["playParams"]["id"],
-            playlist_title=playlist_metadata["attributes"]["name"], playlist_track=playlist_track,
-        )
+        playlist_track = ((safeextractfromdict(playlist_metadata, ['relationships', 'tracks', 'data'], '') or '').index(media_metadata) + 1)
+        return PlaylistTags(playlist_artist=safeextractfromdict(playlist_metadata, ['attributes', 'curatorName'], 'Unknown'), playlist_id=playlist_metadata["attributes"]["playParams"]["id"], playlist_title=playlist_metadata["attributes"]["name"], playlist_track=playlist_track)
     '''getstreaminfolegacy'''
     @staticmethod
     def getstreaminfolegacy(webplayback: dict, codec: SongCodec, request_overrides: dict = None) -> StreamInfoAv:
-        request_overrides = request_overrides or {}
         flavor = "32:ctrp64" if codec == SongCodec.AAC_HE_LEGACY else "28:ctrp256"
-        stream_info = StreamInfo()
-        stream_info.stream_url = next(i for i in webplayback["songList"][0]["assets"] if i["flavor"] == flavor)["URL"]
-        m3u8_obj = m3u8.loads(requests.get(stream_info.stream_url, **request_overrides).text)
-        stream_info.widevine_pssh = m3u8_obj.keys[0].uri
+        (stream_info := StreamInfo()).stream_url = next(i for i in webplayback["songList"][0]["assets"] if i["flavor"] == flavor)["URL"]
+        stream_info.widevine_pssh = m3u8.loads(requests.get(stream_info.stream_url, **dict(request_overrides or {})).text).keys[0].uri
         stream_info_av = StreamInfoAv(media_id=webplayback["songList"][0]["songId"], audio_track=stream_info, file_format=MediaFileFormat.M4A)
         return stream_info_av
     '''getdecryptionkeylegacy'''
@@ -637,11 +554,9 @@ class AppleMusicClientDownloadSongUtils:
     def getdecryptionkeylegacy(stream_info: StreamInfoAv, cdm: Cdm, apple_music_api: AppleMusicClientAPIUtils = None, request_overrides: dict = None) -> DecryptionKeyAv:
         stream_info_audio, request_overrides = stream_info.audio_track, request_overrides or {}
         try:
-            cdm_session = cdm.open(); widevine_pssh_data = WidevinePsshData()
-            widevine_pssh_data.algorithm = 1
+            cdm_session = cdm.open(); (widevine_pssh_data := WidevinePsshData()).algorithm = 1
             widevine_pssh_data.key_ids.append(base64.b64decode(stream_info_audio.widevine_pssh.split(",")[1]))
-            pssh_obj = PSSH(widevine_pssh_data.SerializeToString())
-            challenge = base64.b64encode(cdm.get_license_challenge(cdm_session, pssh_obj)).decode()
+            challenge = base64.b64encode(cdm.get_license_challenge(cdm_session, PSSH(widevine_pssh_data.SerializeToString()))).decode()
             license_resp = apple_music_api.getlicenseexchange(stream_info.media_id, stream_info.audio_track.widevine_pssh, challenge, request_overrides=request_overrides)
             cdm.parse_license(cdm_session, license_resp["license"])
             decryption_key = next(i for i in cdm.get_keys(cdm_session) if i.type == "CONTENT")
@@ -666,16 +581,12 @@ class AppleMusicClientDownloadSongUtils:
     '''getplaylistfromcodec'''
     @staticmethod
     def getplaylistfromcodec(m3u8_data: dict, codec: SongCodec) -> dict | None:
-        matching_playlists = [playlist for playlist in m3u8_data["playlists"] if re.fullmatch(SONG_CODEC_REGEX_MAP[codec.value], playlist["stream_info"]["audio"])]
-        if not matching_playlists: return None
+        if not (matching_playlists := [playlist for playlist in m3u8_data["playlists"] if re.fullmatch(SONG_CODEC_REGEX_MAP[codec.value], playlist["stream_info"]["audio"])]): return None
         return max(matching_playlists, key=lambda x: x["stream_info"]["average_bandwidth"])
     '''getm3u8metadata'''
     @staticmethod
     def getm3u8metadata(m3u8_data: dict, data_id: str):
-        for session_data in m3u8_data.get("session_data", []):
-            if session_data["data_id"] == data_id:
-                return json.loads(base64.b64decode(session_data["value"]).decode("utf-8"))
-        return None
+        return next((json.loads(base64.b64decode(sd["value"]).decode("utf-8")) for sd in m3u8_data.get("session_data", []) if sd["data_id"] == data_id), None)
     '''getaudiosessionkeymetadata'''
     @staticmethod
     def getaudiosessionkeymetadata(m3u8_data: dict):
@@ -687,33 +598,22 @@ class AppleMusicClientDownloadSongUtils:
     '''getdrmurifromsessionkey'''
     @staticmethod
     def getdrmurifromsessionkey(drm_infos: dict, drm_ids: list, drm_key: str) -> str | None:
-        for drm_id in drm_ids:
-            if drm_id != "1" and drm_key in drm_infos.get(drm_id, {}):
-                return drm_infos[drm_id][drm_key]["URI"]
-        return None
+        return next((drm_infos[drm_id][drm_key]["URI"] for drm_id in drm_ids if drm_id != "1" and drm_key in drm_infos.get(drm_id, {})), None)
     '''getdrmurifromm3u8keys'''
     @staticmethod
     def getdrmurifromm3u8keys(m3u8_obj: m3u8.M3U8, drm_key: str) -> str | None:
         default_uri = DRM_DEFAULT_KEY_MAPPING[drm_key]
-        for key in m3u8_obj.keys:
-            if key.keyformat == drm_key and key.uri != default_uri: return key.uri
-        return None
+        return next((key.uri for key in m3u8_obj.keys if key.keyformat == drm_key and key.uri != default_uri), None)
     '''getstreaminfo'''
     @staticmethod
     def getstreaminfo(song_metadata: dict, codec: SongCodec, request_overrides: dict = None) -> StreamInfoAv | None:
-        request_overrides = request_overrides or {}
-        m3u8_master_url: str = safeextractfromdict(song_metadata, ['attributes', 'extendedAssetUrls', 'enhancedHls'], None)
-        if not m3u8_master_url: return None
-        m3u8_master_obj = m3u8.loads(requests.get(m3u8_master_url, **request_overrides).text)
-        m3u8_master_data = m3u8_master_obj.data
-        playlist = AppleMusicClientDownloadSongUtils.getplaylistfromcodec(m3u8_master_data, codec)
-        if playlist is None: return None
-        stream_info = StreamInfo()
-        stream_info.stream_url = (f"{m3u8_master_url.rpartition('/')[0]}/{playlist['uri']}")
-        stream_info.codec = playlist["stream_info"]["codecs"]
-        is_mp4 = any(stream_info.codec.startswith(codec) for codec in MP4_FORMAT_CODECS)
-        session_key_metadata = AppleMusicClientDownloadSongUtils.getaudiosessionkeymetadata(m3u8_master_data)
-        if session_key_metadata:
+        request_overrides = dict(request_overrides or {})
+        if not (m3u8_master_url := safeextractfromdict(song_metadata, ['attributes', 'extendedAssetUrls', 'enhancedHls'], None)): return None
+        m3u8_master_data = m3u8.loads(requests.get(m3u8_master_url, **request_overrides).text).data
+        if (playlist := AppleMusicClientDownloadSongUtils.getplaylistfromcodec(m3u8_master_data, codec)) is None: return None
+        (stream_info := StreamInfo()).stream_url = (f"{str(m3u8_master_url).rpartition('/')[0]}/{playlist['uri']}")
+        stream_info.codec = playlist["stream_info"]["codecs"]; is_mp4 = any(stream_info.codec.startswith(codec) for codec in MP4_FORMAT_CODECS)
+        if (session_key_metadata := AppleMusicClientDownloadSongUtils.getaudiosessionkeymetadata(m3u8_master_data)):
             asset_metadata = AppleMusicClientDownloadSongUtils.getassetmetadata(m3u8_master_data)
             drm_ids = asset_metadata[playlist["stream_info"]["stable_variant_id"]]["AUDIO-SESSION-KEY-IDS"]
             stream_info.widevine_pssh = AppleMusicClientDownloadSongUtils.getdrmurifromsessionkey(session_key_metadata, drm_ids, "urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
@@ -733,21 +633,17 @@ class AppleMusicClientDownloadSongUtils:
     '''getcoverurltemplate'''
     @staticmethod
     def getcoverurltemplate(metadata: dict, cover_format: CoverFormat) -> str:
-        if cover_format == CoverFormat.RAW:
-            cover_url_template = AppleMusicClientDownloadSongUtils.getrawcoverurl(metadata["attributes"]["artwork"]["url"])
-        cover_url_template = metadata["attributes"]["artwork"]["url"]
+        cover_url_template = AppleMusicClientDownloadSongUtils.getrawcoverurl(metadata["attributes"]["artwork"]["url"]) if cover_format == CoverFormat.RAW else metadata["attributes"]["artwork"]["url"]
         return cover_url_template
     '''getcoverurl'''
     @staticmethod
     def getcoverurl(cover_url_template: str, cover_size: int, cover_format: CoverFormat) -> str:
-        cover_url = re.sub(r"\{w\}x\{h\}([a-z]{2})\.jpg", (f"{cover_size}x{cover_size}bb.{cover_format.value}" if cover_format != CoverFormat.RAW else ""), cover_url_template)
-        return cover_url
+        return re.sub(r"\{w\}x\{h\}([a-z]{2})\.jpg", (f"{cover_size}x{cover_size}bb.{cover_format.value}" if cover_format != CoverFormat.RAW else ""), cover_url_template)
     '''getdownloaditem'''
     @staticmethod
     def getdownloaditem(song_metadata: dict, playlist_metadata: dict, synced_lyrics_format: SyncedLyricsFormat = SyncedLyricsFormat.LRC, codec: SongCodec = SongCodec.AAC_LEGACY, apple_music_api: AppleMusicClientAPIUtils = None, itunes_api: AppleMusicClientItunesApiUtils = None, use_album_date: bool = False, fetch_extra_tags: bool = False, use_wrapper: bool = False, cover_format: CoverFormat = CoverFormat.JPG, cover_size: int = 1200, request_overrides: dict = None):
         # init
-        request_overrides = request_overrides or {}
-        download_item = DownloadItem()
+        request_overrides, download_item = request_overrides or {}, DownloadItem()
         download_item.media_metadata, download_item.playlist_metadata = song_metadata, playlist_metadata
         # lyrics
         song_id = AppleMusicClientDownloadSongUtils.getmediaidoflibrarymedia(song_metadata)
@@ -760,15 +656,8 @@ class AppleMusicClientDownloadSongUtils:
         # None for all paths as default value, auto set after searching
         download_item.final_path = None; download_item.synced_lyrics_path = None; download_item.staged_path = None; download_item.playlist_file_path = None
         # stream info and decryption key
-        if codec.islegacy():
-            download_item.stream_info = AppleMusicClientDownloadSongUtils.getstreaminfolegacy(webplayback, codec, request_overrides)
-            download_item.decryption_key = AppleMusicClientDownloadSongUtils.getdecryptionkeylegacy(download_item.stream_info, AppleMusicClientDownloadSongUtils.cdm, apple_music_api=apple_music_api, request_overrides=request_overrides)
-        else:
-            download_item.stream_info = AppleMusicClientDownloadSongUtils.getstreaminfo(song_metadata, codec, request_overrides=request_overrides)
-            if (not use_wrapper and download_item.stream_info and download_item.stream_info.audio_track.widevine_pssh):
-                download_item.decryption_key = AppleMusicClientDownloadSongUtils.getdecryptionkey(download_item.stream_info, AppleMusicClientDownloadSongUtils.cdm, apple_music_api=apple_music_api, request_overrides=request_overrides)
-            else:
-                download_item.decryption_key = None
+        if codec.islegacy(): download_item.stream_info = AppleMusicClientDownloadSongUtils.getstreaminfolegacy(webplayback, codec, request_overrides); download_item.decryption_key = AppleMusicClientDownloadSongUtils.getdecryptionkeylegacy(download_item.stream_info, AppleMusicClientDownloadSongUtils.cdm, apple_music_api=apple_music_api, request_overrides=request_overrides)
+        else: download_item.stream_info = AppleMusicClientDownloadSongUtils.getstreaminfo(song_metadata, codec, request_overrides=request_overrides); download_item.decryption_key = AppleMusicClientDownloadSongUtils.getdecryptionkey(download_item.stream_info, AppleMusicClientDownloadSongUtils.cdm, apple_music_api=apple_music_api, request_overrides=request_overrides) if (not use_wrapper and download_item.stream_info and download_item.stream_info.audio_track.widevine_pssh) else None
         # cover url
         download_item.cover_url_template = AppleMusicClientDownloadSongUtils.getcoverurltemplate(song_metadata, cover_format)
         download_item.cover_url = AppleMusicClientDownloadSongUtils.getcoverurl(download_item.cover_url_template, cover_size, cover_format)
@@ -779,33 +668,27 @@ class AppleMusicClientDownloadSongUtils:
     '''remuxmp4box'''
     @staticmethod
     def remuxmp4box(input_path: str, output_path: str, silent: bool = False, artist: str = ''):
-        cmd = ["MP4Box", "-quiet", "-add", input_path, "-itags", f"artist={artist}", "-keep-utc", "-new", output_path]
-        capture_output = True if silent else False
-        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        cmd = MP4BoxAddCommand().build(input_path=input_path, output_path=output_path, itags=f"artist={artist}")
+        ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''remuxffmpeg'''
     @staticmethod
     def remuxffmpeg(input_path: str, output_path: str, decryption_key: str = None, silent: bool = False):
-        key = ["-decryption_key", decryption_key] if decryption_key else []
-        cmd = ['ffmpeg', "-loglevel", "error", "-y", *key, "-i", input_path, "-c", "copy", "-movflags", "+faststart", output_path]
-        capture_output = True if silent else False
-        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        cmd = FFmpegDecryptRemuxCommand().build(input_path, output_path, decryption_key)
+        ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''decryptmp4decrypt'''
     @staticmethod
     def decryptmp4decrypt(input_path: str, output_path: str, decryption_key: str, legacy: bool, silent: bool = False):
-        if legacy: keys = ["--key", f"1:{decryption_key}"]
-        else: AppleMusicClientDownloadSongUtils.fixkeyid(input_path); keys = ["--key", "0" * 31 + "1" + f":{decryption_key}", "--key", "0" * 32 + f":{DEFAULT_SONG_DECRYPTION_KEY}"]
-        cmd = ["mp4decrypt", *keys, input_path, output_path]
-        capture_output = True if silent else False
-        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        if not legacy: AppleMusicClientDownloadSongUtils.fixkeyid(input_path)
+        keys = [f"1:{decryption_key}"] if legacy else ["0" * 31 + "1" + f":{decryption_key}", "0" * 32 + f":{DEFAULT_SONG_DECRYPTION_KEY}"]
+        ret = subprocess.run(Mp4DecryptCommand().build(input_path, output_path, keys), check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''decryptamdecrypt'''
     @staticmethod
     def decryptamdecrypt(input_path: str, output_path: str, media_id: str, fairplay_key: str, wrapper_decrypt_ip: str = "127.0.0.1:10020", silent: bool = False):
-        cmd = ['amdecrypt', wrapper_decrypt_ip, shutil.which('mp4decrypt'), media_id, fairplay_key, input_path, output_path]
-        capture_output = True if silent else False
-        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        cmd = AmdecryptCommand().build(wrapper_decrypt_ip=wrapper_decrypt_ip, media_id=media_id, fairplay_key=fairplay_key, input_path=input_path, output_path=output_path)
+        ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''stage'''
     @staticmethod
@@ -821,27 +704,17 @@ class AppleMusicClientDownloadSongUtils:
     '''downloadstreamwithnm3u8dlre'''
     @staticmethod
     def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
-        download_path_obj = Path(download_path)
-        download_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        (download_path_obj := Path(download_path)).parent.mkdir(parents=True, exist_ok=True)
         log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
-        cmd = [
-            "N_m3u8DL-RE", stream_url, "--binary-merge", "--ffmpeg-binary-path", shutil.which('ffmpeg'), "--save-name", download_path_obj.stem, 
-            "--save-dir", download_path_obj.parent, "--tmp-dir", download_path_obj.parent, "--log-file-path", log_file_path,
-        ]
-        capture_output = True if silent else False
-        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path)
+        ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''download'''
     @staticmethod
     def download(download_item: DownloadItem, work_dir: str = './', silent: bool = False, codec: SongCodec = SongCodec.AAC_LEGACY, wrapper_decrypt_ip: str = "127.0.0.1:10020", remux_mode: RemuxMode = RemuxMode.MP4BOX, artist: str = "", use_wrapper: bool = False):
-        ext = download_item.stream_info.file_format.value
-        encrypted_path = os.path.join(work_dir, f"{download_item.random_uuid}_encrypted.m4a")
-        is_success = AppleMusicClientDownloadSongUtils.downloadstreamwithnm3u8dlre(download_item.stream_info.audio_track.stream_url, encrypted_path, silent=silent, random_uuid=download_item.random_uuid)
-        decrypted_path = os.path.join(work_dir, f"{download_item.random_uuid}_decrypted.m4a")
-        download_item.staged_path = os.path.join(work_dir, f"{download_item.random_uuid}_staged.{ext}")
-        is_success = AppleMusicClientDownloadSongUtils.stage(
-            encrypted_path=encrypted_path, decrypted_path=decrypted_path, staged_path=download_item.staged_path, decryption_key=download_item.decryption_key,
-            codec=codec, media_id=download_item.media_metadata["id"], fairplay_key=download_item.stream_info.audio_track.fairplay_key, remux_mode=remux_mode,
-            silent=silent, wrapper_decrypt_ip=wrapper_decrypt_ip, artist=artist, use_wrapper=use_wrapper,
+        AppleMusicClientDownloadSongUtils.downloadstreamwithnm3u8dlre(download_item.stream_info.audio_track.stream_url, (encrypted_path := os.path.join(work_dir, f"{download_item.random_uuid}_encrypted.m4a")), silent=silent, random_uuid=download_item.random_uuid)
+        download_item.staged_path = os.path.join(work_dir, f"{download_item.random_uuid}_staged.{download_item.stream_info.file_format.value}")
+        AppleMusicClientDownloadSongUtils.stage(
+            encrypted_path=encrypted_path, decrypted_path=os.path.join(work_dir, f"{download_item.random_uuid}_decrypted.m4a"), staged_path=download_item.staged_path, decryption_key=download_item.decryption_key, codec=codec, artist=artist, 
+            media_id=download_item.media_metadata["id"], fairplay_key=download_item.stream_info.audio_track.fairplay_key, remux_mode=remux_mode, silent=silent, wrapper_decrypt_ip=wrapper_decrypt_ip, use_wrapper=use_wrapper,
         )
-        return is_success

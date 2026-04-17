@@ -11,6 +11,8 @@ import copy
 import click
 import json_repair
 from threading import Lock
+from itertools import chain
+from contextlib import suppress
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
@@ -54,7 +56,7 @@ class MusicClient():
     LOSSLESS_QUALITY_DEFINITIONS = {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'}
     def __init__(self, music_sources: list = [], init_music_clients_cfg: dict = {}, clients_threadings: dict = {}, requests_overrides: dict = {}, search_rules: dict = {}, logger_handle = None):
         # prepare and assert
-        if isinstance(music_sources, str): music_source = [music_sources]
+        music_sources = [music_sources] if isinstance(music_sources, str) else music_sources
         assert isinstance(music_sources, Iterable) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and isinstance(requests_overrides, dict) and isinstance(search_rules, dict)
         music_sources, init_music_clients_cfg, clients_threadings, requests_overrides, search_rules = copy.deepcopy(music_sources), copy.deepcopy(init_music_clients_cfg), copy.deepcopy(clients_threadings), copy.deepcopy(requests_overrides), copy.deepcopy(search_rules)
         # set attributes
@@ -86,69 +88,47 @@ class MusicClient():
         print(BASIC_INFO % (__version__, ', '.join([f'"{v} for {k}"' for k, v in self.work_dirs.items()])))
         printfullline(ch='-')
     '''printandselectsearchresults'''
-    def printandselectsearchresults(self, search_results: dict) -> list[SongInfo]:
+    def printandselectsearchresults(self, search_results: dict[str, list[SongInfo]]) -> list[SongInfo]:
         print_titles, print_items, song_infos, row_ids, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, [], 0
         for _, per_search_results in search_results.items():
             for search_result in per_search_results:
                 song_info_pointer += 1; song_infos[str(song_info_pointer)] = search_result; row_ids.append(str(song_info_pointer))
                 print_items.append([
-                    colorize(str(song_info_pointer), 'number'), colorize(str(search_result['singers'])[:12] + '...' if len(str(search_result['singers'])) > 15 else str(search_result['singers']), 'singer'), str(search_result['song_name']), 
-                    str(search_result['file_size']) if search_result['ext'] not in MusicClient.LOSSLESS_QUALITY_DEFINITIONS else colorize(str(search_result['file_size']), 'flac'), str(search_result['duration']), str(search_result['album']), 
-                    colorize('|'.join([str(s).upper() for s in [str(search_result['source']).removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight')
+                    colorize(str(song_info_pointer), 'number'), colorize(str(search_result.singers)[:12] + '...' if len(str(search_result.singers)) > 15 else str(search_result.singers), 'singer'), str(search_result.song_name), 
+                    str(search_result.file_size) if search_result.ext not in MusicClient.LOSSLESS_QUALITY_DEFINITIONS else colorize(str(search_result.file_size), 'flac'), str(search_result.duration), str(search_result.album),
+                    colorize('|'.join([str(s).upper() for s in [str(search_result.source).removesuffix('MusicClient'), search_result.root_source] if s]), 'highlight'),
                 ])
         if not print_items: self.logger_handle.warning('No songs found from %s' % ', '.join(self.music_sources)); return []
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
         picked_ids = cursorpickintable(print_titles, print_items, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
-        id2row = dict(zip(row_ids, print_items))
-        selected_rows = [id2row[i] for i in picked_ids if i in id2row]
-        if selected_rows: print("\nSelected songs:\n"); print(smarttrunctable(headers=print_titles, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6]))
-        else: print("\nNo songs selected.\n")
-        selected_song_infos = [song_infos[i] for i in picked_ids if i in song_infos]
-        return selected_song_infos
+        selected_rows = [id2row[i] for i in picked_ids if i in (id2row := dict(zip(row_ids, print_items)))]
+        print("\nNo songs selected.\n") if not selected_rows else (print("\nSelected songs:\n"), print(smarttrunctable(headers=print_titles, rows=selected_rows, no_trunc_cols=[0, 1, 3, 4, 6])))
+        return [song_infos[i] for i in picked_ids if i in song_infos]
     '''startcmdui'''
     def startcmdui(self):
         while True:
-            self.printbasicinfo()
-            user_input_keyword = self.processinputs('Please enter keywords to search for songs: ')
-            search_results = self.search(keyword=user_input_keyword)
+            self.printbasicinfo(); search_results = self.search(keyword=self.processinputs('Please enter keywords to search for songs: '))
             selected_song_infos, final_selected_song_infos = self.printandselectsearchresults(search_results=search_results), []
             for song_info in selected_song_infos:
-                if song_info.episodes: final_selected_song_infos.extend(self.printandselectsearchresults({song_info.source: song_info.episodes}))
-                else: final_selected_song_infos.append(song_info)
+                final_selected_song_infos.extend(self.printandselectsearchresults({song_info.source: song_info.episodes})) if song_info.episodes else final_selected_song_infos.append(song_info)
             self.download(final_selected_song_infos)
     '''search'''
-    def search(self, keyword):
+    def search(self, keyword) -> dict[str, list[SongInfo]]:
         self.logger_handle.info(f'Searching {colorize(keyword, "highlight")} From {colorize("|".join(self.music_sources), "highlight")}')
         max_workers, main_progress_lock = min(len(self.music_sources), 10), Lock()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
-            main_progress_id = main_process_context.add_task(f"Search from sources >>> completed (0/0)", total=0)
+            main_progress_id = main_process_context.add_task(f"Search From Sources >>> Completed (0/0) Search URLs", total=0)
             def search_func(ms):
-                try:
-                    return ms, self.music_clients[ms].search(
-                        keyword=keyword, num_threadings=self.clients_threadings[ms], request_overrides=self.requests_overrides[ms], rule=self.search_rules[ms], 
-                        main_process_context=main_process_context, main_progress_id=main_progress_id, main_progress_lock=main_progress_lock,
-                    )
-                except Exception as err:
-                    self.logger_handle.error(f'MusicClient.{ms}.search >>> {keyword} (Error: {err})')
-                    return ms, []
-            with ThreadPoolExecutor(max_workers=max_workers) as ex:
-                return dict(ex.map(search_func, self.music_sources))
+                try: return ms, self.music_clients[ms].search(keyword=keyword, num_threadings=self.clients_threadings[ms], request_overrides=self.requests_overrides[ms], rule=self.search_rules[ms], main_process_context=main_process_context, main_progress_id=main_progress_id, main_progress_lock=main_progress_lock)
+                except Exception as err: self.logger_handle.error(f'MusicClient.{ms}.search >>> {keyword} (Error: {err})'); return ms, []
+            with ThreadPoolExecutor(max_workers=max_workers) as ex: return dict(ex.map(search_func, self.music_sources))
     '''download'''
-    def download(self, song_infos: list[dict], progress_handler=None):
-        classified_song_infos = {}
-        for song_info in song_infos:
-            if song_info['source'] in classified_song_infos:
-                classified_song_infos[song_info['source']].append(song_info)
-            else:
-                classified_song_infos[song_info['source']] = [song_info]
-        all_downloaded_infos = []
+    def download(self, song_infos: list[dict[SongInfo]] | dict[str, list[SongInfo]], progress_handler=None) -> list[SongInfo]:
+        classified_song_infos: dict[str, list[SongInfo]] = {}; downloaded_song_infos: list[SongInfo] = []
+        song_infos: list[SongInfo] = song_infos if isinstance(song_infos, list) else list(chain.from_iterable(song_infos.values()))
+        for song_info in song_infos: classified_song_infos.setdefault(song_info.source, []).append(song_info)
         for source, source_song_infos in classified_song_infos.items():
-            downloaded_songs = self.music_clients[source].download(
-                song_infos=source_song_infos, 
-                num_threadings=self.clients_threadings[source], 
-                request_overrides=self.requests_overrides[source],
-                progress_handler=progress_handler
-            )
+            downloaded_songs = self.music_clients[source].download(song_infos=source_song_infos, num_threadings=self.clients_threadings[source], request_overrides=self.requests_overrides[source], progress_handler=progress_handler)
             
             # Fetch lyrics via LDDC for downloaded songs
             for song_info in downloaded_songs:
@@ -158,19 +138,12 @@ class MusicClient():
                    if lyrics:
                        self.logger_handle.info(f'LDDC: Successfully fetched lyrics for {song_info.song_name}')
                        song_info.lyric = lyrics
-                       # Re-save to txt or update properties if needed by downstream
-                       # Note: download() has already saved txt and embedded lyrics (if available previously)
-                       # We need to update the txt file and maybe re-embed if fetch_lyrics_via_lddc didn't fully handle it or for consistency.
-                       # fetch_lyrics_via_lddc with embed=True handles embedding in the audio file directly via bridge.
-                       # We should update the info file.
                        try:
                            import os
                            txt_path = os.path.splitext(song_info.save_path)[0] + ".txt"
                            if os.path.exists(txt_path):
-                               # Read existing lines
                                with open(txt_path, 'r', encoding='utf-8') as f:
                                    lines = f.readlines()
-                               # Rewrite with new lyrics
                                with open(txt_path, 'w', encoding='utf-8') as f:
                                    in_lyrics = False
                                    for line in lines:
@@ -190,22 +163,19 @@ class MusicClient():
                 except Exception as e:
                     self.logger_handle.error(f'LDDC Lyric Fetch Error for {song_info.song_name}: {e}')
             
-            all_downloaded_infos.extend(downloaded_songs)
+            downloaded_song_infos.extend(downloaded_songs)
+        return downloaded_song_infos
     '''parseplaylist'''
-    def parseplaylist(self, playlist_url):
-        song_infos = []
+    def parseplaylist(self, playlist_url: str) -> list[SongInfo]:
+        song_infos: list[SongInfo] = []
         for source in list(self.music_clients.keys()):
-            try:
-                self.logger_handle.info(f'MusicClient.parseplaylist >>> Trying source: {source}')
-                result = self.music_clients[source].parseplaylist(playlist_url)
-                self.logger_handle.info(f'MusicClient.parseplaylist >>> {source} returned {len(result) if result else 0} songs')
-                if result and len(result) > 0:
-                    song_infos = result
-                    self.logger_handle.info(f'MusicClient.parseplaylist >>> Successfully parsed {len(song_infos)} songs from {source}')
-                    break  # CRITICAL: Break after first successful parse
-            except Exception as e:
-                self.logger_handle.error(f'MusicClient.parseplaylist >>> {source} failed: {e}')
-                continue
+            self.logger_handle.info(f'MusicClient.parseplaylist >>> Trying source: {source}')
+            with suppress(Exception): song_infos = self.music_clients[source].parseplaylist(playlist_url, request_overrides=self.requests_overrides[source])
+            if len(song_infos := song_infos or []) > 0: 
+                self.logger_handle.info(f'MusicClient.parseplaylist >>> Successfully parsed {len(song_infos)} songs from {source}')
+                break
+            else:
+                self.logger_handle.info(f'MusicClient.parseplaylist >>> {source} returned 0 songs or failed')
         self.logger_handle.info(f'MusicClient.parseplaylist >>> Final result: {len(song_infos)} songs')
         return (song_infos or [])
     '''processinputs'''
@@ -226,27 +196,13 @@ class MusicClient():
 '''MusicClientCMD'''
 @click.command()
 @click.version_option()
-@click.option(
-    '-k', '--keyword', default=None, help='The keywords for the music search. If left empty, an interactive terminal will open automatically.', type=str, show_default=True,
-)
-@click.option(
-    '-p', '--playlist-url', '--playlist_url', default=None, help='Given a playlist URL, e.g., "https://music.163.com/#/playlist?id=7583298906", musicdl automatically parses the playlist and downloads all tracks in it.', type=str, show_default=True,
-)
-@click.option(
-    '-m', '--music-sources', '--music_sources', default=','.join(DEFAULT_MUSIC_SOURCES), help='The music search and download sources.', type=str, show_default=True, 
-)
-@click.option(
-    '-i', '--init-music-clients-cfg', '--init_music_clients_cfg', default=None, help='Config such as `work_dir` for each music client as a JSON string.', type=str, show_default=True,
-)
-@click.option(
-    '-r', '--requests-overrides', '--requests_overrides', default=None, help='Requests.get / Requests.post kwargs such as `headers` and `proxies` for each music client as a JSON string.', type=str, show_default=True,
-)
-@click.option(
-    '-c', '--clients-threadings', '--clients_threadings', default=None, help='Number of threads used for each music client as a JSON string.', type=str, show_default=True,
-)
-@click.option(
-    '-s', '--search-rules', '--search_rules', default=None, help='Search rules for each music client as a JSON string.', type=str, show_default=True,
-)
+@click.option('-k', '--keyword', default=None, help='The keywords for the music search. If left empty, an interactive terminal will open automatically.', type=str, show_default=True)
+@click.option('-p', '--playlist-url', '--playlist_url', default=None, help='Given a playlist URL, e.g., "https://music.163.com/#/playlist?id=7583298906", musicdl automatically parses the playlist and downloads all tracks in it.', type=str, show_default=True)
+@click.option('-m', '--music-sources', '--music_sources', default=','.join(DEFAULT_MUSIC_SOURCES), help='The music search and download sources.', type=str, show_default=True)
+@click.option('-i', '--init-music-clients-cfg', '--init_music_clients_cfg', default=None, help='Config such as `work_dir` for each music client as a JSON string.', type=str, show_default=True)
+@click.option('-r', '--requests-overrides', '--requests_overrides', default=None, help='Requests.get / Requests.post kwargs such as `headers` and `proxies` for each music client as a JSON string.', type=str, show_default=True)
+@click.option('-c', '--clients-threadings', '--clients_threadings', default=None, help='Number of threads used for each music client as a JSON string.', type=str, show_default=True)
+@click.option('-s', '--search-rules', '--search_rules', default=None, help='Search rules for each music client as a JSON string.', type=str, show_default=True)
 def MusicClientCMD(keyword: str, playlist_url: str, music_sources: str, init_music_clients_cfg: str, requests_overrides: str, clients_threadings: str, search_rules: str):
     # parse playlist url
     assert keyword is None or playlist_url is None, '"playlist_url" and "keyword" could not be set simultaneously'
@@ -255,19 +211,13 @@ def MusicClientCMD(keyword: str, playlist_url: str, music_sources: str, init_mus
     init_music_clients_cfg = safe_load_func(init_music_clients_cfg); requests_overrides = safe_load_func(requests_overrides)
     clients_threadings = safe_load_func(clients_threadings); search_rules = safe_load_func(search_rules)
     # instance music client
-    music_sources = music_sources.replace(' ', '').split(',')
+    music_sources = [ms.strip() for ms in music_sources.replace(' ', '').split(',') if ms.strip()]
     music_client = MusicClient(music_sources=music_sources, init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings, requests_overrides=requests_overrides, search_rules=search_rules)
     # switch according to keyword and playlist_url
-    if (keyword is None) and (playlist_url is None):
-        music_client.startcmdui()
-    elif playlist_url is not None:
-        print(music_client)
-        song_infos = music_client.parseplaylist(playlist_url)
-        music_client.download(song_infos=song_infos)
+    if (keyword is None) and (playlist_url is None): music_client.startcmdui()
+    elif playlist_url is not None: print(music_client); music_client.download(song_infos=music_client.parseplaylist(playlist_url))
     else:
-        print(music_client)
-        search_results = music_client.search(keyword=keyword)
-        selected_song_infos, final_selected_song_infos = music_client.printandselectsearchresults(search_results=search_results), []
+        print(music_client); selected_song_infos, final_selected_song_infos = music_client.printandselectsearchresults(search_results=music_client.search(keyword=keyword)), []
         for song_info in selected_song_infos:
             if song_info.episodes: final_selected_song_infos.extend(music_client.printandselectsearchresults({song_info.source: song_info.episodes}))
             else: final_selected_song_infos.append(song_info)

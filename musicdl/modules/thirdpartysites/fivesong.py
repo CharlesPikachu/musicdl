@@ -8,10 +8,11 @@ WeChat Official Account (微信公众号):
 '''
 import re
 from bs4 import BeautifulSoup
+from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse
-from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, seconds2hms, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester
+from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''FiveSongMusicClient'''
@@ -42,7 +43,7 @@ class FiveSongMusicClient(BaseMusicClient):
     def _parsesearchresultsfromhtml(self, html_text: str):
         soup, base_url, search_results = BeautifulSoup(html_text, "lxml"), "https://www.5song.xyz", []
         for li in soup.select("div.list ul > li"):
-            if not (a := li.select_one("a[href]")): continue
+            if not (a := li.select_one("a[href]")) or not a.get("href", "").strip(): continue
             href = a.get("href", "").strip(); detail_url = urljoin(base_url, href)
             title_el = a.select_one("div.con div.t h3"); title = title_el.get_text(strip=True) if title_el else None
             formats = [s.get_text(strip=True) for s in a.select("div.con div.t span") if s.get_text(strip=True)]
@@ -63,51 +64,41 @@ class FiveSongMusicClient(BaseMusicClient):
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            search_results = self._parsesearchresultsfromhtml(resp.text)
-            for search_result in search_results:
+            for search_result in self._parsesearchresultsfromhtml(resp.text):
                 # --download results
                 if not isinstance(search_result, dict) or ('detail_url' not in search_result): continue
-                song_info, song_id = SongInfo(source=self.source), urlparse(str(search_result['detail_url'])).path.strip('/').split('/')[-1].split('.')[0]
-                # ----fetch basic information
-                try: (resp := self.get(search_result['detail_url'], **request_overrides)).raise_for_status()
-                except Exception: continue
-                soup, quark_links = BeautifulSoup(resp.text, "lxml"), []
-                for li in soup.select("div.download ul li[data-url]"):
+                song_info, song_id, quark_links = SongInfo(source=self.source), urlparse(str(search_result['detail_url'])).path.strip('/').split('/')[-1].split('.')[0], []
+                # ----obtain basic information
+                with suppress(Exception): (resp := self.get(search_result['detail_url'], **request_overrides)).raise_for_status()
+                if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
+                for li in (soup := BeautifulSoup(resp.text, "lxml")).select("div.download ul li[data-url]"):
                     if not (quark_url := (li.get("data-url") or "").strip()): continue
-                    a = li.select_one("a[href]"); label = a.get_text(" ", strip=True) if a else None
-                    pc_download_href = a.get("href", "").strip() if a else None
-                    pc_download_url = urljoin(base_url, pc_download_href) if pc_download_href else None
+                    label = a.get_text(" ", strip=True) if (a := li.select_one("a[href]")) else None
+                    pc_download_url = urljoin(base_url, pc_download_href) if (pc_download_href := a.get("href", "").strip() if a else None) else None
                     if "quark" in quark_url: quark_links.append({"label": label, "quark_url": quark_url, "pc_download_url": pc_download_url})
-                if not quark_links: continue
-                download_result = dict(quark_links=quark_links)
+                if not (download_result := dict(quark_links=quark_links))['quark_links']: continue
                 # ----parse from quark links
                 for quark_link in sort_by_audio_quality_func(download_result['quark_links']):
                     download_result['quark_parse_result'], download_url = QuarkParser.parsefromurl(quark_link['quark_url'], **self.quark_parser_config)
                     if not download_url or not str(download_url).startswith('http'): continue
-                    duration = [int(float(d)) for d in searchdictbykey(download_result, 'duration') if int(float(d)) > 0]
-                    duration_in_secs = duration[0] if duration else 0
+                    download_url_status: dict = self.quark_audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+                    duration_in_secs = duration[0] if (duration := [int(float(d)) for d in searchdictbykey(download_result, 'duration') if int(float(d)) > 0]) else 0
                     song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('singer')), album='NULL', ext='mp3', file_size_bytes=None, file_size=None, 
-                        identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=cleanlrc("\n".join([p.get_text(strip=True) for p in soup.select_one("div.viewCon div.text").select("p") if p.get_text(strip=True)])), cover_url=search_result.get('cover_url'),
-                        download_url=download_url, download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers,
+                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('singer')), album='NULL', ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, 
+                        duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc("\n".join([p.get_text(strip=True) for p in soup.select_one("div.viewCon div.text").select("p") if p.get_text(strip=True)])), cover_url=search_result.get('cover_url'), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.quark_default_download_headers,
                     )
-                    song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
-                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
-                    if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
-                    elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
-                    if song_info.with_valid_download_url: break
+                    if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+                # ----supplement some meta information
                 if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
-                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
-                # ----filter if invalid
-                if not song_info.with_valid_download_url: continue
+                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
                 # --append to song_infos
-                song_infos.append(song_info)
+                if song_info.with_valid_download_url: song_infos.append(song_info)
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
-        # return
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
+            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
         return song_infos

@@ -20,9 +20,8 @@ class BaseModuleBuilder():
             for name, module in requires_renew_modules.items(): self.renew(name, module)
         self.validate()
     '''build'''
-    def build(self, module_cfg):
-        module_cfg = copy.deepcopy(module_cfg)
-        module_type = module_cfg.pop('type')
+    def build(self, module_cfg: dict):
+        module_type = (module_cfg := copy.deepcopy(module_cfg)).pop('type')
         module = self.REGISTERED_MODULES[module_type](**module_cfg)
         return module
     '''register'''

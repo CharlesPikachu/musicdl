@@ -10,6 +10,7 @@ import random
 import requests
 import ipaddress
 from bisect import bisect
+from itertools import accumulate
 from typing import List, Optional, Sequence
 
 
@@ -31,14 +32,12 @@ class RandomIPGenerator:
         else: return self._randomglobalipv6()
     '''randomipv4scn'''
     def randomipv4scn(self, num_samples: int = 1) -> List[str]:
-        def buildsampler_func(blocks):
-            cum, s = [], 0
-            for _, c in blocks: s += c; cum.append(s)
-            total = s
+        def build_sampler_func(blocks):
+            cum = list(accumulate(c for _, c in blocks)); total = cum[-1] if cum else 0
             def sample_func(n=10): out=[]; [out.append(str(ipaddress.IPv4Address((lambda bc: bc[0]+random.randrange(bc[1]))(blocks[bisect(cum, random.randrange(total))])))) for _ in range(n)]; return out
             return sample_func
         blocks = self._loadcnipv4blocks()
-        sampler = buildsampler_func(blocks)
+        sampler = build_sampler_func(blocks)
         return sampler(num_samples)
     '''addrandomipv4toheaders'''
     def addrandomipv4toheaders(self, headers: dict = None, prefix: Optional[str] = None) -> dict:
@@ -48,17 +47,13 @@ class RandomIPGenerator:
         return headers
     '''_loadcnipv4blocks'''
     def _loadcnipv4blocks(self):
-        text = requests.get("https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest", timeout=30).text.splitlines()
-        blocks = []
+        text, blocks = requests.get("https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest", timeout=30).text.splitlines(), []
         for line in text:
             if not line or line.startswith("#"): continue
-            parts = line.strip().split("|")
-            if len(parts) < 7: continue
+            if len((parts := line.strip().split("|"))) < 7: continue
             _, cc, rtype, start, value, _, status = parts[:7]
-            if cc != "CN" or rtype != "ipv4": continue
-            if status not in ("allocated", "assigned"): continue
-            base = int(ipaddress.IPv4Address(start))
-            count = int(value)
+            if (cc != "CN") or (rtype != "ipv4") or (status not in ("allocated", "assigned")): continue
+            base, count = int(ipaddress.IPv4Address(start)), int(value)
             if count > 0: blocks.append((base, count))
         if not blocks: raise RuntimeError("No CN IPv4 blocks found. Check APNIC file format/URL.")
         return blocks
@@ -66,21 +61,18 @@ class RandomIPGenerator:
     def _randomipv4inprefix(self, prefix: str) -> str:
         net = ipaddress.IPv4Network(prefix, strict=False)
         if net.prefixlen <= 30:
-            network_int = int(net.network_address)
-            broadcast_int = int(net.broadcast_address)
+            network_int, broadcast_int = int(net.network_address), int(net.broadcast_address)
             if broadcast_int - network_int <= 2: candidate_int = random.randint(network_int, broadcast_int)
             else: candidate_int = random.randint(network_int + 1, broadcast_int - 1)
         else:
             offset = random.randrange(net.num_addresses)
             candidate_int = int(net.network_address) + offset
-        addr = ipaddress.IPv4Address(candidate_int)
-        return str(addr)
+        return str(ipaddress.IPv4Address(candidate_int))
     '''_randomglobalipv4'''
     def _randomglobalipv4(self) -> str:
         attempts = 0
         while attempts < self.max_attempts:
-            attempts += 1
-            candidate_int = random.getrandbits(32)
+            attempts += 1; candidate_int = random.getrandbits(32)
             addr = ipaddress.IPv4Address(candidate_int)
             if addr.is_global: return str(addr)
         return str(addr)
@@ -90,14 +82,12 @@ class RandomIPGenerator:
         host_bits = 128 - net.prefixlen
         rand_host = random.getrandbits(host_bits)
         addr_int = int(net.network_address) + rand_host
-        addr = ipaddress.IPv6Address(addr_int)
-        return str(addr)
+        return str(ipaddress.IPv6Address(addr_int))
     '''_randomglobalipv6'''
     def _randomglobalipv6(self) -> str:
         attempts = 0
         while attempts < self.max_attempts:
-            attempts += 1
-            candidate_int = random.getrandbits(128)
+            attempts += 1; candidate_int = random.getrandbits(128)
             addr = ipaddress.IPv6Address(candidate_int)
             if addr.is_global: return str(addr)
         return str(addr)

@@ -12,6 +12,7 @@ Welcome to Musicdl's documentation!
 	Disclaimer.md
 	Install.md
 	Quickstart.md
+	Clients.md
 	API.md
 	Playground.md
 	Changelog.md
