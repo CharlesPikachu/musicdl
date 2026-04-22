@@ -664,16 +664,16 @@ class MainWindow(QMainWindow):
     def _download_and_process(self, songs_to_download, progress_signal):
         """Download and process songs (runs in worker thread)."""
         gui_progress = GUIProgress(signal=progress_signal)
-        self.music_client.download(songs_to_download, progress_handler=gui_progress)
+        downloaded_songs = self.music_client.download(songs_to_download, progress_handler=gui_progress)
         
         target_dir = self.settings.value(
             "download_path", 
             os.path.join(os.getcwd(), 'musicdl_outputs')
         )
         
-        self.log_signal.log.emit("INFO", f"Processing {len(songs_to_download)} downloaded files...")
+        self.log_signal.log.emit("INFO", f"Processing {len(downloaded_songs)} downloaded files...")
         
-        for song_info in songs_to_download:
+        for song_info in downloaded_songs:
             try:
                 org_path = (
                     song_info.save_path if hasattr(song_info, 'save_path') 
@@ -845,7 +845,7 @@ class MainWindow(QMainWindow):
                     f"Failed to process {getattr(song_info, 'song_name', 'Unknown')}: {str(e)}"
                 )
         
-        return songs_to_download
+        return downloaded_songs
     
     def _on_download_finished(self, result):
         """Handle download completion."""
