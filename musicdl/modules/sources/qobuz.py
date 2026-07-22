@@ -14,6 +14,7 @@ import base64
 import struct
 import tempfile
 import requests
+import threading
 from contextlib import suppress
 from .base import BaseMusicClient
 from ..utils.hosts import QOBUZ_MUSIC_HOSTS
@@ -28,6 +29,8 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 class QobuzMusicClient(BaseMusicClient):
     source = 'QobuzMusicClient'
     arcod_client = ArcodClient(base_url="https://arcod.xyz")
+    qobuz_community_client = QobuzCommunityClient(app_version='7.2.0')
+    qobuz_community_lock = threading.RLock()
     def __init__(self, **kwargs):
         super(QobuzMusicClient, self).__init__(**kwargs)
         if self.default_search_cookies: assert QobuzMusicClientUtils.get_token_func(self.default_search_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#qobuzmusicclient-built-in-premium-account"'
@@ -137,9 +140,9 @@ class QobuzMusicClient(BaseMusicClient):
     '''_parsewithspotbyeqzzapi'''
     def _parsewithspotbyeqzzapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, song_id, app_version = request_overrides or {}, str(search_result['id']), "7.2.0"
+        request_overrides, song_id, quality = request_overrides or {}, str(search_result['id']), '24'
         # parse
-        download_result = QobuzCommunityClient(app_version=app_version).requesttrack(song_id, quality="24", request_overrides=request_overrides)
+        with QobuzMusicClient.qobuz_community_lock: download_result = QobuzMusicClient.qobuz_community_client.requesttrack(song_id, quality=quality, request_overrides=request_overrides)
         real_music_quality = real_music_quality[0] if isinstance((real_music_quality := parse_qs(urlparse(str((download_url := download_result['url']))).query, keep_blank_values=True).get('fmt') or QobuzMusicClientUtils.MUSIC_QUALITIES[0]), list) else real_music_quality
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
