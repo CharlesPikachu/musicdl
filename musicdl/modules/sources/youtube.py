@@ -157,6 +157,44 @@ class YouTubeMusicClient(BaseMusicClient):
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
         return song_info
+    '''_parsewithcnvmp3api'''
+    def _parsewithcnvmp3api(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", "Origin": "https://cnvmp3.com", "Referer": "https://cnvmp3.com/v55",}
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
+        if not search_result.get('title'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        urls = {'check': 'https://cnvmp3.com/check_database.php', 'meta': 'https://cnvmp3.com/get_video_data.php', 'convert': 'https://cnvmp3.com/download_video_ucep.php', 'insert': 'https://cnvmp3.com/insert_to_database.php',}
+        (resp := requests.post(urls['check'], headers=headers, json={'youtube_id': song_id, 'quality': 0, 'formatValue': 1}, **request_overrides)).raise_for_status()
+        download_result = {}; download_result['database'] = database_result = resp2json(resp=resp); database_data = database_result.get('data') or {}
+        if database_result.get('success') and database_data.get('server_path'): title = database_data.get('title') or search_result.get('title') or song_id; download_url = database_data['server_path']; cache_hit = True
+        else: title, download_url, cache_hit = search_result.get('title'), None, False
+        if cache_hit:
+            try:
+                (resp := requests.get(download_url, headers={'Referer': 'https://cnvmp3.com/', 'User-Agent': headers['User-Agent']}, **request_overrides,)).raise_for_status()
+                if not resp.content or 'text/html' in resp.headers.get('content-type', '').lower(): cache_hit = False
+            except requests.RequestException:
+                cache_hit = False
+        if not cache_hit:
+            if not title:
+                (resp := requests.post(urls['meta'], headers=headers, json={'url': f'https://www.youtube.com/watch?v={song_id}', 'token': '1234'}, **request_overrides)).raise_for_status()
+                download_result['metadata'] = metadata_result = resp2json(resp=resp); title = metadata_result.get('title')
+                if not metadata_result.get('success') or not title: raise RuntimeError(f'cnvmp3 metadata failed: {metadata_result}')
+            (resp := requests.post(urls['convert'], headers=headers, json={'url': f'https://www.youtube.com/watch?v={song_id}', 'quality': 0, 'title': title, 'formatValue': 1,}, **request_overrides)).raise_for_status()
+            download_result['converter'] = converter_result = resp2json(resp=resp); download_url = converter_result.get('download_link')
+            if not converter_result.get('success') or not download_url: raise RuntimeError(f'cnvmp3 convert failed: {converter_result}')
+            (resp := requests.get(download_url, headers={'Referer': 'https://cnvmp3.com/', 'User-Agent': headers['User-Agent']}, **request_overrides,)).raise_for_status()
+        download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
+        duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > duration_in_secs * 96 * 1000 / 8
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+        )
+        song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
+        # return
+        return song_info
     '''_parsewithy2mateapi'''
     def _parsewithy2mateapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -227,7 +265,7 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithmp3youtube, self._parsewithmediaytmp3api, self._parsewithyt2songapi, self._parsewithcutytapi, self._parsewithspotubedlapi, ]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithmp3youtube, self._parsewithmediaytmp3api, self._parsewithyt2songapi, self._parsewithcutytapi, self._parsewithcnvmp3api, self._parsewithspotubedlapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
