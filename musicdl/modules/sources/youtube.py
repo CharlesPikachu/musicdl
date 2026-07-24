@@ -71,8 +71,8 @@ class YouTubeMusicClient(BaseMusicClient):
         search_urls = [{'candidate_apis': [{'api': self.get, 'inputs': rapidapi_search_rule, 'method': 'rapidapi'}, {'api': ytmusic_search_api, 'inputs': ytmusic_search_rule, 'method': 'ytmusicapi'}]}]
         # return
         return search_urls
-    '''_parsewithmp3youtube'''
-    def _parsewithmp3youtube(self, search_result: dict, request_overrides: dict = None):
+    '''_parsewithmp3youtubeapi'''
+    def _parsewithmp3youtubeapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
@@ -223,6 +223,39 @@ class YouTubeMusicClient(BaseMusicClient):
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
         return song_info
+    '''_parsewith4kdownloadapi'''
+    def _parsewith4kdownloadapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
+        headers = {'Origin': 'https://4kdownload.to', 'Referer': 'https://4kdownload.to/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'}
+        page_url, api_url = 'https://4kdownload.to/ensa/youtube-to-mp3', 'https://p.savenow.to/api/v2/download'
+        if not search_result.get('title'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        (resp := requests.get(page_url, headers=headers, **request_overrides,)).raise_for_status()
+        apikey_match = (re.search(r'''apikey\s*:\s*['"]([^'"]+)''', resp.text, re.I) or re.search(r'''params\.apikey\s*=.*?\|\|\s*['"]([^'"]+)''', resp.text, re.I | re.S,))
+        if not apikey_match: raise RuntimeError('4kdownload API key not found')
+        (resp := requests.get(api_url, headers=headers, params={'format': 'mp3', 'url': f'https://www.youtube.com/watch?v={song_id}', 'apikey': apikey_match.group(1),}, **request_overrides,)).raise_for_status()
+        initial_result = resp2json(resp=resp); progress_url = initial_result.get('progress_url'); progress_result = initial_result; deadline = time.monotonic() + 240
+        if not progress_url and not (initial_result.get('download_url') or initial_result.get('url')): raise RuntimeError(initial_result.get('message') or f'Invalid API response: {initial_result}')
+        while (time.monotonic() < deadline and not progress_result.get('download_url') and not progress_result.get('url')):
+            time.sleep(1.5); (resp := requests.get(progress_url, headers=headers, **request_overrides,)).raise_for_status(); progress_result = resp2json(resp=resp)
+            if (progress_result.get('success') is False or progress_result.get('error')): raise RuntimeError(progress_result.get('error') or progress_result.get('message') or progress_result.get('text') or 'MP3 conversion failed')
+        if not (download_url := (progress_result.get('download_url') or progress_result.get('url'))): raise TimeoutError('MP3 conversion timed out')
+        download_result = {'initial': initial_result, 'progress': progress_result,}
+        (resp := requests.get(download_url, headers={'User-Agent': headers['User-Agent']}, **request_overrides,)).raise_for_status()
+        if any(value in resp.headers.get('Content-Type', '').lower() for value in ('text/html', 'application/json')): raise RuntimeError('Download URL returned an error document')
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        if download_url_status.get('file_size') in {'NULL', None}: download_url_status['file_size_bytes'] = len(resp.content); download_url_status['file_size'] = SongInfoUtils.byte2mb(len(resp.content))
+        # --song info
+        duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+        )
+        song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
+        # return
+        return song_info
     '''_parsewithmediaytmp3api'''
     def _parsewithmediaytmp3api(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -265,7 +298,7 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithmp3youtube, self._parsewithmediaytmp3api, self._parsewithyt2songapi, self._parsewithcutytapi, self._parsewithcnvmp3api, self._parsewithspotubedlapi, ]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithmp3youtubeapi, self._parsewithmediaytmp3api, self._parsewithyt2songapi, self._parsewithcutytapi, self._parsewith4kdownloadapi, self._parsewithcnvmp3api, self._parsewithspotubedlapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
