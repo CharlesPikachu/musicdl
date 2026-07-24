@@ -136,13 +136,10 @@ class SpotifyMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36", "Referer": "https://savemytracks.com/", "Origin": "https://savemytracks.com"}
         session = requests.Session(); session.headers.update((headers := RandomIPGenerator().addrandomipv4toheaders(headers=headers)))
-        add_query_func = lambda url, **params: urlunparse((lambda u: (u.scheme, u.netloc, u.path, u.params, urlencode(dict(parse_qsl(u.query)) | params), u.fragment))(urlparse(str(url))))
         # parse
-        (resp := session.get("https://savemytracks.com/", timeout=20, **request_overrides)).raise_for_status(); decoded = []
-        for b64 in re.findall(r'data:text/javascript;base64,([^"]+)', resp.text):
-            with suppress(Exception): decoded.append(base64.b64decode(b64).decode("utf-8", "ignore"))
-        js = "\n".join(decoded); ajax_url = re.search(r"ajaxUrl:'([^']+)'", js).group(1); nonce = re.search(r"nonce:'([^']+)'", js).group(1)
-        m = re.search(r'"apiBase":"([^"]+)"', js); api_base = (m.group(1).replace("\\/", "/") if m else "https://treqly.onrender.com").rstrip("/")
+        (resp := session.get("https://savemytracks.com/", timeout=20, **request_overrides)).raise_for_status()
+        ajax_url = re.search(r"ajaxUrl:\s*'([^']+)'", resp.text).group(1); nonce = re.search(r"nonce:\s*'([^']+)'", resp.text).group(1)
+        api_base = re.search(r'"apiBase":"([^"]+)"', resp.text).group(1).replace("\\/", "/").rstrip("/")
         (resp := session.post(ajax_url, files={"action": (None, "vm_auth"), "nonce": (None, nonce)}, timeout=20, **request_overrides)).raise_for_status(); token = resp2json(resp=resp)["data"]["token"]
         (resp := session.get(f"{api_base}/api/spotify-info", params={"url": f"https://open.spotify.com/track/{song_id}"}, headers={"X-Req-V": token}, timeout=30, **request_overrides)).raise_for_status()
         (resp := session.post(f"{api_base}/api/download", json={"url": (download_result := resp2json(resp=resp))["youtubeUrl"], "resolution": "audio", "audio_format": "mp3",}, headers={"X-Req-V": token}, timeout=30, **request_overrides)).raise_for_status()
@@ -153,13 +150,14 @@ class SpotifyMusicClient(BaseMusicClient):
             if resp2json(resp=resp).get("status") == "completed" and resp2json(resp=resp).get("download_url"): download_url = resp2json(resp=resp)["download_url"]; break
             if resp2json(resp=resp).get("status") == "failed": raise RuntimeError(resp2json(resp=resp).get("error") or "job failed")
             time.sleep(2)
-        (resp := session.post(ajax_url, files={"action": (None, "vm_auth"), "nonce": (None, nonce)}, timeout=20, **request_overrides)).raise_for_status(); token = resp2json(resp=resp)["data"]["token"]
-        (resp := session.get((download_url := add_query_func(download_url, token=token)), **request_overrides)).raise_for_status()
+        else:
+            raise TimeoutError("download job timed out")
+        (resp := session.get(download_url, timeout=30, **request_overrides)).raise_for_status()
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        if download_url_status['file_size'] in {'NULL'}: download_url_status['file_size_bytes'], download_url_status['file_size'] = resp.content.__sizeof__(), SongInfoUtils.byte2mb(resp.content.__sizeof__())
+        if download_url_status['file_size'] in {'NULL'}: download_url_status['file_size_bytes'], download_url_status['file_size'] = len(resp.content), SongInfoUtils.byte2mb(len(resp.content))
         with suppress(Exception): duration_in_secs = 0; duration_in_secs = download_result.get('durationMs') / 1000
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('title')), singers=legalizestring(legalizestring(download_result.get('artist'))), album=legalizestring(download_result.get('album') or safeextractfromdict(search_result, ['item', 'data', 'albumOfTrack', 'name'], None) or safeextractfromdict(search_result, ['itemV2', 'data', 'albumOfTrack', 'name'], None)), 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('title')), singers=legalizestring(download_result.get('artist')), album=legalizestring(download_result.get('album') or safeextractfromdict(search_result, ['item', 'data', 'albumOfTrack', 'name'], None) or safeextractfromdict(search_result, ['itemV2', 'data', 'albumOfTrack', 'name'], None)),
             ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=download_result.get('thumbnailUrl'), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content,
         )
         # return
@@ -298,7 +296,7 @@ class SpotifyMusicClient(BaseMusicClient):
                 lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 if (song_info := song_info if song_info.with_valid_download_url else song_info_flac).with_valid_download_url: song_infos.append(song_info); continue
-                self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
+                self.logger_handle.warning(f'Fail to parse track info {track_info}', disable_print=self.disable_print)
             main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
         playlist_name = legalizestring(safeextractfromdict(playlist_result_first, ['data', 'playlistV2', 'name'], None) or f"playlist-{playlist_id}")
