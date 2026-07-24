@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-07-24: Released musicdl v2.13.3 — Fixed bugs in all affected common music clients; addressed potential issues in DeezerMusicClient, QobuzMusicClient, YouTubeMusicClient, JooxMusicClient, BilibiliMusicClient, JamendoMusicClient, JioSaavnMusicClient, FiveSingMusicClient, and SpotifyMusicClient, and fixed several related third-party APIs.
 - 2026-07-20: Released musicdl v2.13.2 — added support for music search and downloading from multiple third-party music platforms, including liziyy.top, mgmp3.top, itingwa.com, sgogo.com, and xiageba.liumingye.cn; regularly maintained and updated third-party APIs for Kuwo Music, Kugou Music, QQ Music, Qianqian Music, Migu Music, Bodian Music, and NetEase Cloud Music, while also fixing unreasonable behavior in playlist parsing.
 - 2026-07-08: Released musicdl v2.13.1 — optimized the unreasonable display of progress; removed all third-party music clients that no longer exist; optimized several third-party APIs; updated some music clients that had become unavailable; added support for configuring cookies in Soda Music to download VIP songs.
-- 2026-07-04: Released musicdl v2.13.0 — perform routine maintenance on several commonly used clients.
 
 
 # 🎵 Introduction
