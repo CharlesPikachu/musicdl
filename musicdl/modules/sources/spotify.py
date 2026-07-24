@@ -8,8 +8,10 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import re
+import json
 import copy
 import time
+import base64
 import random
 import requests
 from bs4 import BeautifulSoup
@@ -209,10 +211,36 @@ class SpotifyMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithspotisaverapi'''
+    def _parsewithspotisaverapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, session = request_overrides or {}, str(search_result['id']), requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Referer': 'https://spotisaver.net/en1', 'Accept': 'application/json', 'Cache-Control': 'no-cache',})
+        b64_func = lambda data: base64.urlsafe_b64encode(json.dumps(data, separators=(',', ':'), ensure_ascii=False).encode()).decode().rstrip('=')
+        # parse
+        (resp := session.get('https://spotisaver.net/en1', **request_overrides)).raise_for_status()
+        user_ip, ctx = re.search(r'const user_ip = "([^"]+)"', resp.text).group(1), b64_func({'id': song_id, 'type': 'track', 'lang': 'en'})
+        sign = session.get(f'https://spotisaver.net/api/get_signature.php', params={'action': 'get_playlist', 'ctx': ctx}, **request_overrides).json()
+        data = session.get(f'https://spotisaver.net/api/get_playlist.php', params={'id': song_id, 'type': 'track', 'lang': 'en'}, headers={'X-PT': sign['token'], 'X-PE': str(sign['exp'])}, **request_overrides).json()
+        track = data['tracks'][0]; ctx = b64_func({'lang': 'en', 'id': song_id, 'name': track['name'], 'duration_ms': str(track['duration_ms']),})
+        sign = session.get(f'https://spotisaver.net/api/get_signature.php', params={'action': 'download_track', 'ctx': ctx}, **request_overrides).json()
+        sig = b64_func({'token': sign['token'], 'exp': str(sign['exp'])})
+        (resp := session.post(f'https://spotisaver.net/api/download_track.php', params={'sig': sig}, json={'track': track, 'download_dir': 'downloads', 'filename_tag': 'SPOTISAVER', 'user_ip': user_ip, 'is_premium': False, 'lang': 'en',}, **request_overrides)).raise_for_status()
+        download_url = {'url': f'https://spotisaver.net/api/download_track.php', 'params': {'sig': sig}, 'json': {'track': track, 'download_dir': 'downloads', 'filename_tag': 'SPOTISAVER', 'user_ip': user_ip, 'is_premium': False, 'lang': 'en',}, 'method': 'post'}
+        download_result = {'track': track, 'download_url': download_url}
+        download_url_status = {'download_url': download_url, 'ok': True, 'file_size_bytes': len(resp.content), 'file_size': SongInfoUtils.byte2mb(len(resp.content)), 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content)}
+        duration_in_secs = float(safeextractfromdict(download_result, ['track', 'duration_ms'], 0) or 0) / 1000
+        assert download_url_status['file_size_bytes'] > duration_in_secs * 8 * 1000 / 8
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['track', 'name'], None)), singers=legalizestring(', '.join(safeextractfromdict(download_result, ['track', 'artists'], None) or [])), album=legalizestring(safeextractfromdict(download_result, ['track', 'album'], None) or safeextractfromdict(search_result, ['item', 'data', 'albumOfTrack', 'name'], None) or safeextractfromdict(search_result, ['itemV2', 'data', 'albumOfTrack', 'name'], None)), 
+            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(download_result, ['track', 'image', 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.default_download_headers, downloaded_contents=resp.content
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithspowloadapi, self._parsewithspotmateapi, self._parsewithrapidapi, self._parsewithspotubedlapi, self._parsewithsavemytracksapi, self._parsewithspotidownmeapi, self._parsewithmusicfabapi, ]:
+        for parser_func in [self._parsewithspowloadapi, self._parsewithspotmateapi, self._parsewithrapidapi, self._parsewithspotubedlapi, self._parsewithsavemytracksapi, self._parsewithspotidownmeapi, self._parsewithspotisaverapi, self._parsewithmusicfabapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
