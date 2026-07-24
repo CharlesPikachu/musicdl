@@ -298,7 +298,7 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithmp3youtubeapi, self._parsewithmediaytmp3api, self._parsewithyt2songapi, self._parsewithcutytapi, self._parsewith4kdownloadapi, self._parsewithcnvmp3api, self._parsewithspotubedlapi, ]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithmp3youtubeapi, self._parsewithmediaytmp3api, self._parsewith4kdownloadapi, self._parsewithyt2songapi, self._parsewithcnvmp3api, self._parsewithcutytapi, self._parsewithspotubedlapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break

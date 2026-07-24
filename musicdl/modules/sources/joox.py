@@ -59,8 +59,8 @@ class JooxMusicClient(BaseMusicClient):
     '''_parsewithgdstudioxyzapi'''
     def _parsewithgdstudioxyzapi(self, search_result: dict, lang: str = 'zh_TW', country: str = 'hk', request_overrides: dict = None):
         # init
-        host = "music.gdstudio.xyz"; version = "2026.06.16"; time_url = "https://music.gdstudio.xyz/time"; api_url = "https://music.gdstudio.xyz/api.php"
-        request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.xyz", "Referer": "https://music.gdstudio.xyz/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01"}
+        host = "music.gdstudio.xyz"; version = "2026.07.21"; time_url = "https://music.gdstudio.xyz/time"; api_url = "https://music.gdstudio.xyz/api.php"
+        request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.xyz", "Referer": "https://music.gdstudio.xyz/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
         js_encode_uri_component_func = lambda value: (quote(str(value), safe="-_.!~*'()").replace("(", "%28").replace(")", "%29").replace("*", "%2A").replace("'", "%27").replace("!", "%21"))
         left_rotate_func = lambda x, amount: ((((x & 0xFFFFFFFF) << amount) | ((x & 0xFFFFFFFF) >> (32 - amount))) & 0xFFFFFFFF)
         normalize_version_func = lambda value: "".join(part.zfill(2) if len(part) == 1 else part for part in str(value).split("."))
@@ -69,12 +69,12 @@ class JooxMusicClient(BaseMusicClient):
         encoded_id = js_encode_uri_component_func(str(song_id)); raw_sign_text = f"{str(server_time)[:9]}|{host}|{normalize_version_func(version)}|{encoded_id}"
         data = raw_sign_text.encode("utf-8"); bit_len = (len(data) * 8) & 0xFFFFFFFFFFFFFFFF; data += b"\x80"
         while len(data) % 64 != 56: data += b"\x00"
-        data += struct.pack("<Q", bit_len); a0 = 0x67452302; b0 = 0xEFCDAB8A; c0 = 0x98BADCFE; d0 = 0x10325476
+        data += struct.pack("<Q", bit_len); a0 = 0x67452301; b0 = 0xEFCDAB89; c0 = 0x98BADCFE; d0 = 0x10325476
         shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
         table = [
-            0xD76AA479, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
+            0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
             0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
-            0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
+            0xFFFA3942, 0x8771F681, 0x6D9D6123, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
             0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039, 0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1, 0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1, 0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
         ]
         for offset in range(0, len(data), 64):
@@ -84,7 +84,7 @@ class JooxMusicClient(BaseMusicClient):
                 f = (f + a + table[i] + words[g]) & 0xFFFFFFFF; a, d, c, b = d, c, b, (b + left_rotate_func(f, shifts[i])) & 0xFFFFFFFF
             a0 = (a0 + a) & 0xFFFFFFFF; b0 = (b0 + b) & 0xFFFFFFFF; c0 = (c0 + c) & 0xFFFFFFFF; d0 = (d0 + d) & 0xFFFFFFFF
         params = {"types": "url", "id": str(song_id), "source": "joox", "br": str(999), "s": struct.pack("<4I", a0, b0, c0, d0).hex()[-8:].upper()}
-        (resp := requests.get(api_url, params=params, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        (resp := requests.post(api_url, data=params, headers=headers, timeout=10, **request_overrides)).raise_for_status()
         download_url = safeextractfromdict((download_result_gdstudio := resp2json(resp=resp)), ['url'], '')
         (download_result := self._getsongmetainfo(song_id, lang, country, request_overrides)).update(download_result_gdstudio)
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -97,8 +97,8 @@ class JooxMusicClient(BaseMusicClient):
     '''_parsewithgdstudioorgapi'''
     def _parsewithgdstudioorgapi(self, search_result: dict, lang: str = 'zh_TW', country: str = 'hk', request_overrides: dict = None):
         # init
-        host = "music.gdstudio.org"; version = "2026.06.16"; time_url = "https://music.gdstudio.org/time"; api_url = "https://music.gdstudio.org/api.php"
-        request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.org", "Referer": "https://music.gdstudio.org/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01"}
+        host = "music.gdstudio.org"; version = "2026.07.21"; time_url = "https://music.gdstudio.org/time"; api_url = "https://music.gdstudio.org/api.php"
+        request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.org", "Referer": "https://music.gdstudio.org/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
         js_encode_uri_component_func = lambda value: (quote(str(value), safe="-_.!~*'()").replace("(", "%28").replace(")", "%29").replace("*", "%2A").replace("'", "%27").replace("!", "%21"))
         left_rotate_func = lambda x, amount: ((((x & 0xFFFFFFFF) << amount) | ((x & 0xFFFFFFFF) >> (32 - amount))) & 0xFFFFFFFF)
         normalize_version_func = lambda value: "".join(part.zfill(2) if len(part) == 1 else part for part in str(value).split("."))
@@ -107,12 +107,12 @@ class JooxMusicClient(BaseMusicClient):
         encoded_id = js_encode_uri_component_func(str(song_id)); raw_sign_text = f"{str(server_time)[:9]}|{host}|{normalize_version_func(version)}|{encoded_id}"
         data = raw_sign_text.encode("utf-8"); bit_len = (len(data) * 8) & 0xFFFFFFFFFFFFFFFF; data += b"\x80"
         while len(data) % 64 != 56: data += b"\x00"
-        data += struct.pack("<Q", bit_len); a0 = 0x67452302; b0 = 0xEFCDAB8A; c0 = 0x98BADCFE; d0 = 0x10325476
+        data += struct.pack("<Q", bit_len); a0 = 0x67452301; b0 = 0xEFCDAB89; c0 = 0x98BADCFE; d0 = 0x10325476
         shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
         table = [
-            0xD76AA479, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
+            0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
             0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
-            0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
+            0xFFFA3942, 0x8771F681, 0x6D9D6123, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
             0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039, 0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1, 0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1, 0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
         ]
         for offset in range(0, len(data), 64):
@@ -122,7 +122,7 @@ class JooxMusicClient(BaseMusicClient):
                 f = (f + a + table[i] + words[g]) & 0xFFFFFFFF; a, d, c, b = d, c, b, (b + left_rotate_func(f, shifts[i])) & 0xFFFFFFFF
             a0 = (a0 + a) & 0xFFFFFFFF; b0 = (b0 + b) & 0xFFFFFFFF; c0 = (c0 + c) & 0xFFFFFFFF; d0 = (d0 + d) & 0xFFFFFFFF
         params = {"types": "url", "id": str(song_id), "source": "joox", "br": str(999), "s": struct.pack("<4I", a0, b0, c0, d0).hex()[-8:].upper()}
-        (resp := requests.get(api_url, params=params, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        (resp := requests.post(api_url, data=params, headers=headers, timeout=10, **request_overrides)).raise_for_status()
         download_url = safeextractfromdict((download_result_gdstudio := resp2json(resp=resp)), ['url'], '')
         (download_result := self._getsongmetainfo(song_id, lang, country, request_overrides)).update(download_result_gdstudio)
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -229,7 +229,7 @@ class JooxMusicClient(BaseMusicClient):
                 lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, lang=lang, country=country, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 if (song_info := song_info if song_info.with_valid_download_url else song_info_flac).with_valid_download_url: song_infos.append(song_info); continue
-                self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
+                self.logger_handle.warning(f'Fail to parse track info {track_info}', disable_print=self.disable_print)
             main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
         playlist_name = legalizestring(safeextractfromdict(playlist_result['props']['pageProps']['allPlaylistTracks'], ['name'], None) or f"playlist-{playlist_id}")

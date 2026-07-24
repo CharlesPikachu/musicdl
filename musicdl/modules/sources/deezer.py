@@ -16,6 +16,7 @@ import requests
 from pathlib import Path
 from contextlib import suppress
 from .base import BaseMusicClient
+from ..utils.zarz import ZarzDeezerClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import DEEZER_MUSIC_HOSTS
 from ..utils.deezerutils import DeezerMusicClientUtils
@@ -115,7 +116,7 @@ class DeezerMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, headers = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://antra.hoshi.cfd", "Referer": "https://antra.hoshi.cfd/"}
         accounts = [
-            ('charlespikachubGFvd2FuZw==', 'charlespikachubGFvd2FuZzk2MDIxMg=='), ('charlespikachuZ2lybHNsb3ZldG9t', 'charlespikachuZ2lybHNsb3ZldG9tMTIzNDU2'), ('charlespikachuRXJpYw==', 'charlespikachucmFuZG9tOTk5'), ('charlespikachuZ3JlYXRtYW5hbnRyYQ==', 'charlespikachuZ3JlYXRtYW5hbnRyYQ=='), 
+            ('charlespikachubGFvd2FuZw==', 'charlespikachubGFvd2FuZzk2MDIxMg=='), ('charlespikachuZ2lybHNsb3ZldG9t', 'charlespikachuZ2lybHNsb3ZldG9tMTIzNDU2'), ('charlespikachuRXJpYw==', 'charlespikachucmFuZG9tOTk5'), ('charlespikachuZ3JlYXRtYW5hbnRyYQ==', 'charlespikachuZ3JlYXRtYW5hbnRyYQ=='), ('charlespikachuaWxpa2V0aGlzc2l0ZQ==', 'charlespikachuaWxpa2V0aGlzc2l0ZQ=='), 
             ('charlespikachubWFya2hlcmU=', 'charlespikachubWFya2hlcmU5OTk2NjY='), ('charlespikachubGFkeWdhZ2FmYW5z', 'charlespikachuMTIzNDU2Nzc2NTQzMjE='), ('charlespikachudGFsYXlvcg==', 'charlespikachudGFsYXlvcnRhbGF5b3I='), ('charlespikachuYnVzaW5lc3M=', 'charlespikachuYnVzaW5lc3M='), 
         ]
         decrypt_func = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
@@ -184,10 +185,25 @@ class DeezerMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         # return
         return song_info
+    '''_parsewithzarzapi'''
+    def _parsewithzarzapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, client = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), ZarzDeezerClient()
+        # parse
+        download_url = safeextractfromdict((download_result := client.getdownloadinfo(song_id, request_overrides=request_overrides)), ['url'], '')
+        download_result['meta_info'] = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides)
+        with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(safeextractfromdict(download_result, ['raw', 'duration'], 0) or 0)
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'id': song_id}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['raw', 'title'], None)), singers=legalizestring(safeextractfromdict(download_result, ['raw', 'artist'], None)), album=legalizestring(safeextractfromdict(download_result, ['meta_info', 'album', 'title'], None)), ext=download_url_status['ext'], 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(download_result, ['meta_info', 'album', 'cover_xl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies: return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithantrahoshiapi, ] # vip accounts
+        l1_parser_funcs = [self._parsewithantrahoshiapi, self._parsewithzarzapi, ] # vip accounts
         l2_parser_funcs = [self._parsewithflacdownloaderapi, self._parsewithdeemixerapi, ] # vip accounts but unstable
         l3_parser_funcs = [self._parsewithmusicfabapi, ] # free accounts
         l4_parser_funcs = [self._parsewithdeezdownloadersapi, ] # free accounts but unstable

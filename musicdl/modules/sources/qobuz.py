@@ -91,7 +91,7 @@ class QobuzMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, client = request_overrides or {}, str(search_result['id']), ZarzQobuzClient()
         # parse
-        download_result = client.getdownloadinfo(434390007, QobuzMusicClientUtils.MUSIC_QUALITIES[0], request_overrides=request_overrides)
+        download_result = client.getdownloadinfo(song_id, QobuzMusicClientUtils.MUSIC_QUALITIES[0], request_overrides=request_overrides)
         real_music_quality = real_music_quality[0] if isinstance((real_music_quality := parse_qs(urlparse(str(download_url := download_result['url'])).query, keep_blank_values=True).get('fmt') or QobuzMusicClientUtils.MUSIC_QUALITIES[0]), list) else real_music_quality
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
