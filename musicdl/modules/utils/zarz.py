@@ -358,6 +358,62 @@ class ZarzDeezerClient(ZarzQobuzClient):
         return value
 
 
+'''ZarzTIDALClient'''
+class ZarzTIDALClient(ZarzQobuzClient):
+    DOWNLOAD_PATH = "/dl/tid"
+    EXTENSION_ID = "tidal-web"
+    APP_VERSION = "tidal-web@1.1.0"
+    def __init__(self, session_file: str | Path | None = None, timeout: float = 30, verification_timeout: float = 300,) -> None:
+        super().__init__(session_file=session_file or (Path.home() / ".musicdl" / "zarz_tidal_session.json"), timeout=timeout, verification_timeout=verification_timeout,)
+    '''getstreamresponse'''
+    def getstreamresponse(self, track_id: str | int, quality: str, request_overrides: dict | None = None,) -> dict[str, Any]:
+        quality, track_id, request_overrides = self.normalizequality(quality), self.tidaltrackid(track_id), request_overrides or {}
+        resource_hash = hashlib.sha256(f"tid:track:{track_id.lower()}".encode("utf-8")).hexdigest()
+        ticket = self.signedjson("/tickets", {"capability": "download_ticket", "provider": "tid", "resource_hash": resource_hash,}, request_overrides=request_overrides,)
+        if not (ticket_id := str(ticket.get("ticket_id") or ticket.get("ticket") or "").strip()): raise RuntimeError("Ticket response is missing ticket_id")
+        body = ({"id": track_id, "endpoint": "manifests", "formats": ["EAC3_JOC"],} if quality == "DOLBY_ATMOS" else {"id": track_id, "quality": quality})
+        payload = self.signedjson(self.DOWNLOAD_PATH, body, extra_headers={"X-Zarz-Ticket": ticket_id,}, request_overrides=request_overrides,)
+        if payload.get("success") is False or (error := payload.get("error") or payload.get("detail")): raise RuntimeError(str(error or payload.get("message") or payload))
+        if quality == "DOLBY_ATMOS": return self.convertatmos(payload, track_id, self.timeout, headers={}, request_overrides=request_overrides,)
+        if not isinstance((data := payload.get("data")), dict): raise RuntimeError("TIDAL resolver returned no data")
+        if str(data.get("assetPresentation") or "").upper() == "PREVIEW": raise RuntimeError("TIDAL resolver returned PREVIEW asset")
+        if not data.get("manifest"): raise RuntimeError("TIDAL resolver response is missing manifest")
+        return data
+    '''signedjson'''
+    def signedjson(self, path: str, body: dict, extra_headers: dict | None = None, request_overrides: dict | None = None,) -> dict[str, Any]:
+        (resp := self.signedrequest("POST", path, body, extra_headers or {}, request_overrides=request_overrides,)).raise_for_status()
+        return resp.json()
+    '''convertatmos'''
+    def convertatmos(self, payload: dict[str, Any], track_id: str, timeout: float, headers: dict[str, str], request_overrides: dict,) -> dict[str, Any]:
+        data = data.get("data") if isinstance((data := payload.get("data")), dict) else None
+        attributes = (data.get("attributes") if isinstance(data, dict) else None)
+        if not isinstance(attributes, dict): raise RuntimeError("Atmos manifest payload is missing attributes")
+        if not isinstance((formats := attributes.get("formats")), list) or not any(str(item).upper() == "EAC3_JOC" for item in formats): raise RuntimeError("TIDAL API did not report EAC3_JOC for this track")
+        if not (manifest_url := str(attributes.get("uri") or "").strip()): raise RuntimeError("Atmos manifest URI is empty")
+        (resp := self.http.get(manifest_url, headers={"Accept": "application/dash+xml,text/xml,application/xml;q=0.9,*/*;q=0.8", "User-Agent": f"SpotiFLAC-Mobile/{self.APP_VERSION}", **headers,}, timeout=timeout, **request_overrides,)).raise_for_status()
+        if not (manifest := resp.content): raise RuntimeError("Atmos manifest response is empty")
+        return {
+            "trackid": track_id, "videoid": None, "streamType": "ON_DEMAND", "assetPresentation": "FULL", "audioMode": "DOLBY_ATMOS", "audioQuality": "DOLBY_ATMOS", 
+            "videoQuality": None, "manifestMimeType": "application/dash+xml", "manifest": base64.b64encode(manifest).decode("ascii"),
+        }
+    '''normalizequality'''
+    @staticmethod
+    def normalizequality(quality: str) -> str:
+        value = {"ATMOS": "DOLBY_ATMOS", "DOLBY": "DOLBY_ATMOS", "EAC3": "DOLBY_ATMOS", "EAC3_JOC": "DOLBY_ATMOS", "HIRES": "HI_RES_LOSSLESS", "HI_RES": "HI_RES_LOSSLESS", "MASTER": "HI_RES_LOSSLESS",}.get((value := str(quality or "").strip().upper()), value)
+        if value not in {"DOLBY_ATMOS", "HI_RES_LOSSLESS", "LOSSLESS", "HIGH", "LOW",}: raise ValueError(f"Invalid TIDAL quality: {quality!r}")
+        return value
+    '''tidaltrackid'''
+    @staticmethod
+    def tidaltrackid(track_id: str | int) -> str:
+        if (value := str(track_id).strip()).lower().startswith("tidal:"): value = value.split(":", 1)[1]
+        if value.startswith(("http://", "https://")):
+            parts = [part for part in urllib.parse.urlparse(value).path.split("/") if part]
+            if "track" in (lowered := [part.lower() for part in parts]):
+                if (index := lowered.index("track")) + 1 < len(parts): value = parts[index + 1]
+        if not value.isdigit(): raise ValueError(f"Invalid TIDAL track ID: {track_id!r}")
+        return value
+
+
 '''handlecallbackprocess'''
 def handlecallbackprocess() -> bool:
     if "--receive" not in sys.argv: return False

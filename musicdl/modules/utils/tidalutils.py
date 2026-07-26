@@ -30,6 +30,7 @@ from Crypto.Cipher import AES
 from mutagen.flac import FLAC
 from contextlib import suppress
 from Crypto.Util import Counter
+from .zarz import ZarzTIDALClient
 from xml.etree import ElementTree
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -1002,13 +1003,11 @@ class TIDALMusicClientUtils:
             ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
-    '''getstreamurlzarz2api'''
+    '''getstreamurlzarzapi'''
     @staticmethod
-    def getstreamurlzarz2api(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
-        headers, request_overrides = {"User-Agent": "SpotiFLAC-Mobile/4.5.0", "Accept": "application/json, text/plain, */*", "Content-Type": "application/json"}, request_overrides or {}
-        payload = {"id": str(song_id), "endpoint": "manifests", "formats": ["EAC3_JOC"]} if (quality := quality.upper()) == "DOLBY_ATMOS" else {"id": str(song_id), "quality": quality}
-        (resp := requests.post("https://api.zarz.moe/v1/dl/tid2", json=payload, headers=headers, timeout=10, **request_overrides)).raise_for_status()
-        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel((data := resp.json()['data']), StreamRespond())).manifestMimeType:
+    def getstreamurlzarzapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
+        with ZarzTIDALClient() as client: data = client.getstreamresponse(track_id=song_id, quality=quality, request_overrides=request_overrides,)
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
@@ -1048,7 +1047,7 @@ class TIDALMusicClientUtils:
     '''getstreamurl'''
     @staticmethod
     def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
-        candidate_parsers = [TIDALMusicClientUtils.getstreamurlzarz2api, TIDALMusicClientUtils.getstreamurlspotbyeqzzapi] if apply_thirdpart_apis else []
+        candidate_parsers = [TIDALMusicClientUtils.getstreamurlzarzapi, TIDALMusicClientUtils.getstreamurlspotbyeqzzapi] if apply_thirdpart_apis else []
         for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
             with suppress(Exception): stream_url, stream_resp = None, None; stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides)
             if isinstance(stream_url, StreamUrl) and isinstance(stream_resp, dict) and (len(stream_url.urls) > 0) and (stream_resp.get('assetPresentation') not in {'PREVIEW'}): break
