@@ -37,6 +37,7 @@ from platformdirs import user_log_dir
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from xml.etree.ElementTree import Element
+from .afkarxyz import TidalCommunityClient
 from dataclasses import dataclass, field, asdict
 from urllib.parse import urljoin, urlparse, parse_qs
 from .misc import safeextractfromdict, resp2json, IOUtils
@@ -1028,10 +1029,8 @@ class TIDALMusicClientUtils:
         strip_manifest_prefix_func, raise_value_error_func = lambda manifest_url: (manifest_url[len("MANIFEST:"):] if str(manifest_url).startswith("MANIFEST:") else manifest_url), lambda msg: (_ for _ in ()).throw(ValueError(msg))
         decode_manifest_xml_func = lambda manifest_url: base64.b64decode((b64 := strip_manifest_prefix_func(manifest_url)) + "=" * (-len(b64) % 4)).decode("utf-8")
         convert_embedded_manifest_to_stream_response = lambda out, song_id=None: (lambda manifest_url: (raise_value_error_func("out must contain 'url'") if not manifest_url else raise_value_error_func("Only MANIFEST:base64 MPD is supported here") if not str(manifest_url).startswith("MANIFEST:") else (lambda manifest_b64, xml_text: {"trackid": str(song_id) if song_id is not None else None, "videoid": None, "streamType": "ON_DEMAND", "assetPresentation": "FULL", "audioMode": "STEREO", "audioQuality": TIDALMusicClientUtils.inferaudioqualityfrommpd(xml_text), "videoQuality": None, "manifestMimeType": "application/dash+xml", "manifest": manifest_b64})(strip_manifest_prefix_func(manifest_url), decode_manifest_xml_func(manifest_url))))((out or {}).get("url"))
-        headers, request_overrides = {"User-Agent": "SpotiFLAC/4.5.0", "Accept": "application/json", "Content-Type": "application/json", "x-api-key": "explore-obscure-chivalry-travesty-blinks",}, request_overrides or {}
-        payload = {"id": str(song_id), "quality": {'HI_RES_LOSSLESS': "24", "LOSSLESS": "16"}.get(quality.upper(), "24")}
-        (resp := requests.post("https://tdl-foss.spotbye.qzz.io/api/dl", json=payload, headers=headers, timeout=10, **request_overrides)).raise_for_status()
-        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel((data := convert_embedded_manifest_to_stream_response(resp2json(resp=resp), song_id)), StreamRespond())).manifestMimeType:
+        resp = TidalCommunityClient().requesttrack(track_id=song_id, quality=quality.upper(), request_overrides=request_overrides)
+        if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel((data := convert_embedded_manifest_to_stream_response(resp, song_id)), StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
             return ret, data
@@ -1051,8 +1050,7 @@ class TIDALMusicClientUtils:
     def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         candidate_parsers = [TIDALMusicClientUtils.getstreamurlzarz2api, TIDALMusicClientUtils.getstreamurlspotbyeqzzapi] if apply_thirdpart_apis else []
         for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
-            stream_url, stream_resp = None, None
-            with suppress(Exception): stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides)
+            with suppress(Exception): stream_url, stream_resp = None, None; stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides)
             if isinstance(stream_url, StreamUrl) and isinstance(stream_resp, dict) and (len(stream_url.urls) > 0) and (stream_resp.get('assetPresentation') not in {'PREVIEW'}): break
         return stream_url, stream_resp
     '''downloadstreamwithnm3u8dlre'''

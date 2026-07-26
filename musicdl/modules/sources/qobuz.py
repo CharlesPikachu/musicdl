@@ -19,9 +19,10 @@ from contextlib import suppress
 from .base import BaseMusicClient
 from ..utils.zarz import ZarzQobuzClient
 from ..utils.hosts import QOBUZ_MUSIC_HOSTS
+from ..utils.afkarxyz import QobuzCommunityClient
 from pathvalidate import sanitize_filepath, sanitize_filename
 from urllib.parse import urlencode, urlparse, parse_qs, quote
-from ..utils.qobuzutils import QobuzMusicClientUtils, ArcodClient, QobuzCommunityClient
+from ..utils.qobuzutils import QobuzMusicClientUtils, ArcodClient
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, usedownloadheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 

@@ -7,178 +7,18 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
-import os
-import json
-import hmac
 import time
-import queue
 import base64
 import hashlib
-import secrets
 import binascii
 import requests
-import threading
-import webbrowser
-from pathlib import Path
 from contextlib import suppress
-from dataclasses import asdict, dataclass
+from urllib.parse import urljoin
 from typing import Any, Dict, Optional, Tuple
 from cryptography.hazmat.primitives import hashes
-from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from urllib.parse import urljoin, urlsplit, parse_qs, parse_qsl, urlencode, urlunsplit
-
-
-'''CommunitySessionRecord'''
-@dataclass
-class CommunitySessionRecord:
-    install_id: str = ""
-    session_id: str = ""
-    session_secret: str = ""
-    expires_at: str = ""
-
-
-'''QobuzCommunityClient'''
-class QobuzCommunityClient:
-    API_URL = "https://qbz-oss.spotbye.qzz.io/api/dl"
-    VERIFY_BASE_URL = "https://verify.spotbye.qzz.io"
-    def __init__(self, app_version: str = "7.2.0", platform: str = "desktop", session_file: Optional[str | Path] = None, request_timeout: float = 30, verification_timeout: float = 300, session_skew_seconds: int = 300,) -> None:
-        self.platform = str(platform).strip()
-        self.request_timeout = request_timeout
-        self.app_version = str(app_version).strip()
-        self.verification_timeout = verification_timeout
-        self.session_skew = timedelta(seconds=session_skew_seconds)
-        self.session_file = Path(session_file or (Path.home() / ".musicdl" / "qobuz_community_client_session.json"))
-        self.http = requests.Session()
-    '''requesttrack'''
-    def requesttrack(self, track_id: str | int, quality: str | int = "24", request_overrides: dict = None) -> dict[str, Any]:
-        normalized_track_id, community_quality, request_overrides = self.normalizetrackid(track_id), quality, request_overrides or {}
-        resp = self.senddownloadrequest(track_id=normalized_track_id, community_quality=community_quality, request_overrides=request_overrides)
-        if resp.status_code in (401, 428): resp.close(); self.clearsessioncredentials(); resp = self.senddownloadrequest(track_id=normalized_track_id, community_quality=community_quality, request_overrides=request_overrides)
-        resp.raise_for_status()
-        return resp.json()
-    '''clearsessioncredentials'''
-    def clearsessioncredentials(self) -> None:
-        record = self.loadsession()
-        record.session_id = ""
-        record.session_secret = ""
-        record.expires_at = ""
-        self.savesession(record)
-    '''close'''
-    def close(self) -> None:
-        self.http.close()
-    '''enter'''
-    def __enter__(self) -> "QobuzCommunityClient":
-        return self
-    '''exit'''
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any,) -> None:
-        self.close()
-    '''senddownloadrequest'''
-    def senddownloadrequest(self, track_id: str, community_quality: str, request_overrides: dict = None) -> requests.Response:
-        record = self.ensuresession(); body = self.makerequestbody(track_id=track_id, community_quality=community_quality,)
-        headers = self.makesignedheaders(method="POST", url=self.API_URL, body=body, record=record,)
-        return self.http.post(self.API_URL, data=body, headers=headers, timeout=self.request_timeout, **(request_overrides or {}))
-    '''makerequestbody'''
-    @staticmethod
-    def makerequestbody(track_id: str, community_quality: str,) -> bytes:
-        payload = {"id": track_id, "quality": community_quality,}
-        return json.dumps(payload, separators=(",", ":"), ensure_ascii=False,).encode("utf-8")
-    '''makesignedheaders'''
-    def makesignedheaders(self, method: str, url: str, body: bytes, record: CommunitySessionRecord,) -> dict[str, str]:
-        now = datetime.now(timezone.utc).replace(microsecond=0)
-        timestamp, nonce, body_hash, rolling_window = now.strftime("%Y-%m-%dT%H:%M:%S.000Z"), secrets.token_hex(12), hashlib.sha256(body).hexdigest(), int(now.timestamp()) // 300
-        rolling_input = (f"{rolling_window}:" f"{record.session_id}").encode("utf-8")
-        rolling_key = hmac.new(record.session_secret.encode("utf-8"), rolling_input, hashlib.sha256,).digest()
-        request_path = (parsed_url := urlsplit(url)).path or "/"; request_query = parsed_url.query
-        signing_input = "\n".join(["SPOTIFLAC-HMAC-V1", method.upper(), request_path, request_query, body_hash, timestamp, nonce, record.session_id, self.app_version, self.platform,]).encode("utf-8")
-        signature_bytes = hmac.new(rolling_key, signing_input, hashlib.sha256,).digest()
-        signature = (base64.urlsafe_b64encode(signature_bytes).decode("ascii").rstrip("="))
-        return {
-            "User-Agent": f"SpotiFLAC/{self.app_version}", "Accept": "application/json", "Content-Type": "application/json", "X-Sig-Session": record.session_id, "X-Sig-Timestamp": timestamp,
-            "X-Sig-Nonce": nonce, "X-Sig-Body-SHA256": body_hash, "X-Sig-Signature": signature, "X-Sig-App-Version": self.app_version, "X-Sig-Platform": self.platform,
-        }
-    '''ensuresession'''
-    def ensuresession(self, request_overrides: dict = None) -> CommunitySessionRecord:
-        if self.sessionvalid((record := self.loadsession())): return record
-        grant = self.runbrowserverification(record, request_overrides=request_overrides)
-        return self.exchangegrant(record=record, grant=grant, request_overrides=request_overrides)
-    '''loadsession'''
-    def loadsession(self,) -> CommunitySessionRecord:
-        record = CommunitySessionRecord()
-        if self.session_file.exists():
-            try:
-                data: dict = json.loads(self.session_file.read_text(encoding="utf-8"))
-                record = CommunitySessionRecord(install_id=str(data.get("install_id", "")), session_id=str(data.get("session_id", "")), session_secret=str(data.get("session_secret", "")), expires_at=str(data.get("expires_at", "")),)
-            except Exception: record = CommunitySessionRecord()
-        if not record.install_id: record.install_id = secrets.token_hex(16); self.savesession(record)
-        return record
-    '''savesession'''
-    def savesession(self, record: CommunitySessionRecord,) -> None:
-        self.session_file.parent.mkdir(parents=True, exist_ok=True,)
-        temporary_file = self.session_file.with_suffix(self.session_file.suffix + ".tmp")
-        temporary_file.write_text(json.dumps(asdict(record), ensure_ascii=False, indent=2,), encoding="utf-8",)
-        try: os.chmod(self.session_file.parent, 0o700,); os.chmod(temporary_file, 0o600,)
-        except OSError: pass
-        os.replace(temporary_file, self.session_file,)
-        try: os.chmod(self.session_file, 0o600,)
-        except OSError: pass
-    '''sessionvalid'''
-    def sessionvalid(self, record: CommunitySessionRecord,) -> bool:
-        if not all([record.session_id, record.session_secret, record.expires_at,]): return False
-        try:
-            expires_at = datetime.fromisoformat(record.expires_at.replace("Z", "+00:00",))
-            if expires_at.tzinfo is None: expires_at = expires_at.replace(tzinfo=timezone.utc)
-            remaining = (expires_at.astimezone(timezone.utc) - datetime.now(timezone.utc))
-            return remaining > self.session_skew
-        except (TypeError, ValueError): return False
-    '''runbrowserverification'''
-    def runbrowserverification(self, record: CommunitySessionRecord, request_overrides: dict = None) -> str:
-        grant_queue: queue.Queue[str] = queue.Queue(maxsize=1); callback_state = secrets.token_hex(16)
-        class CallbackHandler(BaseHTTPRequestHandler):
-            def do_GET(handler_self) -> None:
-                if (parsed := urlsplit(handler_self.path)).path != "/session-grant": handler_self.send_error(404); return
-                returned_state = (params := parse_qs(parsed.query)).get("state", [""],)[0]
-                if not hmac.compare_digest(returned_state, callback_state,): handler_self.send_error(400, "Invalid callback state",); return
-                if not (grant := params.get("grant", [""],)[0].strip()): handler_self.send_error(400, "Missing grant",); return
-                html = ("<!doctype html>" "<meta charset='utf-8'>" "<h2>Verification successful</h2>" "<p>You may close this page.</p>" "<script>" "setTimeout(() => window.close(), 700);" "</script>").encode("utf-8")
-                handler_self.send_response(200); handler_self.send_header("Content-Type", "text/html; charset=utf-8",); handler_self.send_header("Cache-Control", "no-store",)
-                handler_self.send_header("Content-Length", str(len(html)),); handler_self.end_headers(); handler_self.wfile.write(html)
-                try: grant_queue.put_nowait(grant)
-                except queue.Full: pass
-            def log_message(handler_self, fmt: str, *args: Any,) -> None: pass
-        server = ThreadingHTTPServer(("127.0.0.1", 0), CallbackHandler,)
-        (server_thread := threading.Thread(target=server.serve_forever, daemon=True,)).start()
-        callback_url = (f"http://127.0.0.1:" f"{server.server_address[1]}" f"/session-grant" f"?state={callback_state}")
-        try:
-            (bootstrap_resp := self.http.get(f"{self.VERIFY_BASE_URL}/bootstrap", params={"install_id": record.install_id, "app_version": self.app_version, "platform": self.platform,}, headers={"User-Agent": "Go-http-client/1.1",}, timeout=15, **(request_overrides or {}))).raise_for_status()
-            bootstrap_data: dict = bootstrap_resp.json(); challenge_url = str(bootstrap_data.get("challenge_url", "",)).strip()
-            if (parsed_challenge := urlsplit(challenge_url)).scheme != "https": raise RuntimeError("bootstrap returns invalid challenge_url")
-            query_pairs = [(key, value) for key, value in parse_qsl(parsed_challenge.query, keep_blank_values=True,) if key != "cb"]; query_pairs.append(("cb", callback_url))
-            opened = webbrowser.open((final_challenge_url := (urlunsplit(parsed_challenge._replace(query=urlencode(query_pairs))))))
-            if not opened: print(f'Your browser did not open automatically. Please copy the URL "{final_challenge_url}" and open it manually.')
-            try: grant = grant_queue.get(timeout=self.verification_timeout)
-            except queue.Empty as exc: raise RuntimeError("timeout for browser verification") from exc
-            return grant
-        finally: server.shutdown(); server.server_close(); server_thread.join(timeout=1)
-    '''exchangegrant'''
-    def exchangegrant(self, record: CommunitySessionRecord, grant: str, request_overrides: dict = None) -> CommunitySessionRecord:
-        (resp := self.http.post(f"{self.VERIFY_BASE_URL}/session/exchange", json={"grant": grant, "install_id": record.install_id, "app_version": self.app_version, "platform": self.platform,}, headers={"User-Agent": "Go-http-client/1.1",}, timeout=15, **(request_overrides or {}))).raise_for_status()
-        data: dict = resp.json(); record.session_id = str(data.get("session_id", "")).strip()
-        record.session_secret = str(data.get("session_secret", "")).strip(); record.expires_at = str(data.get("expires_at", "")).strip()
-        if not all([record.session_id, record.session_secret, record.expires_at,]): raise RuntimeError("session exchange errors")
-        self.savesession(record)
-        return record
-    '''normalizetrackid'''
-    @staticmethod
-    def normalizetrackid(track_id: str | int,) -> str:
-        if (value := str(track_id).strip()).startswith(("http://", "https://",)):
-            parts = [item for item in urlsplit(value).path.split("/") if item]
-            if "track" in parts and (index := parts.index("track")) + 1 < len(parts): value = parts[index + 1]
-        if not value.isdigit(): raise ValueError(f"Invalid Qobuz track ID: {track_id!r}")
-        return value
 
 
 '''ArcodClient'''
