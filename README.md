@@ -59,7 +59,7 @@
 </div>
 
 <p align="center">
-  <strong>学习收获更多有趣的内容, 欢迎关注微信公众号：Charles的皮卡丘</strong>
+  <strong>想要学习收获更多有趣的内容？欢迎关注微信公众号：Charles的皮卡丘</strong>
 </p>
 
 
