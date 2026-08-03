@@ -1798,6 +1798,31 @@ With TIDALMusicClient, additional CLI tools such as [FFmpeg](https://www.ffmpeg.
   music_client.download(song_infos=song_infos)
   ```
 
+#### WikimediaCommonsMusicClient
+
+[Wikimedia Commons](https://commons.wikimedia.org/) is a free media repository offering openly licensed audio files, images, videos, and other multimedia content.
+
+WikimediaCommonsMusicClient allows you to download music directly from Wikimedia Commons.
+
+No external command-line dependencies, including ffmpeg and N_m3u8DL-RE, are required. After installing musicdl with pip, WikimediaCommonsMusicClient works immediately.
+
+(1) Command-Line Usage
+
+- Basic usage for song search and download, without login cookies:
+
+  `musicdl -m WikimediaCommonsMusicClient`
+
+(2) Invoke It in Python
+
+- Basic usage for song search and download, without login cookies:
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['WikimediaCommonsMusicClient'])
+  music_client.startcmdui()
+  ```
+
 #### YouTubeMusicClient (Built-in Premium Account)
 
 [YouTube Music](https://music.youtube.com/) is Google’s music streaming platform, offering access to over 100 million songs, albums, playlists, remixes, and music videos for listening and discovery.
