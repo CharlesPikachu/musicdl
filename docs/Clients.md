@@ -1040,6 +1040,50 @@ To use AppleMusicClient, you will need extra CLI tools such as [FFmpeg](https://
   music_client.download(song_infos=song_infos)
   ```
 
+#### AudiusMusicClient
+
+[Audius](https://audius.co/) is a decentralized music streaming platform that connects artists directly with listeners.
+
+AudiusMusicClient provides access to the music available on the platform described above.
+
+AudiusMusicClient works out of the box and requires no external command-line dependencies such as ffmpeg or N_m3u8DL-RE; installing musicdl is all you need.
+
+(1) Command-Line Usage
+
+- Basic usage for song search and download, without login cookies:
+  
+  `musicdl -m AudiusMusicClient`
+
+- Simple usage for searching and downloading songs, with login cookies:
+
+  `musicdl -m AudiusMusicClient -i "{'AudiusMusicClient': {'default_search_cookies': 'YOUR_COOKIES'}}"`
+
+(2) Invoke It in Python
+
+- Basic usage for song search and download, without login cookies:
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['AudiusMusicClient'])
+  music_client.startcmdui()
+  ```
+
+- Simple usage for searching and downloading songs, with login cookies:
+
+  ```python
+  from musicdl import musicdl
+  
+  your_vip_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'AudiusMusicClient': {
+        'default_search_cookies': your_vip_cookies_with_str_or_dict_format,
+    }
+  }
+  music_client = musicdl.MusicClient(music_sources=['AudiusMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
 #### DeezerMusicClient (Built-in Premium Account)
 
 [Deezer](https://www.deezer.com/us/) is a music streaming platform that lets users listen to over 120 million tracks, podcasts, playlists, and other audio content online.

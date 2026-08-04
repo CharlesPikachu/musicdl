@@ -12,6 +12,7 @@ from .tidal import TIDALMusicClient
 from .apple import AppleMusicClient
 from .kugou import KugouMusicClient
 from .qobuz import QobuzMusicClient
+from .audius import AudiusMusicClient
 from .deezer import DeezerMusicClient
 from .bodian import BodianMusicClient
 from ..utils import BaseModuleBuilder
@@ -45,7 +46,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         # Global Streaming / Indie
         'YouTubeMusicClient' : YouTubeMusicClient,     'JooxMusicClient'       : JooxMusicClient,           'AppleMusicClient'      : AppleMusicClient,          'JamendoMusicClient'         : JamendoMusicClient,             'SoundCloudMusicClient': SoundCloudMusicClient,
         'DeezerMusicClient'  : DeezerMusicClient,      'QobuzMusicClient'      : QobuzMusicClient,          'SpotifyMusicClient'    : SpotifyMusicClient,        'TIDALMusicClient'           : TIDALMusicClient,               'FMAMusicClient'       : FMAMusicClient,
-        'JioSaavnMusicClient': JioSaavnMusicClient,    'OpenGameArtMusicClient': OpenGameArtMusicClient,    'SunoMusicClient'       : SunoMusicClient,           'WikimediaCommonsMusicClient': WikimediaCommonsMusicClient,
+        'JioSaavnMusicClient': JioSaavnMusicClient,    'OpenGameArtMusicClient': OpenGameArtMusicClient,    'SunoMusicClient'       : SunoMusicClient,           'WikimediaCommonsMusicClient': WikimediaCommonsMusicClient,    'AudiusMusicClient'    : AudiusMusicClient,
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient,    'LizhiMusicClient'      : LizhiMusicClient,          'QingtingMusicClient'   : QingtingMusicClient,       'LRTSMusicClient'            : LRTSMusicClient,                'ITunesMusicClient'    : ITunesMusicClient,
         # Aggregators / Multi-Source Gateways
