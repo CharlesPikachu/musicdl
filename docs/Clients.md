@@ -1058,6 +1058,14 @@ AudiusMusicClient works out of the box and requires no external command-line dep
 
   `musicdl -m AudiusMusicClient -i "{'AudiusMusicClient': {'default_search_cookies': 'YOUR_COOKIES'}}"`
 
+- Basic usage for playlist parsing and downloading, without login cookies:
+
+  `musicdl -p "https://audius.co/shakdiselekta/playlist/selekta-vs-rvssian-songs-of-flesh-fire" -m AudiusMusicClient`
+
+- Simple usage for playlist parsing and downloading, with login cookies:
+
+  `musicdl -p "https://audius.co/shakdiselekta/playlist/selekta-vs-rvssian-songs-of-flesh-fire" -m AudiusMusicClient -i "{'AudiusMusicClient': {'default_parse_cookies': 'YOUR_COOKIES'}}"`
+
 (2) Invoke It in Python
 
 - Basic usage for song search and download, without login cookies:
@@ -1082,6 +1090,32 @@ AudiusMusicClient works out of the box and requires no external command-line dep
   }
   music_client = musicdl.MusicClient(music_sources=['AudiusMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
   music_client.startcmdui()
+  ```
+
+- Basic usage for playlist parsing and downloading, without login cookies:
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['AudiusMusicClient'])
+  song_infos = music_client.parseplaylist("https://audius.co/shakdiselekta/playlist/selekta-vs-rvssian-songs-of-flesh-fire")
+  music_client.download(song_infos=song_infos)
+  ```
+
+- Simple usage for playlist parsing and downloading, with login cookies:
+
+  ```python
+  from musicdl import musicdl
+  
+  your_vip_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'AudiusMusicClient': {
+        'default_parse_cookies': your_vip_cookies_with_str_or_dict_format,
+    }
+  }
+  music_client = musicdl.MusicClient(music_sources=['AudiusMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  song_infos = music_client.parseplaylist("https://audius.co/shakdiselekta/playlist/selekta-vs-rvssian-songs-of-flesh-fire")
+  music_client.download(song_infos=song_infos)
   ```
 
 #### DeezerMusicClient (Built-in Premium Account)

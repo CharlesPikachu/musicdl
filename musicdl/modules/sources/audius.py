@@ -6,12 +6,15 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import copy
 from contextlib import suppress
-from rich.progress import Progress
 from ..sources import BaseMusicClient
+from pathvalidate import sanitize_filepath
+from ..utils.hosts import AUDIUS_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
-from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, SongInfo, AudioLinkTester, SongInfoUtils
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, useparseheaderscookies, hostmatchessuffix, obtainhostname, IOUtils, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''AudiusMusicClient'''
@@ -20,6 +23,7 @@ class AudiusMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(AudiusMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"accept": "application/json", "referer": "https://audius.co/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "authorization": ""}
+        self.default_parse_headers = {"accept": "application/json", "referer": "https://audius.co/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "authorization": ""}
         self.default_download_headers = {"referer": "https://audius.co/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
         self._initsession()
@@ -82,4 +86,34 @@ class AudiusMusicClient(BaseMusicClient):
             progress.update(task_id, description=f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})')
             self.logger_handle.error(f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})', disable_print=self.disable_print)
         # return
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        # init
+        playlist_url, playlist_id = self.session.head(playlist_url, allow_redirects=True, **dict(request_overrides := request_overrides or {})).url, None
+        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
+        if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, AUDIUS_MUSIC_HOSTS)): return song_infos
+        # get tracks in playlist
+        (resp := self.get('https://api.audius.co/v1/resolve', params={'url': playlist_url, 'app_name': 'musicdl'}, **request_overrides)).raise_for_status()
+        playlist_result: dict = resp2json(resp=resp).get('data')[0]; playlist_id = playlist_result.get('id')
+        (resp := self.get(f'https://api.audius.co/v1/playlists/{playlist_id}/tracks', params={'app_name': 'musicdl'}, **request_overrides)).raise_for_status()
+        tracks_in_playlist = safeextractfromdict(resp2json(resp=resp), ['data'], [])
+        # parse track by track in playlist
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed (0/{len(tracks_in_playlist)}) SongInfo", total=len(tracks_in_playlist))
+            for idx, track_info in enumerate(tracks_in_playlist):
+                if idx > 0: main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx}/{len(tracks_in_playlist)}) SongInfo")
+                song_info = SongInfo(source=self.source, raw_data={'search': track_info, 'download': {}, 'lyric': {}})
+                with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                if song_info.with_valid_download_url: song_infos.append(song_info); continue
+                self.logger_handle.warning(f'Fail to parse track info {track_info}', disable_print=self.disable_print)
+            main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
+        # post processing
+        playlist_name = legalizestring(safeextractfromdict(playlist_result, ['playlist_name'], None) or f"playlist-{playlist_id}")
+        song_infos, work_dir = self._removeduplicates(song_infos=song_infos), self._constructuniqueworkdir(keyword=playlist_name)
+        for song_info in song_infos:
+            song_info.work_dir, episodes = work_dir, song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, f"{song_info.song_name} - {song_info.singers}")); IOUtils.touchdir(eps_info.work_dir)
+        # return results
         return song_infos
