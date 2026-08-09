@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from urllib.parse import urljoin, urlparse, parse_qs
+from urllib.parse import urljoin, urlparse, parse_qs, quote
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
@@ -33,8 +33,8 @@ class FLMP3MusicClient(BaseMusicClient):
         self.search_size_per_page = min(self.search_size_per_source, 12)
         search_urls, page_size, count = [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            if int(count // page_size) + 1 == 1: search_urls.append(f'https://www.flmp3.pro/search.html?keyword={keyword}')
-            else: search_urls.append(f'https://www.flmp3.pro/search.html?page={int(count // page_size) + 1}&keyword={keyword}')
+            if int(count // page_size) + 1 == 1: search_urls.append(f'https://www.flmp3.pro/search.html?keyword={quote(keyword)}')
+            else: search_urls.append(f'https://www.flmp3.pro/search.html?page={int(count // page_size) + 1}&keyword={quote(keyword)}')
             count += page_size
         # return
         return search_urls

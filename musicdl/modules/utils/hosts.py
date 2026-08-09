@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 APPLE_MUSIC_HOSTS = {"music.apple.com", "geo.music.apple.com", "embed.music.apple.com", "itunes.apple.com", "geo.itunes.apple.com", "apple.com"}
 AUDIUS_MUSIC_HOSTS = {'audius.co', 'www.audius.co',}
 BODIAN_MUSIC_HOST = {"bodian.kuwo.cn", "h5app.kuwo.cn", "bd-api.kuwo.cn", "ab-bodian.kuwo.cn", "bodiancdn.kuwo.cn", "bodianimgcdn.kuwo.cn"}
+CCMIXTER_MUSIC_HOSTS = {"ccmixter.org", "www.ccmixter.org"}
 DEEZER_MUSIC_HOSTS = {"deezer.com", "www.deezer.com", "deezer.page.link",}
 FIVESING_MUSIC_HOSTS = {"5sing.kugou.com",}
 JOOX_MUSIC_HOSTS = {"joox.com",}

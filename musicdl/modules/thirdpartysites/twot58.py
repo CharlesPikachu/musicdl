@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, quote
 from ..utils import legalizestring, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, RandomIPGenerator, AudioLinkTester, SongInfoUtils
 
 
@@ -35,8 +35,8 @@ class TwoT58MusicClient(BaseMusicClient):
         self.search_size_per_page = min(self.search_size_per_source, 68)
         search_urls, page_size, count = [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            if int(count // page_size) + 1 == 1: search_urls.append(f'https://www.2t58.com/so/{keyword}.html')
-            else: search_urls.append(f'https://www.2t58.com/so/{keyword}/{int(count // page_size) + 1}.html')
+            if int(count // page_size) + 1 == 1: search_urls.append(f'https://www.2t58.com/so/{quote(keyword)}.html')
+            else: search_urls.append(f'https://www.2t58.com/so/{quote(keyword)}/{int(count // page_size) + 1}.html')
             count += page_size
         # return
         return search_urls

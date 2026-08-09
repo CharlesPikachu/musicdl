@@ -1118,6 +1118,84 @@ AudiusMusicClient works out of the box and requires no external command-line dep
   music_client.download(song_infos=song_infos)
   ```
 
+#### CCMixterMusicClient
+
+[ccMixter](https://ccmixter.org/) is a Creative Commons music community where artists share, remix, and reuse vocals, samples, and original tracks for collaborative and royalty-friendly music creation.
+
+CCMixterMusicClient lets you access the music hosted on the platform introduced above.
+
+CCMixterMusicClient works out of the box without relying on external command-line tools such as ffmpeg or N_m3u8DL-RE; simply installing musicdl is sufficient.
+
+(1) Command-Line Usage
+
+- Basic usage for song search and download, without login cookies:
+  
+  `musicdl -m CCMixterMusicClient`
+
+- Simple usage for searching and downloading songs, with login cookies:
+
+  `musicdl -m CCMixterMusicClient -i "{'CCMixterMusicClient': {'default_search_cookies': 'YOUR_COOKIES'}}"`
+
+- Basic usage for playlist parsing and downloading, without login cookies:
+
+  `musicdl -p "https://ccmixter.org/playlist/browse/57965" -m CCMixterMusicClient`
+
+- Simple usage for playlist parsing and downloading, with login cookies:
+
+  `musicdl -p "https://ccmixter.org/playlist/browse/57965" -m CCMixterMusicClient -i "{'CCMixterMusicClient': {'default_parse_cookies': 'YOUR_COOKIES'}}"`
+
+(2) Invoke It in Python
+
+- Basic usage for song search and download, without login cookies:
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['CCMixterMusicClient'])
+  music_client.startcmdui()
+  ```
+
+- Simple usage for searching and downloading songs, with login cookies:
+
+  ```python
+  from musicdl import musicdl
+  
+  your_vip_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'CCMixterMusicClient': {
+        'default_search_cookies': your_vip_cookies_with_str_or_dict_format,
+    }
+  }
+  music_client = musicdl.MusicClient(music_sources=['CCMixterMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
+- Basic usage for playlist parsing and downloading, without login cookies:
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['CCMixterMusicClient'])
+  song_infos = music_client.parseplaylist("https://ccmixter.org/playlist/browse/57965")
+  music_client.download(song_infos=song_infos)
+  ```
+
+- Simple usage for playlist parsing and downloading, with login cookies:
+
+  ```python
+  from musicdl import musicdl
+  
+  your_vip_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'CCMixterMusicClient': {
+        'default_parse_cookies': your_vip_cookies_with_str_or_dict_format,
+    }
+  }
+  music_client = musicdl.MusicClient(music_sources=['CCMixterMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  song_infos = music_client.parseplaylist("https://ccmixter.org/playlist/browse/57965")
+  music_client.download(song_infos=song_infos)
+  ```
+
 #### DeezerMusicClient (Built-in Premium Account)
 
 [Deezer](https://www.deezer.com/us/) is a music streaming platform that lets users listen to over 120 million tracks, podcasts, playlists, and other audio content online.

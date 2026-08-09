@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from urllib.parse import urljoin, urlparse, parse_qs
+from urllib.parse import urljoin, urlparse, parse_qs, quote
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, extractdurationsecondsfromlrc, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
@@ -38,8 +38,8 @@ class GequhaiMusicClient(BaseMusicClient):
         self.search_size_per_page = min(self.search_size_per_source, 12)
         search_urls, page_size, count = [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            if int(count // page_size) + 1 == 1: search_urls.append(f'https://www.gequhai.com/s/{keyword}')
-            else: search_urls.append(f'https://www.gequhai.com/s/{keyword}?page={int(count // page_size) + 1}')
+            if int(count // page_size) + 1 == 1: search_urls.append(f'https://www.gequhai.com/s/{quote(keyword)}')
+            else: search_urls.append(f'https://www.gequhai.com/s/{quote(keyword)}?page={int(count // page_size) + 1}')
             count += page_size
         # return
         return search_urls

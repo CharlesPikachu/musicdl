@@ -10,9 +10,9 @@ import re
 from html import unescape
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from urllib.parse import urljoin
 from rich.progress import Progress
 from ..sources import BaseMusicClient
+from urllib.parse import urljoin, quote
 from ..utils import legalizestring, usesearchheaderscookies, SongInfo, AudioLinkTester
 
 
@@ -33,7 +33,7 @@ class HTQYYMusicClient(BaseMusicClient):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
         # construct search urls
-        search_urls = [f'http://www.htqyy.com/home/search?wd={keyword}']
+        search_urls = [f'http://www.htqyy.com/home/search?wd={quote(keyword)}']
         self.search_size_per_page = self.search_size_per_source
         # return
         return search_urls

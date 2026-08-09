@@ -105,6 +105,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [StreetVoiceMusicClient](https://www.streetvoice.cn/)              | [街声](https://www.streetvoice.cn/)                                          | ✅        | ✅         | [streetvoice.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/streetvoice.py)             |
 | **Global Streaming / Indie**             | [AppleMusicClient](https://music.apple.com/)                       | [苹果音乐](https://music.apple.com/)                                         | ✅        | ✅         | [apple.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/apple.py)                         |
 |                                          | [AudiusMusicClient](https://audius.co/)                            | [Audius音乐平台](https://audius.co/)                                         | ✅        | ✅         | [audius.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/audius.py)                       |
+|                                          | [CCMixterMusicClient](https://ccmixter.org/)                       | [ccMixter开放音乐混音社区](https://ccmixter.org/)                            | ✅        | ✅         | [ccmixter.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ccmixter.py)                   |
 |                                          | [DeezerMusicClient](https://www.deezer.com/us/)                    | [Deezer (法国音乐平台)](https://www.deezer.com/us/)                          | ✅        | ✅         | [deezer.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/deezer.py)                       |
 |                                          | [FMAMusicClient](https://freemusicarchive.org/)                    | [FMA (自由音乐网)](https://freemusicarchive.org/)                            | ✅        | ✅         | [fma.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fma.py)                             |
 |                                          | [JamendoMusicClient](https://www.jamendo.com/)                     | [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                            | ✅        | ✅         | [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)                     |
@@ -710,7 +711,7 @@ AppleMusicClient,      DeezerMusicClient,       FiveSingMusicClient,    JamendoM
 KuwoMusicClient,       KugouMusicClient,        MiguMusicClient,        NeteaseMusicClient,      QQMusicClient,
 QianqianMusicClient,   QobuzMusicClient,        SoundCloudMusicClient,  StreetVoiceMusicClient,  SodaMusicClient,
 SpotifyMusicClient,    TIDALMusicClient,        FMAMusicClient,         JioSaavnMusicClient,     BodianMusicClient,
-SunoMusicClient,       MOOVMusicClient,         AudiusMusicClient,
+SunoMusicClient,       MOOVMusicClient,         AudiusMusicClient,      CCMixterMusicClient,
 ```
 
 You can download a supported playlist directly from the terminal:
@@ -722,9 +723,11 @@ musicdl -p "https://music.apple.com/cn/playlist/%E5%8D%81%E5%A4%A7%E4%B8%93%E8%B
 # >>> use wrapper
 musicdl -p "https://music.apple.com/cn/playlist/%E5%8D%81%E5%A4%A7%E4%B8%93%E8%BE%91/pl.u-mJy81mECzBL49zM" -m AppleMusicClient -i "{'AppleMusicClient': {'use_wrapper': True, 'wrapper_account_url': 'http://127.0.0.1:30020/', 'wrapper_decrypt_ip': '127.0.0.1:10020'}}"
 # Parse and Download Audius Music Playlist
-musicdl -p "https://audius.co/audiusplaylists/playlist/audius-weekly-6044"
+musicdl -p "https://audius.co/audiusplaylists/playlist/audius-weekly-6044" -m AudiusMusicClient
 # Parse and Download Bodian Music Playlist
-musicdl -p "https://h5app.kuwo.cn/m/bodian/collection.html?uid=1798690&playlistId=1669719&source=5&ownerId=1798690"
+musicdl -p "https://h5app.kuwo.cn/m/bodian/collection.html?uid=1798690&playlistId=1669719&source=5&ownerId=1798690" -m BodianMusicClient
+# Parse and Download ccMixter Music Playlist
+musicdl -p "https://ccmixter.org/playlist/browse/56358" -m CCMixterMusicClient
 # Parse and Download Deezer Music Playlist
 musicdl -p "https://www.deezer.com/us/playlist/4697225044" -m DeezerMusicClient
 # Parse and Download 5SING Music Playlist

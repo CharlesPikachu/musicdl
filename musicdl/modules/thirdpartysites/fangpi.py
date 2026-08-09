@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, quote
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
@@ -37,7 +37,7 @@ class FangpiMusicClient(BaseMusicClient):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
         # construct search urls
-        search_urls = [f'https://www.fangpi.net/s/{keyword}']
+        search_urls = [f'https://www.fangpi.net/s/{quote(keyword)}']
         self.search_size_per_page = self.search_size_per_source
         # return
         return search_urls

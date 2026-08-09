@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from urllib.parse import urljoin, urlsplit, urlparse, parse_qs
+from urllib.parse import urljoin, urlsplit, urlparse, parse_qs, quote
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, extractdurationsecondsfromlrc, resp2json, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
@@ -35,7 +35,7 @@ class KKWSMusicClient(BaseMusicClient):
         self.search_size_per_page = min(self.search_size_per_source, 15)
         search_urls, page_size, count = [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            search_urls.append(f'https://www.kkws.cc/search.html?key={keyword}&page={int(count // page_size) + 1}')
+            search_urls.append(f'https://www.kkws.cc/search.html?key={quote(keyword)}&page={int(count // page_size) + 1}')
             count += page_size
         # return
         return search_urls
