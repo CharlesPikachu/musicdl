@@ -7,9 +7,10 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import copy
+from typing import Unpack
 from urllib.parse import urlsplit
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, LanZouYParser, AudioLinkTester, SongInfoUtils
 
 
@@ -17,7 +18,7 @@ from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchhea
 class ZhuolinMusicClient(BaseMusicClient):
     source = 'ZhuolinMusicClient'
     MUSIC_QUALITIES = {'128', '320', '2000'}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(ZhuolinMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
         self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}

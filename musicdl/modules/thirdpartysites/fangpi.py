@@ -10,18 +10,19 @@ import re
 import ast
 import base64
 import json_repair
+from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse, quote
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''FangpiMusicClient'''
 class FangpiMusicClient(BaseMusicClient):
     source = 'FangpiMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         kwargs['enable_search_curl_cffi'] = True
         super(FangpiMusicClient, self).__init__(**kwargs)
         if not self.quark_parser_config.get('cookies'): self.logger_handle.warning(f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so song downloads are restricted and only mp3 files can be downloaded.')

@@ -9,7 +9,7 @@ WeChat Official Account (微信公众号):
 import os
 import copy
 from contextlib import suppress
-from ..sources import BaseMusicClient
+from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import AUDIUS_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs

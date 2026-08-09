@@ -10,10 +10,11 @@ import re
 import ast
 import copy
 import json_repair
+from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urljoin, urlparse, parse_qs
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
@@ -22,7 +23,7 @@ from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, ex
 class LivePOOMusicClient(BaseMusicClient):
     source = 'LivePOOMusicClient'
     MUSIC_QUALITY_RANK = {"DSD": 100, "DSF": 100, "DFF": 100, "WAV": 95, "AIFF": 95, "FLAC": 90, "ALAC": 90, "APE": 88, "WV": 88, "OPUS": 70, "AAC": 65, "M4A": 65, "OGG": 60, "VORBIS": 60, "MP3": 50, "WMA": 45}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(LivePOOMusicClient, self).__init__(**kwargs)
         if not self.quark_parser_config.get('cookies'): self.logger_handle.warning(f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so song downloads are restricted and only mp3 files can be downloaded.')
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}

@@ -8,10 +8,11 @@ WeChat Official Account (微信公众号):
 '''
 import re
 import copy
+from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urljoin, parse_qs, urlparse, urlencode
 from ..utils import legalizestring, usesearchheaderscookies, cleanlrc, SongInfo, AudioLinkTester
 
@@ -19,7 +20,7 @@ from ..utils import legalizestring, usesearchheaderscookies, cleanlrc, SongInfo,
 '''ITingWaMusicClient'''
 class ITingWaMusicClient(BaseMusicClient):
     source = 'ITingWaMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(ITingWaMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', 'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7', 'Host': 'www.itingwa.com', 'Sec-CH-UA': '"Not;A=Brand";v="8", "Chromium";v="150", "Google Chrome";v="150"', 'Sec-CH-UA-Mobile': '?0', 

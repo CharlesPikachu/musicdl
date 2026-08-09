@@ -10,7 +10,7 @@ import os
 import copy
 import xml.etree.ElementTree as ET
 from contextlib import suppress
-from ..sources import BaseMusicClient
+from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import CCMIXTER_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs

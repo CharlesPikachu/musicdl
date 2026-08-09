@@ -7,19 +7,20 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+from typing import Unpack
 from html import unescape
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urljoin, quote
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, SongInfo, AudioLinkTester
 
 
 '''HTQYYMusicClient'''
 class HTQYYMusicClient(BaseMusicClient):
     source = 'HTQYYMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(HTQYYMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",

@@ -8,17 +8,18 @@ WeChat Official Account (微信公众号):
 '''
 import uuid
 import copy
+from typing import Unpack
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urlparse, parse_qs, urlencode
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, resp2json, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''XiagebaMusicClient'''
 class XiagebaMusicClient(BaseMusicClient):
     source = 'XiagebaMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(XiagebaMusicClient, self).__init__(**kwargs)
         assert self.quark_parser_config.get('cookies'), f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so the songs cannot be downloaded.'
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"}

@@ -8,10 +8,11 @@ WeChat Official Account (微信公众号):
 '''
 import re
 import copy
+from typing import Unpack
 from contextlib import suppress
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
@@ -19,7 +20,7 @@ from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextr
 class MituMusicClient(BaseMusicClient):
     source = 'MituMusicClient'
     MUSIC_QUALITY_RANK = {"DSD": 100, "DSF": 100, "DFF": 100, "WAV": 95, "AIFF": 95, "FLAC": 90, "ALAC": 90, "APE": 88, "WV": 88, "OPUS": 70, "AAC": 65, "M4A": 65, "OGG": 60, "VORBIS": 60, "MP3": 50, "WMA": 45}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(MituMusicClient, self).__init__(**kwargs)
         if not self.quark_parser_config.get('cookies'): self.logger_handle.warning(f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so song downloads are restricted and only mp3 files can be downloaded.')
         self.default_search_headers = {

@@ -12,18 +12,19 @@ import urllib
 import base64
 import json_repair
 import urllib.parse
+from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse, parse_qs, quote
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, extractdurationsecondsfromlrc, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''GequhaiMusicClient'''
 class GequhaiMusicClient(BaseMusicClient):
     source = 'GequhaiMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(GequhaiMusicClient, self).__init__(**kwargs)
         if not self.quark_parser_config.get('cookies'): self.logger_handle.warning(f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so song downloads are restricted and only mp3 files can be downloaded.')
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}

@@ -9,11 +9,12 @@ WeChat Official Account (微信公众号):
 import re
 import copy
 import requests
+from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse, quote
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, RandomIPGenerator, AudioLinkTester, SongInfoUtils
 
 
@@ -21,7 +22,7 @@ from ..utils import legalizestring, usesearchheaderscookies, extractdurationseco
 class TwoT58MusicClient(BaseMusicClient):
     source = 'TwoT58MusicClient'
     MUSIC_QUALITIES = ['flac', 'wav', '320']
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(TwoT58MusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8", "Connection": "keep-alive",}
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"}

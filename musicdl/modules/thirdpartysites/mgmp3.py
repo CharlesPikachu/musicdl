@@ -10,10 +10,11 @@ import re
 import html
 import copy
 import warnings
+from typing import Unpack
 from contextlib import suppress
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 warnings.filterwarnings('ignore')
 
@@ -21,7 +22,7 @@ warnings.filterwarnings('ignore')
 '''MGMP3MusicClient'''
 class MGMP3MusicClient(BaseMusicClient):
     source = 'MGMP3MusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(MGMP3MusicClient, self).__init__(**kwargs)
         if not self.quark_parser_config.get('cookies'): self.logger_handle.warning(f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so song downloads are restricted and only mp3 files can be downloaded.')
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", "Referer": "https://www.mgmp3.top/"}

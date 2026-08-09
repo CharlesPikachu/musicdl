@@ -7,11 +7,12 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse, parse_qs, quote
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
@@ -19,7 +20,7 @@ from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, ex
 class FiveSongMusicClient(BaseMusicClient):
     source = 'FiveSongMusicClient'
     MUSIC_QUALITY_RANK = {"DSD": 0, "WAV": 1, "FLAC": 2, "APE": 3, "ALAC": 4, "AAC": 5, "MP3": 6, "OGG": 7, "M4A": 8}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(FiveSongMusicClient, self).__init__(**kwargs)
         assert self.quark_parser_config.get('cookies'), f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so the songs cannot be downloaded.'
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
