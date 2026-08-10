@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+import requests
 from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
@@ -41,17 +42,20 @@ class FiveSongMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_parsesearchresultsfromhtml'''
-    def _parsesearchresultsfromhtml(self, html_text: str):
-        soup, base_url, search_results = BeautifulSoup(html_text, "lxml"), "https://www.5song.xyz", []
+    def _parsesearchresultsfromhtml(self, resp: requests.Response):
+        soup, base_url, search_results = BeautifulSoup(resp.text, "lxml"), "https://www.5song.xyz", []
         for li_item in soup.select("div.list ul > li"):
             if not (a := li_item.select_one("a[href]")) or not a.get("href", "").strip(): continue
             title = title_el.get_text(strip=True) if (title_el := a.select_one("div.con div.t h3")) else None
-            formats = [s.get_text(strip=True) for s in a.select("div.con div.t span") if s.get_text(strip=True)]
             singer = singer_el.get_text(strip=True) if (singer_el := a.select_one("div.singerNum div.singer")) else None
-            date = date_el.get_text(strip=True) if (date_el := a.select_one("div.singerNum div.date")) else None
-            num = num_el.get_text(strip=True) if (num_el := a.select_one("div.singerNum div.num")) else None
             cover_url = urljoin(base_url, img.get("src")) if (img := a.select_one("div.pic img")) and img.get("src") else None
-            search_results.append({"title": title, "formats": formats, "singer": singer, "date": date, "num": num, "detail_url": urljoin(base_url, a.get("href", "").strip()), "cover_url": cover_url})
+            search_results.append({"title": title, "singer": singer, "detail_url": urljoin(base_url, a.get("href", "").strip()), "cover_url": cover_url})
+        if not search_results and '/search.html' not in urlparse(resp.url).path:
+            title = title_el.get("content") if (title_el := soup.select_one('meta[property="og:title"][content]')) else None
+            singer = singer_el.get_text(strip=True) if (singer_el := soup.select_one('div.article-meta a[href^="/singer/"]')) else None
+            cover_url = cover_el.get("content") if (cover_el := soup.select_one('meta[property="og:image"][content]')) else None
+            detail_url = detail_el.get("content") if (detail_el := soup.select_one('meta[property="og:url"][content]')) else resp.url
+            search_results = [{"title": title, "singer": singer, "detail_url": urljoin(base_url, detail_url), "cover_url": urljoin(base_url, cover_url) if cover_url else None}]
         return search_results
     '''_search'''
     @usesearchheaderscookies
@@ -65,11 +69,11 @@ class FiveSongMusicClient(BaseMusicClient):
         try:
             # --search results
             (resp := self.get(search_url, **(request_overrides := request_overrides or {}))).raise_for_status()
-            for search_result_idx, search_result in enumerate(self._parsesearchresultsfromhtml(resp.text)):
+            for search_result_idx, search_result in enumerate(self._parsesearchresultsfromhtml(resp)):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
-                if not isinstance(search_result, dict) or ('detail_url' not in search_result): continue
+                if not isinstance(search_result, dict) or not search_result.get('detail_url'): continue
                 song_info, song_id, quark_links = SongInfo(source=self.source), urlparse(str(search_result['detail_url'])).path.strip('/').split('/')[-1].split('.')[0], []
                 # ----obtain basic information
                 with suppress(Exception): resp = None; (resp := self.get(search_result['detail_url'], **request_overrides)).raise_for_status(); soup = BeautifulSoup(resp.text, "lxml")
