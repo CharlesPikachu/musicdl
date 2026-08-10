@@ -118,7 +118,7 @@ class GequbaoMusicClient(BaseMusicClient):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
-                if not isinstance(search_result, dict) or ('url' not in search_result): continue
+                if not isinstance(search_result, dict) or not search_result.get('url'): continue
                 with suppress(Exception): search_result.update(self._getsongmetainfo(search_result=search_result, request_overrides=request_overrides))
                 # ----parse from quark links
                 with suppress(Exception): song_info = self._parsesearchresultfromquark(search_result, request_overrides) if self.quark_parser_config.get('cookies') else SongInfo(source=self.source)

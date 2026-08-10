@@ -77,7 +77,7 @@ class HTQYYMusicClient(BaseMusicClient):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
-                if not isinstance(search_result, dict) or ('play_url' not in search_result): continue
+                if not isinstance(search_result, dict) or not search_result.get('play_url'): continue
                 song_info, song_id = SongInfo(source=self.source), search_result.get('id') or search_result.get('sid')
                 with suppress(Exception): resp = None; (resp := self.get(search_result['play_url'], **request_overrides)).raise_for_status()
                 if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue

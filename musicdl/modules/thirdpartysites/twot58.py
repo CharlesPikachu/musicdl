@@ -79,7 +79,7 @@ class TwoT58MusicClient(BaseMusicClient):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
-                if not isinstance(search_result, dict) or ('url' not in search_result) or ('id' not in search_result): continue
+                if not isinstance(search_result, dict) or (not search_result.get('url')) or (not search_result.get('id')): continue
                 headers, song_info, song_id = copy.deepcopy(self.default_download_headers), SongInfo(source=self.source), search_result['id']
                 for music_quality in TwoT58MusicClient.MUSIC_QUALITIES:
                     download_url = f"https://www.2t58.com/plug/down.php?ac=music&id={song_id}&k={music_quality}"; RandomIPGenerator().addrandomipv4toheaders(headers=headers)

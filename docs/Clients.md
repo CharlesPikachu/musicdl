@@ -2734,36 +2734,6 @@ Using FiveSongMusicClient does not require the installation of any additional co
   music_client.startcmdui()
   ```
 
-#### FLMP3MusicClient
-
-[flmp3.pro](https://www.flmp3.pro/index.html) is a music-sharing website that offers high-quality lossless audio resources, online listening, and downloadable tracks for music lovers.
-
-We use FLMP3MusicClient to download music from the platform above.
-
-Getting started with FLMP3MusicClient is easy: no need to install ffmpeg, N_m3u8DL-RE, or any other CLI tools. Just pip install musicdl and you are good to go.
-
-
-(1) Command-Line Usage
-
-- Configure Quark Drive Cookies to Search for and Download High-Quality Music Files
-
-  `musicdl -m FLMP3MusicClient -i "{'FLMP3MusicClient': {'quark_parser_config': {'cookies': 'Your Quark Drive Login Cookies'}}}"`
-
-(2) Invoke It in Python
-
-- Configure Quark Drive Cookies to Search for and Download High-Quality Music Files
-
-  ```python
-  from musicdl import musicdl
-  
-  your_quark_drive_login_cookies_with_str_or_dict_format = ''
-  init_music_clients_cfg = {
-    'FLMP3MusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
-  }
-  music_client = musicdl.MusicClient(music_sources=['FLMP3MusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-  music_client.startcmdui()
-  ```
-
 #### GequbaoMusicClient
 
 [gequbao.com](https://www.gequbao.com/) is a music website for searching, streaming, and downloading high-quality MP3 songs, with charts, updates, and curated collections.

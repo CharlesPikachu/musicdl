@@ -368,7 +368,6 @@ End users usually do not create this class directly. Instead, they use subclasse
 - `musicdl.modules.thirdpartysites.BuguyyMusicClient`
 - `musicdl.modules.thirdpartysites.FiveSongMusicClient`
 - `musicdl.modules.thirdpartysites.FangpiMusicClient`
-- `musicdl.modules.thirdpartysites.FLMP3MusicClient`
 - `musicdl.modules.thirdpartysites.GequbaoMusicClient`
 - `musicdl.modules.thirdpartysites.GequhaiMusicClient`
 - `musicdl.modules.thirdpartysites.HTQYYMusicClient`
