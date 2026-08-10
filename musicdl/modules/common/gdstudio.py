@@ -9,11 +9,11 @@ WeChat Official Account (微信公众号):
 import copy
 import time
 import struct
-from typing import Dict, Any
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from typing import Dict, Any, Unpack
 from urllib.parse import quote, urljoin
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import resp2json, legalizestring, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient
 
 
@@ -27,8 +27,8 @@ class GDStudioMusicClient(BaseMusicClient):
     API_URL = "https://music.gdstudio.xyz/api.php"
     MUSIC_QUALITIES = [999, 740, 320, 192, 128]
     SUPPORTED_SITES = ['netease', 'joox', 'tidal', 'qobuz', 'apple', 'bilibili', 'ytmusic', 'spotify', 'kuwo', 'tencent']
-    def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-4])))
+    def __init__(self, allowed_music_sources: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+        self.allowed_music_sources = list(set(allowed_music_sources or GDStudioMusicClient.SUPPORTED_SITES[:-4]))
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",

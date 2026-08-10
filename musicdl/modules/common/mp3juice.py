@@ -9,19 +9,20 @@ WeChat Official Account (微信公众号):
 import copy
 import time
 import base64
+from typing import Unpack
 from urllib.parse import quote
 from contextlib import suppress
 from itertools import zip_longest
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 
 
 '''MP3JuiceMusicClient'''
 class MP3JuiceMusicClient(BaseMusicClient):
     source = 'MP3JuiceMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         kwargs['search_size_per_source'] = kwargs['search_size_per_source'] * 2
         super(MP3JuiceMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", "Referer": "https://mp3juice.sc/", "Origin": "https://mp3juice.sc"}

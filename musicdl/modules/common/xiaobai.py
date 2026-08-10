@@ -7,10 +7,11 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import copy
+from typing import Unpack
 from contextlib import suppress
 from urllib.parse import urljoin
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
 
 
@@ -18,8 +19,8 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractd
 class XiaoBaiMusicClient(BaseMusicClient):
     source = 'XiaoBaiMusicClient'
     ALLOWED_SITES = ['netease', 'qq', 'kugou', 'kuwo']
-    def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', XiaoBaiMusicClient.ALLOWED_SITES)))
+    def __init__(self, allowed_music_sources: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+        self.allowed_music_sources = list(set(allowed_music_sources or XiaoBaiMusicClient.ALLOWED_SITES))
         super(XiaoBaiMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", 'origin': 'https://music.90svip.cn', 'x-requested-with': 'XMLHttpRequest',

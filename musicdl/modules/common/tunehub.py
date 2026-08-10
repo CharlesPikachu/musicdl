@@ -10,10 +10,11 @@ import copy
 import random
 import base64
 import requests
+from typing import Unpack
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
 from urllib.parse import urlparse, parse_qs
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
 
 
@@ -24,8 +25,8 @@ class TuneHubMusicClient(BaseMusicClient):
     TUNEHUB_API_MUSIC_QUALITIES = ['flac24bit', 'flac', '320k', '128k']
     METING_API_MUSIC_QUALITIES = ['400', '380', '320', '128']
     REQUEST_API_KEYS = ['charlespikachudGhfZGQ2YzNmZDFhZjI1ZTkyNTZmODY5YjU4MzkyNjhiZGNhMjlhYjcwZGY5ZmU4NWYy']
-    def __init__(self, tunehub_api_key: str = None, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', TuneHubMusicClient.ALLOWED_SITES)))
+    def __init__(self, tunehub_api_key: str = None, allowed_music_sources: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+        self.allowed_music_sources = list(set(allowed_music_sources or TuneHubMusicClient.ALLOWED_SITES))
         super(TuneHubMusicClient, self).__init__(**kwargs)
         tunehub_api_key = tunehub_api_key if tunehub_api_key else (lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'))(random.choice(TuneHubMusicClient.REQUEST_API_KEYS))
         self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'X-API-Key': tunehub_api_key}
