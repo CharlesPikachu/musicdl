@@ -4,6 +4,7 @@ from .kkws import KKWSMusicClient
 from .htqyy import HTQYYMusicClient
 from .mgmp3 import MGMP3MusicClient
 from .sgogo import SgogoMusicClient
+from .xmfwav import XMFWAVMusicClient
 from .twot58 import TwoT58MusicClient
 from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient

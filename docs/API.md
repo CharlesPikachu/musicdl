@@ -380,6 +380,7 @@ End users usually do not create this class directly. Instead, they use subclasse
 - `musicdl.modules.thirdpartysites.SgogoMusicClient`
 - `musicdl.modules.thirdpartysites.TwoT58MusicClient`
 - `musicdl.modules.thirdpartysites.XiagebaMusicClient`
+- `musicdl.modules.thirdpartysites.XMFWAVMusicClient`
 - `musicdl.modules.thirdpartysites.YinyuedaoMusicClient`
 - `musicdl.modules.thirdpartysites.ZhuolinMusicClient`
 - `musicdl.modules.common.GDStudioMusicClient`

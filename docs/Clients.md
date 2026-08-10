@@ -3167,6 +3167,48 @@ XiagebaMusicClient does not rely on external command-line utilities such as FFmp
   music_client.startcmdui()
   ```
 
+#### XMFWAVMusicClient
+
+[xmfwav.com](https://www.xmfwav.com/) is a streamlined music platform known for its extensive song library, fast search, online playback, and high-quality lossless FLAC/APE downloads.
+
+XMFWAVMusicClient provides seamless access to music downloads from the platform above, with no external CLI tooling required.
+
+Unlike workflows that rely on utilities such as ffmpeg or N_m3u8DL-RE, XMFWAVMusicClient works out of the box with a simple pip install musicdl.
+
+(1) Command-Line Usage
+
+- Search for and Download Playable Music Files from Websites
+
+  `musicdl -m XMFWAVMusicClient`
+
+- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
+
+  `musicdl -m XMFWAVMusicClient -i "{'XMFWAVMusicClient': {'quark_parser_config': {'cookies': 'Your Quark Drive Login Cookies'}}}"`
+
+(2) Invoke It in Python
+
+- Search for and Download Playable Music Files from Websites
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['XMFWAVMusicClient'])
+  music_client.startcmdui()
+  ```
+
+- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
+
+  ```python
+  from musicdl import musicdl
+  
+  your_quark_drive_login_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'XMFWAVMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
+  }
+  music_client = musicdl.MusicClient(music_sources=['XMFWAVMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
 #### YinyuedaoMusicClient
 
 [1mp3.top](https://1mp3.top/) is a music download website that provides free MP3 and lossless tracks, searchable song pages, and bundled music collections.

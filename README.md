@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-08-09: Released musicdl v2.13.5 — perform monthly maintenance checks on third-party music clients, fixing numerous bugs and restoring all broken clients; remove the FLMP3 music client and introduce the new XMFWAV music client; add support for three music platforms with clearly copyrighted content.
 - 2026-07-26: Released musicdl v2.13.4 — fix potential bugs in playlist parsing for several music clients; add and fix several third-party parsing APIs for the Deezer, Tidal, and Qobuz music clients.
 - 2026-07-24: Released musicdl v2.13.3 — fixed bugs in all affected common music clients; addressed potential issues in DeezerMusicClient, QobuzMusicClient, YouTubeMusicClient, JooxMusicClient, BilibiliMusicClient, JamendoMusicClient, JioSaavnMusicClient, FiveSingMusicClient, and SpotifyMusicClient.
-- 2026-07-20: Released musicdl v2.13.2 — added support for music search and downloading from multiple third-party music platforms, including liziyy.top, mgmp3.top, itingwa.com, sgogo.com, and xiageba.liumingye.cn; regularly maintained and updated third-party APIs for Kuwo Music, Kugou Music, QQ Music, Qianqian Music, Migu Music, Bodian Music, and NetEase Cloud Music, while also fixing unreasonable behavior in playlist parsing.
 
 
 # 🎵 Introduction
@@ -145,6 +145,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [SgogoMusicClient](https://www.sgogo.com/)                         | [搜歌网](https://www.sgogo.com/)                                             | ✅        | ✅         | [sgogo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/thirdpartysites/sgogo.py)                 |
 |                                          | [TwoT58MusicClient](https://www.2t58.com/)                         | [爱听音乐网](https://www.2t58.com/)                                          | ✅        | ✅         | [twot58.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/thirdpartysites/twot58.py)               |
 |                                          | [XiagebaMusicClient](https://xiageba.liumingye.cn/)                | [下歌吧](https://xiageba.liumingye.cn/)                                      | ✅        | ✅         | [xiageba.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/thirdpartysites/xiageba.py)             |
+|                                          | [XMFWAVMusicClient](https://www.xmfwav.com/)                       | [小蜜蜂音乐网](https://www.xmfwav.com/)                                      | ✅        | ✅         | [xmfwav.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/thirdpartysites/xmfwav.py)               |
 |                                          | [YinyuedaoMusicClient](https://1mp3.top/)                          | [音乐岛](https://1mp3.top/)                                                  | ✅        | ✅         | [yinyuedao.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/thirdpartysites/yinyuedao.py)         |
 |                                          | [ZhuolinMusicClient](https://music.zhuolin.wang/)                  | [音乐解析下载网](https://music.zhuolin.wang/)                                | ✅        | ✅         | [zhuolin.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/thirdpartysites/zhuolin.py)             |
 
