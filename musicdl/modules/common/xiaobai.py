@@ -58,7 +58,7 @@ class XiaoBaiMusicClient(BaseMusicClient):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}.{root_source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
-                if not isinstance(search_result, dict) or ('songid' not in search_result) or ('url' not in search_result): continue
+                if not isinstance(search_result, dict) or (not search_result.get('songid')) or (not search_result.get('url')): continue
                 song_info, download_url = SongInfo(source=self.source, root_source=root_source), urljoin(base_url, search_result['url'])
                 with suppress(Exception): download_url = self.session.head(download_url, allow_redirects=True, **request_overrides).url
                 cover_url, song_id = urljoin(base_url, search_result.get('cover', "") or ""), search_result['songid']

@@ -299,3 +299,9 @@ class SongInfoUtils:
         for cls, ext in AUDIO_EXTENSIONS.items():
             if isinstance(audio, cls): return ext
         return None
+    '''naiveguessdurationfromaudiobytes'''
+    @staticmethod
+    def naiveguessdurationfromaudiobytes(content: bytes):
+        audio: FLAC = MutagenFile(BytesIO(content))
+        duration_in_secs = audio.info.length if audio and audio.info and hasattr(audio.info, 'length') else None
+        return duration_in_secs

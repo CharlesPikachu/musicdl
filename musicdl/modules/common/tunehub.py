@@ -79,7 +79,7 @@ class TuneHubMusicClient(BaseMusicClient):
             search_results = search_url['search_api'](**search_url['rule']) if isinstance(search_url, dict) else resp2json(self.get(search_url, **request_overrides))
             for search_result_idx, search_result in enumerate(search_results):
                 # --init song info
-                if not isinstance(search_result, dict) or ('id' not in search_result and 'url' not in search_result): continue
+                if not isinstance(search_result, dict) or ((not search_result.get('id')) and (not search_result.get('url'))): continue
                 if not (song_id := search_result.get('id')): search_result['id'] = parse_qs(urlparse(str(search_result['url'])).query, keep_blank_values=True).get('id')[0]; song_id = search_result['id']
                 song_info = SongInfo(source=self.source, root_source=root_source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --update progress

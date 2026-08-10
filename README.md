@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-08-10: Released musicdl v2.13.6 — perform routine updates and maintenance for the common music clients, this update fixes two common music clients.
 - 2026-08-09: Released musicdl v2.13.5 — perform monthly maintenance checks on third-party music clients, fixing numerous bugs and restoring all broken clients; remove the FLMP3 music client and introduce the new XMFWAV music client; add support for three music platforms with clearly copyrighted content.
 - 2026-07-26: Released musicdl v2.13.4 — fix potential bugs in playlist parsing for several music clients; add and fix several third-party parsing APIs for the Deezer, Tidal, and Qobuz music clients.
-- 2026-07-24: Released musicdl v2.13.3 — fixed bugs in all affected common music clients; addressed potential issues in DeezerMusicClient, QobuzMusicClient, YouTubeMusicClient, JooxMusicClient, BilibiliMusicClient, JamendoMusicClient, JioSaavnMusicClient, FiveSingMusicClient, and SpotifyMusicClient.
 
 
 # 🎵 Introduction

@@ -83,8 +83,8 @@ class MP3JuiceMusicClient(BaseMusicClient):
                 if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
                 # ----you have to download the music contents immediately, otherwise the links will fail.
                 song_info.downloaded_contents = self.get(download_url, **request_overrides).content
-                song_info.file_size_bytes = song_info.downloaded_contents.__sizeof__()
-                song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
+                song_info.file_size_bytes = song_info.downloaded_contents.__sizeof__(); song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
+                song_info.duration_s = SongInfoUtils.naiveguessdurationfromaudiobytes(song_info.downloaded_contents); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
                 # --append to song_infos
                 if song_info.with_valid_download_url: song_infos.append(song_info)
             # --update progress
