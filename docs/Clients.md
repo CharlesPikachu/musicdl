@@ -2050,13 +2050,17 @@ LizhiMusicClient works out of the box with just pip install musicdl — no extra
 
   `musicdl -m LizhiMusicClient -i "{'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}"`
 
-- Search for and Download Tracks and Albums from This Platform
+- Search and Download User Works from This Platform
 
-  `musicdl -m LizhiMusicClient -i "{'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album']}}"`
+  `musicdl -m LizhiMusicClient -i "{'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['user']}}"`
 
-- Search & Download Tracks and Albums Using Your Own Premium Account Cookies
+- Search for and Download Tracks, Albums and User Works from This Platform
 
-  `musicdl -m LizhiMusicClient -i "{'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album'], 'default_search_cookies': 'YOUR_COOKIES'}}"`
+  `musicdl -m LizhiMusicClient -i "{'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album', 'user']}}"`
+
+- Search & Download Tracks, Albums and User Works Using Your Own Premium Account Cookies
+
+  `musicdl -m LizhiMusicClient -i "{'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album', 'user'], 'default_search_cookies': 'YOUR_COOKIES'}}"`
 
 (2) Invoke It in Python
 
@@ -2080,22 +2084,32 @@ LizhiMusicClient works out of the box with just pip install musicdl — no extra
   music_client.startcmdui()
   ```
 
-- Search for and Download Tracks and Albums from This Platform
+- Search and Download User Works from This Platform
 
   ```python
   from musicdl import musicdl
 
-  init_music_clients_cfg = {'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album']}}
+  init_music_clients_cfg = {'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['user']}}
   music_client = musicdl.MusicClient(music_sources=['LizhiMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
   music_client.startcmdui()
   ```
 
-- Search & Download Tracks and Albums Using Your Own Premium Account Cookies
+- Search for and Download Tracks, Albums and User Works from This Platform
 
   ```python
   from musicdl import musicdl
 
-  init_music_clients_cfg = {'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album'], 'default_search_cookies': 'YOUR_COOKIES'}}
+  init_music_clients_cfg = {'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album', 'user']}}
+  music_client = musicdl.MusicClient(music_sources=['LizhiMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
+- Search & Download Tracks, Albums and User Works Using Your Own Premium Account Cookies
+
+  ```python
+  from musicdl import musicdl
+
+  init_music_clients_cfg = {'LizhiMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album', 'user'], 'default_search_cookies': 'YOUR_COOKIES'}}
   music_client = musicdl.MusicClient(music_sources=['LizhiMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
   music_client.startcmdui()
   ```
