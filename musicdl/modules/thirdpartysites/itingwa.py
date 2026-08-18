@@ -8,10 +8,10 @@ WeChat Official Account (微信公众号):
 '''
 import re
 import copy
-from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urljoin, parse_qs, urlparse, urlencode
 from ..utils import legalizestring, usesearchheaderscookies, cleanlrc, SongInfo, AudioLinkTester

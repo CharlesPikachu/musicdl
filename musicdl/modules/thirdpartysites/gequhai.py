@@ -12,10 +12,10 @@ import urllib
 import base64
 import json_repair
 import urllib.parse
-from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from urllib.parse import urljoin, urlparse, parse_qs, quote
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, extractdurationsecondsfromlrc, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils

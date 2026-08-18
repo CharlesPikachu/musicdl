@@ -10,10 +10,10 @@ import re
 import ast
 import copy
 import json_repair
-from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urljoin, urlparse, parse_qs
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils

@@ -9,12 +9,12 @@ WeChat Official Account (微信公众号):
 import copy
 import time
 import base64
-from typing import Unpack
 from urllib.parse import quote
 from contextlib import suppress
 from itertools import zip_longest
 from urllib.parse import urlencode
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 

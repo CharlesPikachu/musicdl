@@ -9,9 +9,10 @@ WeChat Official Account (微信公众号):
 import copy
 import time
 import struct
+from typing import Dict, Any
 from contextlib import suppress
 from rich.progress import Progress
-from typing import Dict, Any, Unpack
+from typing_extensions import Unpack
 from urllib.parse import quote, urljoin
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import resp2json, legalizestring, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient

@@ -10,10 +10,10 @@ import re
 import html
 import copy
 import warnings
-from typing import Unpack
 from contextlib import suppress
 from urllib.parse import urlencode
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 warnings.filterwarnings('ignore')

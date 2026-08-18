@@ -7,9 +7,9 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import copy
-from typing import Unpack
 from urllib.parse import urlsplit
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, LanZouYParser, AudioLinkTester, SongInfoUtils
 

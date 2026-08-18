@@ -9,11 +9,11 @@ WeChat Official Account (微信公众号):
 import re
 import copy
 import xml.etree.ElementTree as ET
-from typing import Unpack
 from functools import reduce
 from contextlib import suppress
 from rich.progress import Progress
 from urllib.parse import urlencode
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 

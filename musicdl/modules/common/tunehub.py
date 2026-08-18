@@ -10,9 +10,9 @@ import copy
 import random
 import base64
 import requests
-from typing import Unpack
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from urllib.parse import urlparse, parse_qs
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils

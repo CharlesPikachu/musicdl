@@ -7,11 +7,11 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
-from typing import Unpack
 from html import unescape
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from urllib.parse import urljoin, quote
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, SongInfo, AudioLinkTester

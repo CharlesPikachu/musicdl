@@ -7,10 +7,10 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
-from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urljoin, urlsplit, urlparse, parse_qs, quote
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, extractdurationsecondsfromlrc, resp2json, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils

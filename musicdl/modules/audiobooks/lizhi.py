@@ -8,11 +8,11 @@ WeChat Official Account (微信公众号):
 '''
 import re
 import copy
-from typing import Unpack
 from itertools import chain
 from contextlib import suppress
 from urllib.parse import urlencode
 from rich.progress import Progress
+from typing_extensions import Unpack
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 

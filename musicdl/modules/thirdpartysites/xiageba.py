@@ -8,9 +8,9 @@ WeChat Official Account (微信公众号):
 '''
 import uuid
 import copy
-from typing import Unpack
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from urllib.parse import urlparse, parse_qs, urlencode
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, searchdictbykey, resp2json, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils

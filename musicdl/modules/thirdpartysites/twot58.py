@@ -9,10 +9,10 @@ WeChat Official Account (微信公众号):
 import re
 import copy
 import requests
-from typing import Unpack
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
+from typing_extensions import Unpack
 from urllib.parse import urljoin, urlparse, quote
 from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, RandomIPGenerator, AudioLinkTester, SongInfoUtils
