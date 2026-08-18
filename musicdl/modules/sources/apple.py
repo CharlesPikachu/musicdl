@@ -116,7 +116,7 @@ class AppleMusicClient(BaseMusicClient):
             download_url_status: dict = self.audio_link_tester.test(url=download_item.stream_info.audio_track.stream_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['attributes', 'name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['attributes', 'artistName'], None)), album=legalizestring(safeextractfromdict(search_result, ['attributes', 'albumName'], None)), ext=download_item.stream_info.file_format.value, 
-                file_size_bytes='HLS', file_size='HLS', identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(str(download_item.lyrics.synced) or ''), cover_url=safeextractfromdict(search_result, ['attributes', 'artwork', 'url'], None), download_url=download_item, download_url_status=download_url_status,
+                file_size_bytes='HLS', file_size='HLS', identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(str(download_item.lyrics.synced) if download_item.lyrics is not None else ''), cover_url=safeextractfromdict(search_result, ['attributes', 'artwork', 'url'], None), download_url=download_item, download_url_status=download_url_status,
             )
             if song_info.cover_url and song_info.cover_url.startswith('http'): song_info.cover_url = song_info.cover_url.format(w=600, h=600, f='jpg')
         # return
