@@ -3265,19 +3265,19 @@ You don’t need to install any extra tools like ffmpeg or N_m3u8DL-RE to use Yi
   music_client.startcmdui()
   ```
 
-#### ZhuolinMusicClient
+#### YinyuekuMusicClient
 
-[music.zhuolin.wang](https://music.zhuolin.wang/) is an online music service for searching, playing, and downloading VIP tracks, with synced lyrics and playlist synchronization features.
+[yinyueku.cn](http://yinyueku.cn/) is an online music platform that provides music search, playback, lyrics, cover art, and direct audio access from multiple sources.
 
-To fetch music from the platform above, we can use ZhuolinMusicClient.
+To fetch music from the platform above, we can use YinyuekuMusicClient.
 
-ZhuolinMusicClient works right out of the box. No ffmpeg, no N_m3u8DL-RE, and no other CLI tools needed — just install musicdl with pip.
+YinyuekuMusicClient works right out of the box. No ffmpeg, no N_m3u8DL-RE, and no other CLI tools needed — just install musicdl with pip.
 
 (1) Command-Line Usage
 
 - Search for and Download Playable Music Files from Websites
 
-  `musicdl -m ZhuolinMusicClient`
+  `musicdl -m YinyuekuMusicClient`
 
 (2) Invoke It in Python
 
@@ -3286,7 +3286,7 @@ ZhuolinMusicClient works right out of the box. No ffmpeg, no N_m3u8DL-RE, and no
   ```python
   from musicdl import musicdl
 
-  music_client = musicdl.MusicClient(music_sources=['ZhuolinMusicClient'])
+  music_client = musicdl.MusicClient(music_sources=['YinyuekuMusicClient'])
   music_client.startcmdui()
   ```
 

@@ -382,7 +382,7 @@ End users usually do not create this class directly. Instead, they use subclasse
 - `musicdl.modules.thirdpartysites.XiagebaMusicClient`
 - `musicdl.modules.thirdpartysites.XMFWAVMusicClient`
 - `musicdl.modules.thirdpartysites.YinyuedaoMusicClient`
-- `musicdl.modules.thirdpartysites.ZhuolinMusicClient`
+- `musicdl.modules.thirdpartysites.YinyuekuMusicClient`
 - `musicdl.modules.common.GDStudioMusicClient`
 - `musicdl.modules.common.JBSouMusicClient`
 - `musicdl.modules.common.MP3JuiceMusicClient`

@@ -32,7 +32,7 @@ from .wikimediacommons import WikimediaCommonsMusicClient
 from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient, LRTSMusicClient, ITunesMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient, XiaoBaiMusicClient
 from ..thirdpartysites import (
-    MituMusicClient, BuguyyMusicClient, YinyuedaoMusicClient, FiveSongMusicClient, FangpiMusicClient, TwoT58MusicClient, ZhuolinMusicClient, HTQYYMusicClient, XiagebaMusicClient, GequbaoMusicClient, 
+    MituMusicClient, BuguyyMusicClient, YinyuedaoMusicClient, FiveSongMusicClient, FangpiMusicClient, TwoT58MusicClient, YinyuekuMusicClient, HTQYYMusicClient, XiagebaMusicClient, GequbaoMusicClient, 
     KKWSMusicClient, GequhaiMusicClient, LivePOOMusicClient, LiziYYMusicClient, MGMP3MusicClient, ITingWaMusicClient, SgogoMusicClient, XMFWAVMusicClient
 )
 
@@ -57,7 +57,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         # Unofficial Download Sites / Scrapers
         'MituMusicClient'    : MituMusicClient,        'BuguyyMusicClient'     : BuguyyMusicClient,         'GequbaoMusicClient'    : GequbaoMusicClient,        'YinyuedaoMusicClient'       : YinyuedaoMusicClient,           'XiagebaMusicClient'   : XiagebaMusicClient,
         'FangpiMusicClient'  : FangpiMusicClient,      'FiveSongMusicClient'   : FiveSongMusicClient,       'KKWSMusicClient'       : KKWSMusicClient,           'GequhaiMusicClient'         : GequhaiMusicClient,             'LivePOOMusicClient'   : LivePOOMusicClient,
-        'HTQYYMusicClient'   : HTQYYMusicClient,       'TwoT58MusicClient'     : TwoT58MusicClient,         'ZhuolinMusicClient'    : ZhuolinMusicClient,        'LiziYYMusicClient'          : LiziYYMusicClient,              'MGMP3MusicClient'     : MGMP3MusicClient,
+        'HTQYYMusicClient'   : HTQYYMusicClient,       'TwoT58MusicClient'     : TwoT58MusicClient,         'YinyuekuMusicClient'   : YinyuekuMusicClient,       'LiziYYMusicClient'          : LiziYYMusicClient,              'MGMP3MusicClient'     : MGMP3MusicClient,
         'ITingWaMusicClient' : ITingWaMusicClient,     'SgogoMusicClient'      : SgogoMusicClient,          'XMFWAVMusicClient'     : XMFWAVMusicClient,
     }
 

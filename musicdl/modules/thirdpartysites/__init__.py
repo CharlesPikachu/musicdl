@@ -11,9 +11,9 @@ from .buguyy import BuguyyMusicClient
 from .liziyy import LiziYYMusicClient
 from .xiageba import XiagebaMusicClient
 from .itingwa import ITingWaMusicClient
-from .zhuolin import ZhuolinMusicClient
 from .gequbao import GequbaoMusicClient
 from .gequhai import GequhaiMusicClient
 from .livepoo import LivePOOMusicClient
+from .yinyueku import YinyuekuMusicClient
 from .fivesong import FiveSongMusicClient
 from .yinyuedao import YinyuedaoMusicClient
