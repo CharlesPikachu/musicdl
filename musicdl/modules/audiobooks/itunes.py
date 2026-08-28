@@ -44,7 +44,7 @@ class ITunesMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_parsebypodcast'''
-    def _parsebypodcast(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
+    def _parsebypodcast(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None, main_page_no: int = 1):
         # init
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         element_to_dict_func = lambda element: reduce(lambda item_dict, child: (item_dict.__setitem__("enclosure" if child.tag == "enclosure" else child.tag, child.attrib if child.tag == "enclosure" else child.text) or item_dict), element, {})
@@ -59,17 +59,17 @@ class ITunesMusicClient(BaseMusicClient):
                 album=f"{safeextractfromdict(search_result, ['trackCount'], 0) or 0} Episodes", ext=None, file_size_bytes=None, file_size=None, identifier=album_id, duration_s=None, duration='-:-:-', lyric=None, cover_url=search_result.get('cover'), download_url=None, download_url_status={}, episodes=[],
             )
             # --download all pages for further processing
-            download_album_pid = progress.add_task(f"{self.source}._parsebypodcast >>> (0/1) pages downloaded in album {album_id}", total=1)
+            download_album_pid = progress.add_task(f"{self.source}.p{main_page_no}._parsebypodcast >>> (0/1) pages downloaded in album {album_id}", total=1)
             with suppress(Exception): feed_resp = None; (feed_resp := self.get(search_result['feedUrl'], timeout=10)).raise_for_status()
             if not locals().get('feed_resp') or not hasattr(locals().get('feed_resp'), 'text'): continue
-            download_results.append(feed_resp.content); progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebypodcast >>> (1/1) pages downloaded in album {album_id}")
+            download_results.append(feed_resp.content); progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}.p{main_page_no}._parsebypodcast >>> (1/1) pages downloaded in album {album_id}")
             # --parse tracks in this album one by one
             tracks_in_this_album, channel = (root := ET.fromstring(feed_resp.content)).findall('./channel/item'), root.find('./channel')
             album_info = {"album_title": channel.findtext('title', default='NULL'), "album_author": channel.findtext('itunes:author', namespaces=namespaces), "album_cover": None}
             if (album_image_node := channel.find('itunes:image', namespaces)) is not None: album_info["album_cover"] = album_image_node.get('href')
-            download_album_pid = progress.add_task(f"{self.source}._parsebypodcast >>> (0/{len(tracks_in_this_album)}) episodes completed in album {album_id}", total=len(tracks_in_this_album))
+            download_album_pid = progress.add_task(f"{self.source}.p{main_page_no}._parsebypodcast >>> (0/{len(tracks_in_this_album)}) episodes completed in album {album_id}", total=len(tracks_in_this_album))
             for track_idx, track in enumerate(tracks_in_this_album):
-                if track_idx > 0: progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebypodcast >>> ({track_idx}/{len(tracks_in_this_album)}) episodes completed in album {album_id}")
+                if track_idx > 0: progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}.p{main_page_no}._parsebypodcast >>> ({track_idx}/{len(tracks_in_this_album)}) episodes completed in album {album_id}")
                 download_url = enclosure.get('url') if (enclosure := track.find('enclosure')) is not None else None
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(track.findtext('itunes:duration', namespaces=namespaces).strip())
@@ -80,7 +80,7 @@ class ITunesMusicClient(BaseMusicClient):
                 )
                 if not eps_info.with_valid_download_url or eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
                 if eps_info.with_valid_download_url and eps_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: song_info.episodes.append(eps_info)
-            progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebypodcast >>> ({track_idx+1}/{len(tracks_in_this_album)}) episodes completed in album {album_id}")
+            progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}.p{main_page_no}._parsebypodcast >>> ({track_idx+1}/{len(tracks_in_this_album)}) episodes completed in album {album_id}")
             if len(song_info.episodes) == 0 or not song_info.with_valid_download_url: continue
             # --post processing
             with suppress(Exception): song_info.duration_s = sum([float(eps.duration_s) for eps in song_info.episodes]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
@@ -101,9 +101,9 @@ class ITunesMusicClient(BaseMusicClient):
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
             # --parse based on search type
             parsers = {'podcast': self._parsebypodcast, }
-            parsers[search_type](resp2json(resp), song_infos=song_infos, request_overrides=request_overrides, progress=progress)
+            parsers[search_type](resp2json(resp), song_infos=song_infos, request_overrides=request_overrides, progress=progress, main_page_no=page_no)
             # --update progress
-            progress.update(task_id, description=f'{self.source}.{search_type}._search >>> All search results processed on page {page_no}')
+            progress.update(task_id, description=f'{self.source}.{search_type}._search >>> All search results processed on page {page_no}', total=len(song_infos), completed=len(song_infos))
         # failure
         except Exception as err:
             progress.update(task_id, description=f'{self.source}.{search_type}._search >>> {keyword} on page {page_no} (Error: {err})')

@@ -16,8 +16,9 @@ from itertools import chain
 from Crypto.Cipher import AES
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from typing_extensions import Unpack
 from urllib.parse import urlencode, urlparse, parse_qs
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo, SongInfoUtils, AudioLinkTester
 
 
@@ -25,8 +26,8 @@ from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchhea
 class XimalayaMusicClient(BaseMusicClient):
     source = 'XimalayaMusicClient'
     ALLOWED_SEARCH_TYPES = ['album', 'track']
-    def __init__(self, **kwargs):
-        self.allowed_search_types = list(set(kwargs.pop('allowed_search_types', XimalayaMusicClient.ALLOWED_SEARCH_TYPES)))
+    def __init__(self, allowed_search_types: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+        self.allowed_search_types = list(set(allowed_search_types or XimalayaMusicClient.ALLOWED_SEARCH_TYPES))
         super(XimalayaMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36"}
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36"}
