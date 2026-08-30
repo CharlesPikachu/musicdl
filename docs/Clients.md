@@ -2283,6 +2283,8 @@ XimalayaMusicClient is ready to use after a simple pip install. No extra command
 - Search & Download Tracks and Albums Using Your Own Premium Account Cookies
 
   `musicdl -m XimalayaMusicClient -i "{'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track', 'album'], 'default_search_cookies': 'YOUR_COOKIES'}}"`
+  
+  If you're not sure what format the cookies should follow, you can use the script [build_cookies_for_ximalaya.py](https://github.com/CharlesPikachu/musicdl/tree/master/scripts/build_cookies_for_ximalaya.py) we provide to obtain cookies that meet musicdl's requirements.
 
 (2) Invoke It in Python
 
