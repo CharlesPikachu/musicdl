@@ -174,13 +174,13 @@ class XimalayaMusicClient(BaseMusicClient):
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
         request_overrides, page_no = request_overrides or {}, int(float(parse_qs(urlparse(url=str(search_url)).query, keep_blank_values=True).get('page')[0]))
+        search_type = parse_qs(urlparse(search_url).query, keep_blank_values=True).get('core')[0]
         task_id = progress.add_task(f"{self.source}.{search_type}._search >>> Start to process search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
             # --parse based on search type
-            search_type = parse_qs(urlparse(search_url).query, keep_blank_values=True).get('core')[0]
             parsers = {'album': self._parsebyalbum, 'track': self._parsebytrack}
             parsers[search_type](resp2json(resp), song_infos=song_infos, request_overrides=request_overrides, progress=progress)
             # --update progress

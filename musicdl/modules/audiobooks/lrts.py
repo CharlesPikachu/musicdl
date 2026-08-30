@@ -11,8 +11,9 @@ import math
 from itertools import chain
 from contextlib import suppress
 from rich.progress import Progress
-from ..sources import BaseMusicClient
+from typing_extensions import Unpack
 from urllib.parse import urlencode, urlparse, parse_qs
+from ..sources import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 
 
@@ -20,8 +21,8 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 class LRTSMusicClient(BaseMusicClient):
     source = 'LRTSMusicClient'
     ALLOWED_SEARCH_TYPES = ['album', 'book']
-    def __init__(self, **kwargs):
-        self.allowed_search_types = list(set(kwargs.pop('allowed_search_types', LRTSMusicClient.ALLOWED_SEARCH_TYPES)))
+    def __init__(self, allowed_search_types: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+        self.allowed_search_types = list(set(allowed_search_types or LRTSMusicClient.ALLOWED_SEARCH_TYPES))
         super(LRTSMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "cache-control": "max-age=0", "connection": "keep-alive", "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
@@ -78,66 +79,78 @@ class LRTSMusicClient(BaseMusicClient):
         # return
         return song_info
     '''_parsebybook'''
-    def _parsebybook(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
+    def _parsebybook(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None, main_page_no: int = 1):
+        # parse books one by one
         for search_result in search_results['data']['bookResult']['list']:
             if (not isinstance(search_result, dict)) or (not (book_id := search_result.get('id'))): continue
+            # --basic song info class
             download_results, tracks, page_size, unique_track_ids, request_overrides = [], [], 50, set(), dict(request_overrides or {})
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_results, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(search_result.get('announcer')), album=f"{safeextractfromdict(search_result, ['sections'], 0) or 0} Episodes", 
                 ext=None, file_size_bytes=None, file_size=None, identifier=book_id, duration_s=None, duration='-:-:-', lyric=None, cover_url=search_result.get('cover'), download_url=None, download_url_status={}, episodes=[],
             )
+            # --download all pages for further processing
             num_pages = math.ceil(int(safeextractfromdict(search_result, ['sections'], 0) or 0) / page_size)
-            download_book_pid = progress.add_task(f"{self.source}._parsebybook >>> (0/{num_pages}) pages downloaded in book {book_id}", total=num_pages)
+            download_book_pid = progress.add_task(f"{self.source}.p{main_page_no}._parsebybook >>> (0/{num_pages}) pages downloaded in book {book_id}", total=num_pages)
             for page_num_idx, page_num in enumerate(range(1, num_pages + 1)):
-                if page_num_idx > 0: progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}._parsebybook >>> ({page_num_idx}/{num_pages}) pages downloaded in book {book_id}")
+                if page_num_idx > 0: progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}.p{main_page_no}._parsebybook >>> ({page_num_idx}/{num_pages}) pages downloaded in book {book_id}")
                 with suppress(Exception): download_results.append(resp2json(self.get(f'https://m.lrts.me/ajax/getBookMenu?bookId={book_id}&pageNum={page_num}&pageSize={page_size}&sortType=0', **request_overrides)))
-            progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}._parsebybook >>> ({page_num_idx+1}/{num_pages}) pages downloaded in book {book_id}")
+            progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}.p{main_page_no}._parsebybook >>> ({page_num_idx+1}/{num_pages}) pages downloaded in book {book_id}")
+            # --parse tracks in this album one by one
             for track in chain.from_iterable((safeextractfromdict(download_result, ['list'], []) or []) for download_result in download_results):
                 if (not isinstance(track, dict)) or (not track.get('id')) or (track.get('id') in unique_track_ids): continue
                 unique_track_ids.add(track.get('id')); tracks.append(track)
-            download_book_pid = progress.add_task(f"{self.source}._parsebybook >>> (0/{len(tracks)}) episodes completed in book {book_id}", total=len(tracks))
+            download_book_pid = progress.add_task(f"{self.source}.p{main_page_no}._parsebybook >>> (0/{len(tracks)}) episodes completed in book {book_id}", total=len(tracks))
             for track_idx, track in enumerate(tracks):
-                if track_idx > 0: progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}._parsebybook >>> ({track_idx}/{len(tracks)}) episodes completed in book {book_id}")
+                if track_idx > 0: progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}.p{main_page_no}._parsebybook >>> ({track_idx}/{len(tracks)}) episodes completed in book {book_id}")
                 eps_info, track['book_info'] = SongInfo(source=self.source), copy.deepcopy(search_result)
                 with suppress(Exception): eps_info = self._parsebookwithofficialapiv1(section_idx=track_idx+1, search_result=track, request_overrides=request_overrides)
                 if not eps_info.with_valid_download_url or eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
                 if eps_info.with_valid_download_url: song_info.episodes.append(eps_info)
-            progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}._parsebybook >>> ({track_idx+1}/{len(tracks)}) episodes completed in book {book_id}")
+            progress.advance(download_book_pid, 1); progress.update(download_book_pid, description=f"{self.source}.p{main_page_no}._parsebybook >>> ({track_idx+1}/{len(tracks)}) episodes completed in book {book_id}")
             if len(song_info.episodes) == 0 or not song_info.with_valid_download_url: continue
+            # --post processing
             with suppress(Exception): song_info.duration_s = sum([float(eps.duration_s) for eps in song_info.episodes]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
             with suppress(Exception): song_info.file_size_bytes = sum([float(eps.file_size_bytes) for eps in song_info.episodes]); song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
             if song_info.with_valid_download_url: song_info.album = f"{len(song_info.episodes)} Episodes"; song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
+        # return
         return song_infos
     '''_parsebyalbum'''
-    def _parsebyalbum(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
+    def _parsebyalbum(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None, main_page_no: int = 1):
+        # parse albums one by one
         for search_result in search_results['data']['albumResult']['list']:
             if (not isinstance(search_result, dict)) or (not (album_id := search_result.get('id'))): continue
+            # --basic song info class
             download_results, tracks, unique_track_ids, request_overrides = [], [], set(), dict(request_overrides or {})
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_results, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(search_result.get('nickName')), album=f"{safeextractfromdict(search_result, ['sections'], 0) or 0} Episodes", 
                 ext=None, file_size_bytes=None, file_size=None, identifier=album_id, duration_s=None, duration='-:-:-', lyric=None, cover_url=search_result.get('cover'), download_url=None, download_url_status={}, episodes=[],
             )
-            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/1) pages downloaded in album {album_id}", total=1)
+            # --download all pages for further processing
+            download_album_pid = progress.add_task(f"{self.source}.p{main_page_no}._parsebyalbum >>> (0/1) pages downloaded in album {album_id}", total=1)
             with suppress(Exception): resp = None; (resp := self.get(f'https://m.lrts.me/ajax/getAlbumAudios?ablumnId={album_id}&sortType=0')).raise_for_status()
             if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
-            download_results.append(resp2json(resp=resp)); progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> (1/1) pages downloaded in album {album_id}")
+            download_results.append(resp2json(resp=resp)); progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}.p{main_page_no}._parsebyalbum >>> (1/1) pages downloaded in album {album_id}")
+            # --parse tracks in this album one by one
             for track in chain.from_iterable((safeextractfromdict(download_result, ['list'], []) or []) for download_result in download_results):
                 if (not isinstance(track, dict)) or (not track.get('audioId')) or (track.get('audioId') in unique_track_ids): continue
                 unique_track_ids.add(track.get('audioId')); tracks.append(track)
-            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/{len(tracks)}) episodes completed in album {album_id}", total=len(tracks))
+            download_album_pid = progress.add_task(f"{self.source}.p{main_page_no}._parsebyalbum >>> (0/{len(tracks)}) episodes completed in album {album_id}", total=len(tracks))
             for track_idx, track in enumerate(tracks):
-                if track_idx > 0: progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{len(tracks)}) episodes completed in album {album_id}")
+                if track_idx > 0: progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}.p{main_page_no}._parsebyalbum >>> ({track_idx}/{len(tracks)}) episodes completed in album {album_id}")
                 eps_info, track['album_info'] = SongInfo(source=self.source), copy.deepcopy(search_result)
                 with suppress(Exception): eps_info = self._parsealbumwithofficialapiv1(section_idx=track_idx+1, search_result=track, request_overrides=request_overrides)
                 if not eps_info.with_valid_download_url or eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
                 if eps_info.with_valid_download_url: song_info.episodes.append(eps_info)
-            progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx+1}/{len(tracks)}) episodes completed in album {album_id}")
+            progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}.p{main_page_no}._parsebyalbum >>> ({track_idx+1}/{len(tracks)}) episodes completed in album {album_id}")
             if len(song_info.episodes) == 0 or not song_info.with_valid_download_url: continue
+            # --post processing
             with suppress(Exception): song_info.duration_s = sum([float(eps.duration_s) for eps in song_info.episodes]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
             with suppress(Exception): song_info.file_size_bytes = sum([float(eps.file_size_bytes) for eps in song_info.episodes]); song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
             if song_info.with_valid_download_url: song_info.album = f"{len(song_info.episodes)} Episodes"; song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
+        # return
         return song_infos
     '''_search'''
     @usesearchheaderscookies
@@ -152,9 +165,9 @@ class LRTSMusicClient(BaseMusicClient):
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
             # --parse based on search type
             parsers = {'album': self._parsebyalbum, 'book': self._parsebybook}
-            parsers[search_type](resp2json(resp), song_infos=song_infos, request_overrides=request_overrides, progress=progress)
+            parsers[search_type](resp2json(resp), song_infos=song_infos, request_overrides=request_overrides, progress=progress, main_page_no=page_no)
             # --update progress
-            progress.update(task_id, description=f'{self.source}.{search_type}._search >>> All search results processed on page {page_no}')
+            progress.update(task_id, description=f'{self.source}.{search_type}._search >>> All search results processed on page {page_no}', total=len(song_infos), completed=len(song_infos))
         # failure
         except Exception as err:
             progress.update(task_id, description=f'{self.source}.{search_type}._search >>> {keyword} on page {page_no} (Error: {err})')
