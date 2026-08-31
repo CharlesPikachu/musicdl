@@ -25,7 +25,7 @@ from urllib.parse import urlparse, parse_qs, urljoin
 from .base import BaseMusicClient, BaseMusicClientKwargs
 from ..utils.kugouutils import KugouMusicClientUtils, MUSIC_QUALITIES
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 warnings.filterwarnings('ignore')
 
 
@@ -146,6 +146,24 @@ class KugouMusicClient(BaseMusicClient):
         if song_info.cover_url and isinstance(song_info.cover_url, str) and ('{size}' in song_info.cover_url): song_info.cover_url = song_info.cover_url.format(size=300)
         # return
         return song_info
+    '''_parsewithxianyuwapi'''
+    def _parsewithxianyuwapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuc2stMDE0YWQ2NjQ2NWQ0MmZlMzZkNWM5NDc5ZjY4MzdiYjE=', 'charlespikachuc2stNmNhODBkOTJjZTY3NGY5MzBkY2Q0NWQ5ZDYzYzNlMTY=']
+        request_overrides, file_hash, song_info = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash'), SongInfo(source=self.source)
+        if not (search_result.get('duration') or search_result.get('Duration') or search_result.get('timelen')): search_result.update(self._getsongmetainfo(song_id=file_hash, request_overrides=request_overrides))
+        # parse
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
+        (resp := requests.get(f'https://apii.xianyuw.cn/api/v1/kugou-music-search?id={file_hash}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        if not (download_url := (download_result := resp2json(resp=resp))['data']['url']) or not str(download_url).startswith('http'): return song_info
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        lyric = cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], '') or 'NULL')
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)), singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'author'], '') or '').replace('/', ', ')), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url_status['ext'], 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=file_hash, duration_s=extractdurationsecondsfromlrc(lyric), duration=SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(lyric)), lyric=lyric, cover_url=safeextractfromdict(download_result, ['data', 'cover'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status,
+        )
+        # return
+        return song_info
     '''_parsewith317akapi'''
     def _parsewith317akapi(self, search_result: dict, request_overrides: dict = None) -> "SongInfo":
         # init
@@ -241,9 +259,9 @@ class KugouMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewith317akapi, self._parsewithchkszapi] # svip
+        l1_parser_funcs = [self._parsewith317akapi, self._parsewithxianyuwapi, ] # svip
         l2_parser_funcs = [self._parsewithlzmhhhapi, self._parsewith90svipapi, self._parsewithtomapi, self._parsewithjbsouapi, ] # vip
-        l3_parser_funcs = [self._parsewithbakaapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable accounts
+        l3_parser_funcs = [self._parsewithchkszapi, self._parsewithbakaapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
