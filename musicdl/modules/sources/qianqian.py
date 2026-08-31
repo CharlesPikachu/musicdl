@@ -12,11 +12,12 @@ import time
 import copy
 import hashlib
 from contextlib import suppress
-from .base import BaseMusicClient
 from rich.progress import Progress
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import QIANQIAN_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
@@ -26,7 +27,7 @@ class QianqianMusicClient(BaseMusicClient):
     source = 'QianqianMusicClient'
     APPID = '16073360'
     MUSIC_QUALITIES = ['3000', '320', '128', '64']
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(QianqianMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "referer": "https://music.91q.com/player", "sec-ch-ua-platform": "\"Windows\"",

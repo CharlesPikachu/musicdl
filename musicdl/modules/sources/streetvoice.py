@@ -12,10 +12,10 @@ import time
 from pathlib import Path
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from .base import BaseMusicClient
-from rich.progress import Progress
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import STREETVOICE_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urljoin, urlparse, urlsplit, urlunsplit, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, IOUtils, SongInfoUtils
@@ -24,7 +24,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 '''StreetVoiceMusicClient'''
 class StreetVoiceMusicClient(BaseMusicClient):
     source = 'StreetVoiceMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(StreetVoiceMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0", "Referer": "https://www.streetvoice.cn/", "x-requested-with": "XMLHttpRequest"}
         if self.default_search_cookies: self.default_search_headers['X-Csrftoken'] = self.default_search_cookies['csrf-token']

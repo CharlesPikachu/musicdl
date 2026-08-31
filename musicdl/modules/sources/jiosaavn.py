@@ -13,12 +13,13 @@ from functools import reduce
 from itertools import product
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from .base import BaseMusicClient
 from Cryptodome.Cipher import DES
+from typing_extensions import Unpack
 from Cryptodome.Util.Padding import unpad
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import JIOSAAVN_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
@@ -27,7 +28,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 class JioSaavnMusicClient(BaseMusicClient):
     source = 'JioSaavnMusicClient'
     MUSIC_QUALITIES = ('320', '160', '96', '48', '12')
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(JioSaavnMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Accept": "application/json", "Content-Type": "application/json"}
         self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Accept": "application/json", "Content-Type": "application/json"}
