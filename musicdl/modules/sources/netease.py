@@ -216,6 +216,25 @@ class NeteaseMusicClient(BaseMusicClient):
         song_info = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]}) if (song_info.file_size_bytes * 8 < 320000 * song_info.duration_s) else song_info
         # return
         return song_info
+    '''_parsewithffapi'''
+    def _parsewithffapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, headers = request_overrides or {}, search_result['id'], {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"}
+        if not search_result.get('name'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        for music_quality in MUSIC_QUALITIES:
+            (resp := requests.get("https://ffapi.cn/int/v1/netease_url", params={"id": song_id, "quality": music_quality}, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], '')) or not str(download_url).startswith('http'): break
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('dt', 0) or 0) / 1000
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': music_quality}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
+                ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        song_info = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]}) if (song_info.file_size_bytes * 8 < 320000 * song_info.duration_s) else song_info
+        # return
+        return song_info
     '''_parsewithbileizhenapi'''
     def _parsewithbileizhenapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -593,7 +612,7 @@ class NeteaseMusicClient(BaseMusicClient):
         if (cookies := self.default_cookies or (request_overrides := request_overrides or {}).get('cookies')) and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
         l1_parser_funcs = [self._parsewithtmetuapi, self._parsewithxuanluogeapi, self._parsewithbugpkapi, self._parsewithkangqiovoapi, self._parsewithchkszapi, self._parsewithxunjinluapi, self._parsewithxingmianapi, self._parsewithznnuapi, self._parsewithxiaoqinapi, self._parsewithvincentzyu233api, self._parsewithbileizhenapi, ] # svip
         l2_parser_funcs = [self._parsewithrrvennapi, self._parsewithhaitangwapi, self._parsewithguyueiapi, self._parsewithcunyuapi, ] # svip, but unstable accounts
-        l3_parser_funcs = [self._parsewithnanorockyapi, self._parsewithyutangxiaowuapi, self._parsewithqjqqapi, self._parsewithcocodownloaderapi, self._parsewithgdstudioapi, self._parsewithbyfunsapi, self._parsewithxiaotapi, self._parsewithxcvtsapi, self._parsewithxianyuwapi, self._parsewithjfjtapi, ] # vip
+        l3_parser_funcs = [self._parsewithnanorockyapi, self._parsewithyutangxiaowuapi, self._parsewithqjqqapi, self._parsewithcocodownloaderapi, self._parsewithffapi, self._parsewithgdstudioapi, self._parsewithbyfunsapi, self._parsewithxiaotapi, self._parsewithxcvtsapi, self._parsewithxianyuwapi, self._parsewithjfjtapi, ] # vip
         l4_parser_funcs = [self._parsewithrxtoolapi, self._parsewithceseetapi, self._parsewithmanshuoapi, ] # vip, but unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': MUSIC_QUALITIES[-1]})
