@@ -8,16 +8,17 @@ WeChat Official Account (微信公众号):
 '''
 import copy
 from contextlib import suppress
-from .base import BaseMusicClient
 from rich.progress import Progress
+from typing_extensions import Unpack
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''BilibiliMusicClient'''
 class BilibiliMusicClient(BaseMusicClient):
     source = 'BilibiliMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(BilibiliMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0", "Sec-Ch-Ua": '"Not A(Brand";v="99", "Microsoft Edge";v="121", "Chromium";v="121"', "Referer": "https://www.bilibili.com/", "Sec-Ch-Ua-Mobile": "?0", "Sec-Ch-Ua-Platform": '"Windows"', "Cache-Control": "max-age=0", "Upgrade-Insecure-Requests": "1", 

@@ -13,10 +13,11 @@ import json
 import requests
 from typing import Any, Dict
 from contextlib import suppress
-from .base import BaseMusicClient
 from rich.progress import Progress
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import MIGU_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urlparse, parse_qs, urlsplit, urljoin
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
@@ -28,7 +29,7 @@ class MiguMusicClient(BaseMusicClient):
     MAGIC = b"\xab\xcd\x01"
     MIGU_KEY = b"Jk8qzuePiJ1qE3mDYhLQ3T73DtDoAhLP"
     MUSIC_QUALITIES = {'LQ': 'mp3', 'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ': 'flac', 'Z3D': 'flac', 'ZQ24': 'flac', 'ZQ32': 'flac'}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(MiguMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", 

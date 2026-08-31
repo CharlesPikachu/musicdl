@@ -11,9 +11,10 @@ import re
 import copy
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import FIVESING_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urlparse, urljoin, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
@@ -23,7 +24,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 class FiveSingMusicClient(BaseMusicClient):
     source = 'FiveSingMusicClient'
     MUSIC_QUALITIES = ['sq', 'hq', 'lq']
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(FiveSingMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "Referer": "https://5sing.kugou.com/"}
         self.default_parse_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "Referer": "https://5sing.kugou.com/"}

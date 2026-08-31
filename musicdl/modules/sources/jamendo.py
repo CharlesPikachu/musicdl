@@ -12,9 +12,10 @@ import copy
 import random
 import hashlib
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import JAMENDO_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode, urlparse, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
@@ -23,7 +24,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 '''JamendoMusicClient'''
 class JamendoMusicClient(BaseMusicClient):
     source = 'JamendoMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(JamendoMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "referer": "https://www.jamendo.com/search?q=musicdl", "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"", "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
