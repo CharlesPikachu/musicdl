@@ -13,15 +13,16 @@ import string
 from contextlib import suppress
 from rich.progress import Progress
 from collections.abc import Callable
-from ..sources import BaseMusicClient
+from typing_extensions import Unpack
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''WikimediaCommonsMusicClient'''
 class WikimediaCommonsMusicClient(BaseMusicClient):
     source = 'WikimediaCommonsMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(WikimediaCommonsMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"accept": "application/json", "referer": "https://commons.wikimedia.org/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"}
         self.default_download_headers = {"referer": "https://commons.wikimedia.org/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"}

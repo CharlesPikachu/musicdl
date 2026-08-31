@@ -13,9 +13,10 @@ import hashlib
 from pathlib import Path
 from typing import Callable
 from contextlib import suppress
-from .base import BaseMusicClient
 from rich.progress import Progress
 from bs4 import BeautifulSoup, Tag
+from typing_extensions import Unpack
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from itertools import dropwhile, islice, takewhile, chain
 from ..utils import legalizestring, usesearchheaderscookies, SongInfo
 from urllib.parse import urlencode, urljoin, urlparse, unquote, parse_qs
@@ -31,7 +32,7 @@ class OpenGameArtMusicClient(BaseMusicClient):
     LOSSY_EXTS = {".opus", ".ogg", ".oga", ".m4a", ".mp3"}
     AUDIO_EXTS = {".flac", ".wav", ".aiff", ".aif", ".opus", ".ogg", ".oga", ".m4a", ".mp3", ".mid", ".midi", ".mod", ".xm", ".it", ".s3m"}
     BASE_QUALITY_SCORE = {".flac": 100, ".wav": 95, ".aiff": 95, ".aif": 95, ".opus": 82, ".ogg": 78, ".oga": 78, ".m4a": 74, ".mp3": 70, ".xm": 45, ".it": 43, ".mod": 40, ".s3m": 40, ".mid": 25, ".midi": 25, ".zip": 10, ".7z": 10, ".rar": 10}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(OpenGameArtMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 OGA-Music-Search/1.0"}
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 OGA-Music-Search/1.0"}

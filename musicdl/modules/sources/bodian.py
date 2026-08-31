@@ -20,14 +20,15 @@ import warnings
 import requests
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from .base import BaseMusicClient
 from rich.progress import Progress
+from typing import Any, Dict, Tuple
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import BODIAN_MUSIC_HOST
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urlparse, parse_qs, unquote, quote
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import optionalimport, legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 warnings.filterwarnings('ignore')
 
 
@@ -37,7 +38,7 @@ class BodianMusicClient(BaseMusicClient):
     DEFAULT_MUSIC_QUALITY_ID = '6' # Actual testing shows that audio streams with higher bitrates than 2000k FLAC are in an encrypted state (DRM-protected)
     MUSIC_QUALITIES: Dict[str, Tuple[str, str]] = {"1": ("mp3", "128kmp3"), "2": ("mp3", "320kmp3"), "3": ("ogg", "100kogg"), "4": ("ogg", "192kogg"), "5": ("ogg", "300kogg"), "6": ("flac", "2000kflac"), "7": ("mflac", "20201kmflac"), "8": ("aac", "48kaac"), "9": ("mflac", "20501kmflac"), "10": ("mflac", "20900kmflac"), "11": ("mgg", "22000kmgg"), "12": ("zp", "20000kzp")}
     AUDIO_TO_MUSIC_QUALITY: Dict[Tuple[str, str], str] = {("mp3", "128"): "1", ("mp3", "320"): "2", ("ogg", "100"): "3", ("ogg", "192"): "4", ("ogg", "300"): "5", ("flac", "2000"): "6", ("mflac", "20201"): "7", ("aac", "48"): "8", ("mflac", "20501"): "9", ("mflac", "20900"): "10", ("mgg", "22000"): "11", ("zp", "20000"): "12"}
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(BodianMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"user-agent": "Dart/3.3 (dart:io)", "plat": "win", "accept-encoding": "gzip", "api-ver": "application/json", "channel": "W1", "brand": "Windows 11 Pro for Workstations", "net": "wifi", "content-type": "application/json", "ver": "1.1.5", "svrver": "13"}
         self.default_download_headers = {"user-agent": "Dart/3.3 (dart:io)", "plat": "win", "accept-encoding": "gzip", "api-ver": "application/json", "channel": "W1", "brand": "Windows 11 Pro for Workstations", "net": "wifi", "content-type": "application/json", "ver": "1.1.5", "svrver": "13"}
@@ -68,24 +69,6 @@ class BodianMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
-    '''_parsewithcggapi'''
-    def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
-        # init
-        curl_cffi, request_overrides, song_id, song_info = optionalimport('curl_cffi'), request_overrides or {}, search_result['id'], SongInfo(source=self.source)
-        if TYPE_CHECKING and curl_cffi is not None: import curl_cffi as curl_cffi
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
-        # parse
-        with suppress(Exception): (resp := curl_cffi.requests.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level=lossless&format=json", timeout=10, impersonate="chrome131", verify=False, **request_overrides)).raise_for_status()
-        if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): (resp := requests.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level=lossless&format=json", headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
-        if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): return song_info
-        duration_in_secs = int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-            file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], '')), cover_url=safeextractfromdict(download_result, ['data', 'pic'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
-        )
-        # return
-        return song_info
     '''_parsewithtianbaoapi'''
     def _parsewithtianbaoapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -104,10 +87,28 @@ class BodianMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithjiakongapi'''
+    def _parsewithjiakongapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['id'], SongInfo(source=self.source)
+        if not (search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        params = {"f": "web", "source": "kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk", "type": "convert_url_with_sign", "rid": song_id, "br": '2000kflac', "user": random.randint(0, 4294967295), "loginUid": random.randint(0, 4294967295),}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Accept": "*/*",}
+        (resp := requests.get("https://nmobi.kuwo.cn/mobi.s", headers=headers, params=params, **request_overrides)).raise_for_status()
+        download_url = safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], None)
+        duration_in_secs = int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('artist')), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('albumPic') or search_result.get('pic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.auth_info.get('token'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithcggapi, self._parsewithtianbaoapi]:
+        for parser_func in [self._parsewithjiakongapi, self._parsewithtianbaoapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
