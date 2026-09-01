@@ -9,10 +9,11 @@ WeChat Official Account (微信公众号):
 import os
 import copy
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import AUDIUS_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, useparseheaderscookies, hostmatchessuffix, obtainhostname, IOUtils, SongInfo, AudioLinkTester, SongInfoUtils
 
@@ -20,7 +21,7 @@ from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextr
 '''AudiusMusicClient'''
 class AudiusMusicClient(BaseMusicClient):
     source = 'AudiusMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(AudiusMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"accept": "application/json", "referer": "https://audius.co/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "authorization": ""}
         self.default_parse_headers = {"accept": "application/json", "referer": "https://audius.co/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "authorization": ""}

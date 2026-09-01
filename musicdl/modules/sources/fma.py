@@ -12,10 +12,11 @@ import copy
 import html
 import json_repair
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from ..utils.hosts import FMA_MUSIC_HOSTS
 from pathvalidate import sanitize_filepath
 from bs4 import BeautifulSoup, NavigableString, Tag
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urlparse, urljoin, urlsplit, urlunsplit, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cookies2string, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
@@ -24,7 +25,7 @@ from ..utils import legalizestring, usesearchheaderscookies, safeextractfromdict
 '''FMAMusicClient'''
 class FMAMusicClient(BaseMusicClient):
     source = 'FMAMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(FMAMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
         if self.default_search_cookies: self.default_search_headers['cookie'] = cookies2string(self.default_search_cookies)

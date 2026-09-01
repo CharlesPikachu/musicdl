@@ -16,9 +16,10 @@ import requests
 import json_repair
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import JOOX_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urlparse, parse_qs, quote
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
@@ -28,7 +29,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 class JooxMusicClient(BaseMusicClient):
     source = 'JooxMusicClient'
     SALT = "Jo0x@t3Nc3nT"
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(JooxMusicClient, self).__init__(**kwargs)
         self.auth_info = self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies
         if self.default_search_cookies: self.default_search_cookies = self.default_search_cookies.get('cookies') or {}
@@ -59,7 +60,7 @@ class JooxMusicClient(BaseMusicClient):
     '''_parsewithgdstudioxyzapi'''
     def _parsewithgdstudioxyzapi(self, search_result: dict, lang: str = 'zh_TW', country: str = 'hk', request_overrides: dict = None):
         # init
-        host = "music.gdstudio.xyz"; version = "2026.07.21"; time_url = "https://music.gdstudio.xyz/time"; api_url = "https://music.gdstudio.xyz/api.php"
+        host = "music.gdstudio.xyz"; version = "2026.08.01"; time_url = "https://music.gdstudio.xyz/time"; api_url = "https://music.gdstudio.xyz/api.php"
         request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.xyz", "Referer": "https://music.gdstudio.xyz/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
         js_encode_uri_component_func = lambda value: (quote(str(value), safe="-_.!~*'()").replace("(", "%28").replace(")", "%29").replace("*", "%2A").replace("'", "%27").replace("!", "%21"))
         left_rotate_func = lambda x, amount: ((((x & 0xFFFFFFFF) << amount) | ((x & 0xFFFFFFFF) >> (32 - amount))) & 0xFFFFFFFF)
@@ -73,8 +74,8 @@ class JooxMusicClient(BaseMusicClient):
         shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
         table = [
             0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
-            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
-            0xFFFA3942, 0x8771F681, 0x6D9D6123, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
+            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4D8A,
+            0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
             0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039, 0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1, 0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1, 0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
         ]
         for offset in range(0, len(data), 64):
@@ -97,7 +98,7 @@ class JooxMusicClient(BaseMusicClient):
     '''_parsewithgdstudioorgapi'''
     def _parsewithgdstudioorgapi(self, search_result: dict, lang: str = 'zh_TW', country: str = 'hk', request_overrides: dict = None):
         # init
-        host = "music.gdstudio.org"; version = "2026.07.21"; time_url = "https://music.gdstudio.org/time"; api_url = "https://music.gdstudio.org/api.php"
+        host = "music.gdstudio.org"; version = "2026.08.01"; time_url = "https://music.gdstudio.org/time"; api_url = "https://music.gdstudio.org/api.php"
         request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.org", "Referer": "https://music.gdstudio.org/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
         js_encode_uri_component_func = lambda value: (quote(str(value), safe="-_.!~*'()").replace("(", "%28").replace(")", "%29").replace("*", "%2A").replace("'", "%27").replace("!", "%21"))
         left_rotate_func = lambda x, amount: ((((x & 0xFFFFFFFF) << amount) | ((x & 0xFFFFFFFF) >> (32 - amount))) & 0xFFFFFFFF)
@@ -111,8 +112,8 @@ class JooxMusicClient(BaseMusicClient):
         shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
         table = [
             0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
-            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
-            0xFFFA3942, 0x8771F681, 0x6D9D6123, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
+            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4D8A,
+            0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
             0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039, 0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1, 0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1, 0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
         ]
         for offset in range(0, len(data), 64):

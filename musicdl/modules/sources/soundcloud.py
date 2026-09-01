@@ -12,10 +12,11 @@ import copy
 import subprocess
 from pathlib import Path
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from platformdirs import user_log_dir
 from ..utils.hosts import SOUNDCLOUD_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from pathvalidate import sanitize_filepath, sanitize_filename
 from ..utils.soundcloudutils import SoundCloudMusicClientUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
@@ -26,7 +27,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextr
 class SoundCloudMusicClient(BaseMusicClient):
     source = 'SoundCloudMusicClient'
     CLIENT_ID = None
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(SoundCloudMusicClient, self).__init__(**kwargs)
         if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#soundcloudmusicclient"'
         if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#soundcloudmusicclient"'

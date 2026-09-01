@@ -11,9 +11,11 @@ import copy
 import xml.etree.ElementTree as ET
 from contextlib import suppress
 from .base import BaseMusicClient
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import CCMIXTER_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, usesearchheaderscookies, useparseheaderscookies, hostmatchessuffix, obtainhostname, resp2json, safeextractfromdict, IOUtils, SongInfo, AudioLinkTester, SongInfoUtils
 
@@ -21,7 +23,7 @@ from ..utils import legalizestring, usesearchheaderscookies, useparseheaderscook
 '''CCMixterMusicClient'''
 class CCMixterMusicClient(BaseMusicClient):
     source = 'CCMixterMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(CCMixterMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"accept": "application/xspf+xml, application/xml, text/xml, */*", "referer": "https://ccmixter.org/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
         self.default_download_headers = {"referer": "https://ccmixter.org/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
