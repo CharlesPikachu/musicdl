@@ -65,7 +65,7 @@
 
 # 🎉 What's New
 
-- 2026-08-31: Released musicdl v2.13.8 — perform routine maintenance on Bilibili, Bodian, FiveSing, Jamendo, JioSaavn, Kugou, Kuwo, Migu, NetEase, OpenGameArt, Qianqian, QQ, StreetVoice, and Wikimedia Commons music clients.
+- 2026-08-31: Released musicdl v2.13.8 — routine maintenance for Bilibili, Bodian, FiveSing, Jamendo, JioSaavn, Kugou, Kuwo, Migu, NetEase, OpenGameArt, Qianqian, QQ, StreetVoice, and Wikimedia Commons music clients.
 - 2026-08-30: Released musicdl v2.13.7 — fix all broken audiobook clients; thoroughly test and inspect all third-party music clients and common music clients, and properly handle any clients that are no longer working.
 - 2026-08-10: Released musicdl v2.13.6 — perform routine updates and maintenance for the common music clients, this update fixes two common music clients.
 
