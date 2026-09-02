@@ -65,9 +65,10 @@ class YouTubeMusicClient(BaseMusicClient):
                 resp.raise_for_status(); download_url_status = {'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'download_url': download_url}; break
             except Exception: continue
         duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
-            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers=headers,
         )
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
@@ -85,9 +86,10 @@ class YouTubeMusicClient(BaseMusicClient):
         (resp := session.post("https://yt2song.com/api/v1/download", headers=headers, json=payload, **request_overrides)).raise_for_status()
         download_url_status: dict = {'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__())}
         duration_in_secs = int(float(download_result.get('duration', 0) or search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('title') or search_result.get('title')), singers=legalizestring(download_result.get('artist') or search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(download_result.get('album') or safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), 
-            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=download_result.get('thumbnail') or search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url='https://yt2song.com/api/v1/download', download_url_status=download_url_status, downloaded_contents=resp.content, 
+            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=download_result.get('thumbnail') or search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url='https://yt2song.com/api/v1/download', download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers=headers,
         )
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
@@ -107,12 +109,12 @@ class YouTubeMusicClient(BaseMusicClient):
         filename = (download_result := resp2json(resp=resp)).get("FileInAzure"); download_url = file_base_url + quote(filename, safe="")
         head = next((head for delay in (0, 1, 2, 4, 8) if not time.sleep(delay) and (head := session.head(download_url, headers=headers, allow_redirects=True, timeout=(10, 30), **request_overrides)) and head.status_code == 200), None) or head
         (resp := session.get(download_url, headers=headers, **request_overrides)).raise_for_status()
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        if download_url_status['file_size'] in {'NULL'}: download_url_status['file_size_bytes'], download_url_status['file_size'] = resp.content.__sizeof__(), SongInfoUtils.byte2mb(resp.content.__sizeof__())
+        download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
         duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
-            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers=headers,
         )
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
@@ -147,10 +149,10 @@ class YouTubeMusicClient(BaseMusicClient):
             (resp := requests.get(download_url, headers={'Referer': 'https://cnvmp3.com/', 'User-Agent': headers['User-Agent']}, **request_overrides,)).raise_for_status()
         download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
         duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
-        assert download_url_status['file_size_bytes'] > duration_in_secs * 96 * 1000 / 8
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
-            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers={'Referer': 'https://cnvmp3.com/', 'User-Agent': headers['User-Agent']},
         )
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
@@ -173,12 +175,12 @@ class YouTubeMusicClient(BaseMusicClient):
         download_result['converter'] = resp2json(resp=resp); download_url = str(download_result['converter']['url']).replace('/tunnel?', '/tunnel/?', 1)
         # --download
         (resp := requests.get(download_url, headers={"Referer": "https://frame.y2meta-uk.com/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"}, **request_overrides)).raise_for_status()
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides={**request_overrides, 'headers': {"Referer": "https://frame.y2meta-uk.com/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"}}, renew_session=True)
-        if download_url_status['file_size'] in {'NULL'}: download_url_status['file_size_bytes'], download_url_status['file_size'] = resp.content.__sizeof__(), SongInfoUtils.byte2mb(resp.content.__sizeof__())
+        download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
         duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
-            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
+            identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers={"Referer": "https://frame.y2meta-uk.com/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"},
         )
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
@@ -205,10 +207,10 @@ class YouTubeMusicClient(BaseMusicClient):
         download_result = {'initial': initial_result, 'progress': progress_result,}
         (resp := requests.get(download_url, headers={'User-Agent': headers['User-Agent']}, **request_overrides,)).raise_for_status()
         if any(value in resp.headers.get('Content-Type', '').lower() for value in ('text/html', 'application/json')): raise RuntimeError('Download URL returned an error document')
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        if download_url_status.get('file_size') in {'NULL', None}: download_url_status['file_size_bytes'] = len(resp.content); download_url_status['file_size'] = SongInfoUtils.byte2mb(len(resp.content))
+        download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
         # --song info
         duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
             file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
@@ -244,13 +246,57 @@ class YouTubeMusicClient(BaseMusicClient):
         # --download
         download_headers = {"User-Agent": base_headers["User-Agent"], "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8", "Accept-Language": base_headers["Accept-Language"], "Referer": "https://media.ytmp3.gg/"}
         (resp := requests.get(download_url, headers=download_headers, **request_overrides)).raise_for_status()
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        if download_url_status.get('file_size') in {'NULL', None}: download_url_status['file_size_bytes'] = len(resp.content); download_url_status['file_size'] = SongInfoUtils.byte2mb(len(resp.content))
+        download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
         # --song info
         duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
-            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers=download_headers,
+        )
+        song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
+        # return
+        return song_info
+    '''_parsewithgmpionapi'''
+    def _parsewithgmpionapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
+        song_url, api_url = f"https://www.youtube.com/watch?v={song_id}", "https://api.ezsrv.net"
+        base_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Origin": "https://gmpion.pl", "Referer": "https://gmpion.pl/"}
+        if not search_result.get('title'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        # --attest
+        attest_headers = base_headers.copy(); attest_headers["Content-Type"] = "application/json"
+        (resp := requests.post(f"{api_url}/api/attest", headers=attest_headers, json={"token": ""}, **request_overrides)).raise_for_status()
+        attest_result = resp2json(resp=resp); captcha_token = attest_result.get('token')
+        # --converter
+        download_result, payload = {'attest': attest_result}, {"url": song_url, "format": "mp3", "quality": 320, "captchaToken": captcha_token}
+        (resp := requests.post(f"{api_url}/api/convert", headers=attest_headers, json=payload, **request_overrides)).raise_for_status()
+        download_result['converter'] = resp2json(resp=resp); job_id = download_result['converter'].get('jobId')
+        if not job_id: raise RuntimeError(f"GMPion converter response has no jobId: {download_result['converter']}")
+        # --poll status
+        status_url = f"{api_url}/api/convert/status?jobId={job_id}"
+        for _ in range(120):
+            (resp := requests.get(status_url, headers=base_headers, **request_overrides)).raise_for_status(); download_result['status'] = resp2json(resp=resp)
+            if download_result['status'].get('title') and not search_result.get('title'): search_result['title'] = download_result['status']['title']
+            if download_result['status'].get('status') == 'done' and download_result['status'].get('downloadUrl'): break
+            if download_result['status'].get('status') in {'failed', 'error', 'blocked'}: raise RuntimeError(f"GMPion convert failed: {download_result['status']}")
+            time.sleep(2)
+        else:
+            raise TimeoutError(f"GMPion convert timeout: {download_result.get('status')}")
+        download_url = download_result['status'].get('downloadUrl'); download_result['download_url'] = download_url
+        if not download_url: raise RuntimeError(f"GMPion status response has no downloadUrl: {download_result['status']}")
+        # --download
+        download_headers = {"User-Agent": base_headers["User-Agent"], "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8", "Accept-Language": base_headers["Accept-Language"], "Referer": "https://gmpion.pl/"}
+        (resp := requests.get(download_url, headers=download_headers, **request_overrides)).raise_for_status()
+        download_url_status = {'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'download_url': download_url}
+        # --song info
+        duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        assert download_url_status['file_size_bytes'] > (duration_in_secs or 1) * 96 * 1000 / 8
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or download_result['status'].get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'],
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers=download_headers,
         )
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
@@ -258,7 +304,7 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithmediaytmp3api, self._parsewith4kdownloadapi, self._parsewithyt2songapi, self._parsewithcnvmp3api, self._parsewithcutytapi, self._parsewithspotubedlapi, ]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithmediaytmp3api, self._parsewithgmpionapi, self._parsewith4kdownloadapi, self._parsewithyt2songapi, self._parsewithcnvmp3api, self._parsewithspotubedlapi, self._parsewithcutytapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
