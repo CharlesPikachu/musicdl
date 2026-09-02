@@ -125,7 +125,7 @@ class QQMusicClient(BaseMusicClient):
         MUSIC_QUALITIES, headers = ["7", "9", "10", "8", "6", "5"], {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"}
         request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
         if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
-        REQUEST_KEYS, decrypt_func = ['charlespikachuWk83NlFKQ0lINVBQSUNKT09YVUg='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
+        REQUEST_KEYS, decrypt_func = ['charlespikachuWk83NlFKQ0lINVBQSUNKT09YVUg=', 'charlespikachuUUkyNzZXTTgwNzFaT1JKS0JFMTQ='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         # parse
         for music_quality in MUSIC_QUALITIES:
             (resp := requests.get(f"https://api.317ak.com/api/yinyue/qqyinyue?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={song_id}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, **request_overrides)).raise_for_status()

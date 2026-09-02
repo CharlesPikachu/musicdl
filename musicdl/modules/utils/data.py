@@ -54,10 +54,9 @@ class SongInfo:
     @property
     def with_valid_download_url(self) -> bool:
         from ..utils.tidalutils import StreamUrl as TidalStreamObj
-        from ..utils.youtubeutils import Stream as YouTubeStreamObj
         from ..utils.appleutils import DownloadItem as AppleStreamObj
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
-        is_valid_download_url_format = self.download_url.startswith('http') if isinstance(self.download_url, str) else isinstance(self.download_url, (TidalStreamObj, YouTubeStreamObj, AppleStreamObj))
+        is_valid_download_url_format = self.download_url.startswith('http') if isinstance(self.download_url, str) else isinstance(self.download_url, (TidalStreamObj, AppleStreamObj))
         is_downloadable, with_downloaded_contents = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok'), bool(self.downloaded_contents)
         return bool(with_downloaded_contents or (is_valid_download_url_format and is_downloadable))
     # save info

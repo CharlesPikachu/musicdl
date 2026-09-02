@@ -212,7 +212,7 @@ class SpotubeSecureClient:
         self.server_public_key = None
         self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
-        self.default_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36", "Origin": self.base_url, "Referer": self.base_url + "/", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"}
+        self.default_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "Origin": self.base_url, "Referer": self.base_url + "/", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"}
     '''urljoin'''
     @staticmethod
     def urljoin(base_url: str, path: str) -> str:
@@ -323,7 +323,7 @@ class SpotubeSecureClient:
         api_path = SpotubeSecureClient.pathfromapi(api_path)
         post_url = SpotubeSecureClient.urljoin(self.base_url, (post_path := SpotubeSecureClient.randompath()))
         response_public_raw = SpotubeSecureClient.exportrawpublickey((response_private := SpotubeSecureClient.generatep256privatekey()))
-        plaintext = SpotubeSecureClient.jsoncompact({"path": api_path, "body": body})
+        plaintext = SpotubeSecureClient.jsoncompact({"path": api_path, "method": "GET", "body": body})
         encrypted_body, random_header = self.encryptrequestenvelope(post_path, plaintext, request_overrides), SpotubeSecureClient.randomheadername()
         headers = {**self.default_headers, random_header: SpotubeSecureClient.b64encode(response_public_raw), "Content-Type": "application/octet-stream", "Accept": "application/octet-stream, application/json"}
         resp = self.session.post(post_url, headers=headers, data=encrypted_body, timeout=90, allow_redirects=True, **(request_overrides or {}))
