@@ -1,5 +1,7 @@
 # Release Log
 
+- 2026-09-02: Released musicdl v2.13.9 — performed routine checks and maintenance on the Audius, ccMixter, FMA, JOOX, SoundCloud, Suno, and YouTube music clients; since YouTube's native API had become completely unusable, the YouTube client was fully refactored, with a large amount of unnecessary code removed.
+
 - 2026-08-31: Released musicdl v2.13.8 — routine maintenance for Bilibili, Bodian, FiveSing, Jamendo, JioSaavn, Kugou, Kuwo, Migu, NetEase, OpenGameArt, Qianqian, QQ, StreetVoice, and Wikimedia Commons music clients.
 
 - 2026-08-30: Released musicdl v2.13.7 — fix all broken audiobook clients; thoroughly test and inspect all third-party music clients and common music clients, and properly handle any clients that are no longer working.

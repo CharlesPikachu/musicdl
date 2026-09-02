@@ -15,10 +15,10 @@ import math
 import base64
 from contextlib import suppress
 from urllib.parse import urlparse
-from .base import BaseMusicClient
-from rich.progress import Progress
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import SUNO_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, IOUtils, SongInfoUtils
 
@@ -28,7 +28,7 @@ class SunoMusicClient(BaseMusicClient):
     source = 'SunoMusicClient'
     AUTH_TOKEN = None
     browser_token_func = lambda: json.dumps({"token": base64.urlsafe_b64encode(json.dumps({"timestamp": int(time.time() * 1000)}, separators=(",", ":")).encode("utf-8")).decode("utf-8").rstrip("=")}, separators=(",", ":"))
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(SunoMusicClient, self).__init__(**kwargs)
         SunoMusicClient.AUTH_TOKEN = self.default_search_cookies.get('auth_token') or self.default_parse_cookies.get('auth_token') or self.default_download_cookies.get('auth_token')
         self.default_search_headers = {
@@ -67,7 +67,8 @@ class SunoMusicClient(BaseMusicClient):
         # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
-            download_url = search_result.get('audio_url') or f'https://cdn1.suno.ai/{song_id}.mp3'
+            media_info = next((media for media in (search_result.get('media_urls') or []) if isinstance(media, dict) and media.get('content_type') == 'm4a-opus' and media.get('url')), None) or next((media for media in (search_result.get('media_urls') or []) if isinstance(media, dict) and media.get('content_type') == 'mp3' and media.get('url')), None)
+            download_url = (media_info or {}).get('url') or search_result.get('audio_url') or f'https://cdn1.suno.ai/{song_id}.mp3'
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             duration_in_secs = float(safeextractfromdict(search_result, ['metadata', 'duration'], 0) or 0)
             song_info = SongInfo(

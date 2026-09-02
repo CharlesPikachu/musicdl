@@ -1819,10 +1819,6 @@ SunoMusicClient works out of the box with only musicdl installed and does not re
 
 (1) Command-Line Usage
 
-- Basic usage for song search and download, without login cookies:
-
-  `musicdl -m SunoMusicClient`
-
 - Simple usage for searching and downloading songs, with login cookies:
 
   `musicdl -m SunoMusicClient -i "{'SunoMusicClient': {'default_search_cookies': 'YOUR_COOKIES'}}"`
@@ -1842,15 +1838,6 @@ SunoMusicClient works out of the box with only musicdl installed and does not re
   `musicdl -p "https://suno.com/playlist/176ff485-6f66-4701-ac01-d55f194c325e" -m SunoMusicClient -i "{'SunoMusicClient': {'default_parse_cookies': 'YOUR_COOKIES'}}"`
 
 (2) Invoke It in Python
-
-- Basic usage for song search and download, without login cookies:
-
-  ```python
-  from musicdl import musicdl
-
-  music_client = musicdl.MusicClient(music_sources=['SunoMusicClient'])
-  music_client.startcmdui()
-  ```
 
 - Simple usage for searching and downloading songs, with login cookies:
 

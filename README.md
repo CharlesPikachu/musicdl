@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-09-02: Released musicdl v2.13.9 — performed routine checks and maintenance on the Audius, ccMixter, FMA, JOOX, SoundCloud, Suno, and YouTube music clients; since YouTube's native API had become completely unusable, the YouTube client was fully refactored, with a large amount of unnecessary code removed.
 - 2026-08-31: Released musicdl v2.13.8 — routine maintenance for Bilibili, Bodian, FiveSing, Jamendo, JioSaavn, Kugou, Kuwo, Migu, NetEase, OpenGameArt, Qianqian, QQ, StreetVoice, and Wikimedia Commons music clients.
 - 2026-08-30: Released musicdl v2.13.7 — fix all broken audiobook clients; thoroughly test and inspect all third-party music clients and common music clients, and properly handle any clients that are no longer working.
-- 2026-08-10: Released musicdl v2.13.6 — perform routine updates and maintenance for the common music clients, this update fixes two common music clients.
 
 
 # 🎵 Introduction
@@ -765,7 +765,7 @@ musicdl -p "https://qishui.douyin.com/s/iHFSgNKw/" -m SodaMusicClient
 # Parse and Download Spotify Music Playlist
 musicdl -p "https://open.spotify.com/playlist/37i9dQZF1E8NWHOpySOxQd" -m SpotifyMusicClient
 # Parse and Download Suno Music Playlist
-musicdl -p "https://suno.com/playlist/71f56f55-93a8-4c93-830d-6762853cc862" -m SunoMusicClient
+musicdl -p "https://suno.com/playlist/71f56f55-93a8-4c93-830d-6762853cc862" -m SunoMusicClient -i "{'SunoMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 # Parse and Download TIDAL Music Playlist
 musicdl -p "https://tidal.com/playlist/a94e7dce-da66-413d-81a5-990328afa3c9" -m TIDALMusicClient -i "{'TIDALMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 ```
