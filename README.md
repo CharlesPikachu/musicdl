@@ -65,7 +65,7 @@
 
 # 🎉 What's New
 
-- 2026-09-05: Released musicdl v2.13.10 — perform routine checks and maintenance on the Audius, ccMixter, FMA, JOOX, MOOV, SoundCloud, Spotify, and YouTube music clients to ensure that all their interfaces remain valid and functional.
+- 2026-09-05: Released musicdl v2.13.10 — perform routine checks and maintenance on the Audius, ccMixter, FMA, JOOX, MOOV, SoundCloud, Spotify, and YouTube music clients to ensure that all their interfaces remain valid.
 - 2026-09-02: Released musicdl v2.13.9 — performed routine checks and maintenance on the Audius, ccMixter, FMA, JOOX, SoundCloud, Suno, and YouTube music clients; since YouTube's native API had become completely unusable, the YouTube client was fully refactored, with a large amount of unnecessary code removed.
 - 2026-08-31: Released musicdl v2.13.8 — routine maintenance for Bilibili, Bodian, FiveSing, Jamendo, JioSaavn, Kugou, Kuwo, Migu, NetEase, OpenGameArt, Qianqian, QQ, StreetVoice, and Wikimedia Commons music clients.
 
