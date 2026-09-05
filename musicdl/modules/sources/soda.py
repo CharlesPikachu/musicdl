@@ -16,11 +16,12 @@ import json_repair
 from typing import Any
 from pathlib import Path
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from collections.abc import Callable
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import SODA_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from ..utils.sodautils import AudioDecryptor, SodaTimedLyricsParser
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import extractdurationsecondsfromlrc, searchdictbykey, cookies2string, legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, IOUtils
@@ -29,7 +30,7 @@ from ..utils import extractdurationsecondsfromlrc, searchdictbykey, cookies2stri
 '''SodaMusicClient'''
 class SodaMusicClient(BaseMusicClient):
     source = 'SodaMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(SodaMusicClient, self).__init__(**kwargs)
         self.soda_auth_info = self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies
         self.device_id = self.soda_auth_info.get('device_id') or self.soda_auth_info.get('device-id') or "3753066532709850"

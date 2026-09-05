@@ -16,20 +16,21 @@ import platform
 import subprocess
 from pathlib import Path
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from platformdirs import user_log_dir
 from ..utils.hosts import MOOV_MUSIC_HOSTS
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from pathvalidate import sanitize_filepath, sanitize_filename
 from urllib.parse import urlencode, urlparse, parse_qs, unquote
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import usedownloadheaderscookies, legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils, NM3U8DLREDownloadCommand
+from ..utils import usedownloadheaderscookies, legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils, NM3U8DLREDownloadCommand, ExtractAudioFromVideoFFmpegCommand
 
 
 '''MOOVMusicClient'''
 class MOOVMusicClient(BaseMusicClient):
     source = 'MOOVMusicClient'
     DEVICE_ID = str(uuid.UUID(bytes=hashlib.sha256(f"{platform.node()}-{uuid.getnode()}".encode()).digest()[:16], version=4)).upper()
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(MOOVMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Origin": "https://moov.hk", "Referer": "https://moov.hk/", "Accept": "application/json, text/javascript, */*; q=0.01",}
         self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Origin": "https://moov.hk", "Referer": "https://moov.hk/", "Accept": "application/json, text/javascript, */*; q=0.01",}
@@ -51,9 +52,13 @@ class MOOVMusicClient(BaseMusicClient):
             cmd = NM3U8DLREDownloadCommand().build(song_info.download_url, song_info.save_path, log_file_path=log_file_path, auto_select=True, tmp_dir=sanitize_filepath(str(Path(song_info.save_path).parent / str(song_info.identifier))), save_pattern=Path(song_info.save_path).name, mods=({"__add__": [("--key", k) for k in keys]} if (keys := song_info.download_url_status.get('decrypt_keys')) else None))
             progress.update(song_progress_id, total=None, description=f"{self.source}._download >>> {song_info.song_name[:15] + '...' if len(song_info.song_name) > 18 else song_info.song_name[:18]} (Downloading)")
             subprocess.run(cmd, check=True, capture_output=self.disable_print, text=True, encoding='utf-8', errors='ignore')
-            real_save_path = max(Path(song_info.save_path).parent.glob(f"{Path(song_info.save_path).name}*"), key=lambda p: p.stat().st_mtime, default=None)
-            song_info._save_path, song_info.ext = AudioLinkTester.extractaudiofromvideolossless(real_save_path, song_info.save_path)
-            if not os.path.samefile(real_save_path, song_info.save_path): os.remove(real_save_path)
+            real_save_path = max(Path(song_info.save_path).parent.glob(f"{Path(song_info.save_path).name}*"), key=lambda p: p.stat().st_size, default=None)
+            if real_save_path.suffix.lower() == '.ts':
+                subprocess.run(ExtractAudioFromVideoFFmpegCommand().build(str(real_save_path), song_info.save_path), check=True, capture_output=self.disable_print, text=True, encoding='utf-8', errors='ignore')
+                song_info._save_path, song_info.ext = song_info.save_path, Path(song_info.save_path).suffix.lstrip('.')
+            else:
+                song_info._save_path, song_info.ext = AudioLinkTester.extractaudiofromvideolossless(real_save_path, song_info.save_path)
+            if not os.path.samefile(real_save_path, song_info._save_path): os.remove(real_save_path)
             progress.update(song_progress_id, total=os.path.getsize(song_info.save_path), advance=os.path.getsize(song_info.save_path), description=f"{self.source}._download >>> {song_info.song_name[:15] + '...' if len(song_info.song_name) > 18 else song_info.song_name[:18]} (Success)")
             downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(song_info, logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else song_info)
         except Exception as err:
