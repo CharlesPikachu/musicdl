@@ -10,6 +10,9 @@ import os
 import re
 import copy
 import time
+import json
+import uuid
+import hmac
 import random
 import base64
 import hashlib
@@ -21,8 +24,8 @@ from urllib.parse import urlencode
 from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import KUGOU_MUSIC_HOSTS
-from urllib.parse import urlparse, parse_qs, urljoin
 from .base import BaseMusicClient, BaseMusicClientKwargs
+from urllib.parse import urlparse, parse_qs, urljoin, parse_qsl
 from ..utils.kugouutils import KugouMusicClientUtils, MUSIC_QUALITIES
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
@@ -256,10 +259,33 @@ class KugouMusicClient(BaseMusicClient):
         with suppress(Exception): (resp := requests.get(lyric_url, headers=headers, allow_redirects=True, **request_overrides)).raise_for_status(); song_info.lyric = cleanlrc(resp.text)
         # return
         return song_info
+    '''_parsewithqqovoapi'''
+    def _parsewithqqovoapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, file_hash = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash')
+        headers = {"Accept": "*/*", "Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36", "Referer": "https://qqovo.top/room/4SVWQK", "Origin": "https://qqovo.top"}
+        get_qqovo_headers_func = lambda url, api_sign_key: (lambda parsed, timestamp, nonce, query, payload: {**headers, "X-OM-Ts": timestamp, "X-OM-Nonce": nonce, "X-OM-Sign": base64.urlsafe_b64encode(hmac.new(api_sign_key.encode(), payload.encode(), hashlib.sha256).digest()).decode().rstrip('=')})(*(lambda parsed, timestamp, nonce: (parsed, timestamp, nonce, '&'.join(f'{key}={value}' for key, value in sorted(parse_qsl(parsed.query, keep_blank_values=True), key=lambda x: x[0])), '\n'.join(['GET', parsed.path, '&'.join(f'{key}={value}' for key, value in sorted(parse_qsl(parsed.query, keep_blank_values=True), key=lambda x: x[0])), '', timestamp, nonce])))(urlparse(url), str(int(time.time())), str(uuid.uuid4())))
+        if not (search_result.get('duration') or search_result.get('Duration') or search_result.get('timelen')): search_result.update(self._getsongmetainfo(song_id=file_hash, request_overrides=request_overrides))
+        # bootstrap
+        qqovo_session, qqovo_device_id = requests.Session(), str(uuid.uuid4())
+        (resp := qqovo_session.post("https://qqovo.top/api/session/bootstrap", headers={**headers, "Content-Type": "application/json"}, data=json.dumps({"deviceId": qqovo_device_id}, separators=(',', ':')), timeout=10, **request_overrides)).raise_for_status()
+        qqovo_api_sign_key = safeextractfromdict(resp2json(resp=resp), ['apiSignKey'], '')
+        # parse
+        track_url = f"https://qqovo.top/api/meting?server=kugou&type=url&id={file_hash}&quality=lossless"
+        (resp := qqovo_session.get(track_url, headers=get_qqovo_headers_func(track_url, qqovo_api_sign_key), timeout=10, **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+        download_url_status: dict = self.audio_link_tester.test(url=download_result['url'], request_overrides=request_overrides, renew_session=True)
+        with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('songname') or search_result.get('SongName') or search_result.get('songname_original') or search_result.get('OriSongName') or search_result.get('filename') or search_result.get('FileName') or search_result.get('name') or search_result.get('Name')), singers=legalizestring(search_result.get('singername') or search_result.get('SingerName') or ', '.join([singer.get('name') for singer in (search_result.get('singerinfo') or search_result.get('Singers') or []) if isinstance(singer, dict) and singer.get('name')])), 
+            album=legalizestring(search_result.get('album_name') or search_result.get('AlbumName') or safeextractfromdict(search_result, ['albuminfo', 'name'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=file_hash, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['trans_param', 'union_cover'], None) or search_result.get('cover_url') or search_result.get('Image'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        if song_info.cover_url and isinstance(song_info.cover_url, str) and ('{size}' in song_info.cover_url): song_info.cover_url = song_info.cover_url.format(size=300)
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewith317akapi, self._parsewithxianyuwapi, ] # svip
+        l1_parser_funcs = [self._parsewith317akapi, self._parsewithqqovoapi, self._parsewithxianyuwapi, ] # svip
         l2_parser_funcs = [self._parsewithlzmhhhapi, self._parsewith90svipapi, self._parsewithtomapi, self._parsewithjbsouapi, ] # vip
         l3_parser_funcs = [self._parsewithchkszapi, self._parsewithbakaapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
