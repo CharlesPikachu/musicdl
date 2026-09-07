@@ -767,7 +767,7 @@ SodaMusicClient offers an out-of-the-box experience: no extra CLI tools like ffm
 
   `musicdl -m SodaMusicClient -i "{'SodaMusicClient': {'default_search_cookies': 'YOUR_COOKIES'}}"`
   
-  Please note that the cookies must be captured from the network requests of the [desktop version of Soda Music](https://www.douyin.com/qishui/), and they must be provided in the following format:
+  Please note that the cookies must be captured from the network requests of an older desktop version of [Soda Music](https://www.douyin.com/qishui/), such as version 3.4.0 or earlier, and they must be provided in the following format:
   
   ```python
   SODA_MUSIC_REQUIRED_COOKIES = {
@@ -775,6 +775,7 @@ SodaMusicClient offers an out-of-the-box experience: no extra CLI tools like ffm
 	'device_id': 'xxx',
 	'x_helios': 'xxx',
 	'x_medusa': 'xxx',
+	'iid': 'xxx',
   }
   ```
   

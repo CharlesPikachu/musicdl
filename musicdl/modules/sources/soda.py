@@ -38,15 +38,16 @@ class SodaMusicClient(BaseMusicClient):
     def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(SodaMusicClient, self).__init__(**kwargs)
         self.soda_auth_info = self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies
+        self.iid = self.soda_auth_info.get('iid') or "850377327519292"
         self.device_id = self.soda_auth_info.get('device_id') or self.soda_auth_info.get('device-id') or "3753066532709850"
         self.auth_cookies = self.soda_auth_info.get('cookies') or self.soda_auth_info.get('cookie') or self.soda_auth_info.get('Cookies') or self.soda_auth_info.get('Cookie') or {}
         self.x_helios = self.soda_auth_info.get('x_helios') or self.soda_auth_info.get('x-helios') or self.soda_auth_info.get('X-Helios') or "SicAACJWDNiSHEX4DSBVXo3+TNXAHXt9Af6CkPaMTmSX1Jcg"
         self.x_medusa = self.soda_auth_info.get('x_medusa') or self.soda_auth_info.get('x-medusa') or self.soda_auth_info.get('X-Medusa') or "GBR+aez8IZPMw6JSzT62GUzbH3GODwMBg7ZESAAAAQk/GduVkAZWRUCTX0SGSLVDDQ/gYOFKM/adGsI29F3FyR/OAoj+AK7fOY1Pe1po0w3w850g3Y0xvZOEl35RaWIynTM+dvmKmsQLoBG2LPT9eoaLqF8pi6MjvRdIJK8PMnnwDYrreh4OQ85zqzZdCFytOf6cXPH4NImgdUgBceuFfUtCN8ZdI3bRTDD28J8OxDK8vsWjdzimSPNTIe6C2EKel/U+PcqXfkbs/ZWCvHyxmqgrLfu5tHAtnXuEbQf6J53G8I6wdY8JQ5wm8+7o37XUiWC8FCB6y+09/aB9q4LTwNEMOlv50fAQg/bT9RgB6+7jF+7RXZyIuNkXAuJb2uZeBSzfJVvw6VITls5AFSOdNu376GqKGm4T6M8V9HzT2L8cW8smYgNG6HJPjd3iVVcv8fjeJeAGolEPMBbBvbAjJCSQAOY6jo/RGbRvOUsDyZgJ6fEp8ncjXIcK6Nw1GSPOv7AXWILqyt5sBpFDvPlpJTqih5TWbmWSEBc52+OPX2DJKknmz4qBPrRdJ7QvtxA5nrLDBjc3doDJa2iv1FE/7nUQoGJ5njCFw2BYfT9LE3kxDVUtWzmYLtxzkFGpuhGdAuRYSSC2LiCgbGcaqIkDrUpa2yaVZNimFJi3s08+OCUllT5aQQIh/mv02EEXGXi1IV7UCWqTNEdzjZrat6P2rNQbG0DYXvj3sbTJX8+7mS/c6LD5sWZ4UjKiVo4PMRknYHv3syjwX4VuvF49u/+fHYWtv72Y+buTO0iuGDxIiOk6kNElV895F40J6WpZ59nPpg7Qum8ndQHko5xqtdAXIB/l//3/v+/3//8AAA=="
-        self.default_search_headers = {"User-Agent": "LunaPC/3.5.1(408871041)", "Content-Type": "application/json; charset=utf-8"}
+        self.default_search_headers = {"User-Agent": "LunaPC/3.4.0(388267242)", "Content-Type": "application/json; charset=utf-8", "X-Luna-Background-Type": "foreground", "X-Luna-Is-Background-Req": "0", "X-Luna-Is-Local-User": "1", "Accept-Encoding": "gzip, deflate"}
         if self.default_search_cookies: self.default_search_headers.update({'Cookie': cookies2string(self.auth_cookies), 'X-Helios': self.x_helios, 'X-Medusa': self.x_medusa})
-        self.default_parse_headers = {"User-Agent": "LunaPC/3.5.1(408871041)", "Content-Type": "application/json; charset=utf-8"}
+        self.default_parse_headers = {"User-Agent": "LunaPC/3.4.0(388267242)", "Content-Type": "application/json; charset=utf-8", "X-Luna-Background-Type": "foreground", "X-Luna-Is-Background-Req": "0", "X-Luna-Is-Local-User": "1", "Accept-Encoding": "gzip, deflate"}
         if self.default_parse_cookies: self.default_parse_headers.update({'Cookie': cookies2string(self.auth_cookies), 'X-Helios': self.x_helios, 'X-Medusa': self.x_medusa})
-        self.default_download_headers = {"User-Agent": "LunaPC/3.5.1(408871041)", "Content-Type": "application/json; charset=utf-8"}
+        self.default_download_headers = {"User-Agent": "LunaPC/3.4.0(388267242)", "Content-Type": "application/json; charset=utf-8", "X-Luna-Background-Type": "foreground", "X-Luna-Is-Background-Req": "0", "X-Luna-Is-Local-User": "1", "Accept-Encoding": "gzip, deflate"}
         if self.default_download_cookies: self.default_download_headers.update({'Cookie': cookies2string(self.auth_cookies), 'X-Helios': self.x_helios, 'X-Medusa': self.x_medusa})
         self.default_headers = self.default_search_headers; self.default_cookies = {}; self.default_search_cookies = {}; self.default_download_cookies = {}; self.default_parse_cookies = {}
         self._initsession()
@@ -166,12 +167,13 @@ class SodaMusicClient(BaseMusicClient):
         # init
         song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
         if (not isinstance(search_result, dict)) or (not (song_id := safeextractfromdict(search_result, ['entity', 'track', 'id'], None))): return song_info
+        song_id = str(song_id)
         rank_audio_func = lambda video_list: sorted([v for v in video_list if isinstance(v, dict)], key=lambda x: (x.get('Size'), x.get('Bitrate')), reverse=True)
-        default_query = {"aid": "386088", "app_name": "luna_pc", "region": "cn", "geo_region": "cn", "os_region": "cn", "sim_region": "", "device_id": self.device_id, "cdid": "", "iid": "3753066532713946", "version_name": "3.5.1", "version_code": "30050100", "channel": "official", "build_mode": "master", "network_carrier": "", "ac": "wifi", "tz_name": "Asia/Shanghai", "resolution": "", "device_platform": "windows", "device_type": "Windows", "os_version": "Windows 10 Education", "fp": self.device_id,}
+        default_query = {"aid": "386088", "app_name": "luna_pc", "region": "cn", "geo_region": "cn", "os_region": "cn", "sim_region": "", "device_id": self.device_id, "cdid": "", "iid": self.iid, "version_name": "3.4.0", "version_code": "30040000", "channel": "official", "build_mode": "master", "network_carrier": "", "ac": "wifi", "tz_name": "Asia/Shanghai", "resolution": "", "device_platform": "windows", "device_type": "Windows", "os_version": "Windows 10 Education", "fp": self.device_id,}
         # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
-            body = {"media_type": "track", "queue_type": "search_one_track", "scene_name": "search", "track_id": song_id}
+            body = {"track_id": song_id, "media_type": "track", "queue_type": "search_one_track", "scene_name": "search"}
             with suppress(Exception): download_result = {}; download_result = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides)
             (resp := self.post(f'https://api.qishui.com/luna/pc/track_v2?{urlencode(default_query)}', data=json.dumps(body, ensure_ascii=False, separators=(",", ":")), **request_overrides)).raise_for_status(); download_result['track'] = resp2json(resp)
             (resp := self.get(download_result['track']['track_player']['url_player_info'], **request_overrides)).raise_for_status(); download_result['url_player_info'] = resp2json(resp)
