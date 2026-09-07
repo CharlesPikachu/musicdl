@@ -9,16 +9,20 @@ WeChat Official Account (微信公众号):
 import os
 import re
 import copy
+import time
 import json
+import hmac
+import uuid
 import random
 import base64
+import hashlib
 import requests
 from contextlib import suppress
 from typing_extensions import Unpack
 from ..utils.hosts import QQ_MUSIC_HOSTS
 from pathvalidate import sanitize_filepath
-from urllib.parse import urlparse, parse_qs, urljoin
 from .base import BaseMusicClient, BaseMusicClientKwargs
+from urllib.parse import urlparse, parse_qs, urljoin, parse_qsl
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.qqutils import QQMusicClientUtils, SearchType, Credential, ThirdPartVKeysAPISongFileType, SongFileType, EncryptedSongFileType
 from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
@@ -357,11 +361,32 @@ class QQMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithqqovoapi'''
+    def _parsewithqqovoapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
+        headers = {"Accept": "*/*", "Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36", "Referer": "https://qqovo.top/room/4SVWQK", "Origin": "https://qqovo.top"}
+        get_qqovo_headers_func = lambda url, api_sign_key: (lambda parsed, timestamp, nonce, query, payload: {**headers, "X-OM-Ts": timestamp, "X-OM-Nonce": nonce, "X-OM-Sign": base64.urlsafe_b64encode(hmac.new(api_sign_key.encode(), payload.encode(), hashlib.sha256).digest()).decode().rstrip('=')})(*(lambda parsed, timestamp, nonce: (parsed, timestamp, nonce, '&'.join(f'{key}={value}' for key, value in sorted(parse_qsl(parsed.query, keep_blank_values=True), key=lambda x: x[0])), '\n'.join(['GET', parsed.path, '&'.join(f'{key}={value}' for key, value in sorted(parse_qsl(parsed.query, keep_blank_values=True), key=lambda x: x[0])), '', timestamp, nonce])))(urlparse(url), str(int(time.time())), str(uuid.uuid4())))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # bootstrap
+        qqovo_session, qqovo_device_id = requests.Session(), str(uuid.uuid4())
+        (resp := qqovo_session.post("https://qqovo.top/api/session/bootstrap", headers={**headers, "Content-Type": "application/json"}, data=json.dumps({"deviceId": qqovo_device_id}, separators=(',', ':')), timeout=10, **request_overrides)).raise_for_status()
+        qqovo_api_sign_key = safeextractfromdict(resp2json(resp=resp), ['apiSignKey'], '')
+        # parse
+        track_url = f"https://qqovo.top/api/meting?server=tencent&type=url&id={song_id}&quality=lossless"
+        (resp := qqovo_session.get(track_url, headers=get_qqovo_headers_func(track_url, qqovo_api_sign_key), timeout=10, **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+        download_url_status: dict = self.audio_link_tester.test(url=download_result['url'], request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=int(float(search_result.get('interval', 0) or 0)), duration=SongInfoUtils.seconds2hms(int(float(search_result.get('interval', 0) or 0))), lyric=None, cover_url=f"https://y.gtimg.cn/music/photo_new/T002R800x800M000{safeextractfromdict(search_result, ['album', 'mid'], '') or search_result.get('albummid')}.jpg", download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or (request_overrides := request_overrides or {}).get('cookies'): return SongInfo(source=self.source)
         l1_parser_funcs = [self._parsewithvkeysapi, self._parsewith317akapi, self._parsewithxingmianapi, self._parsewithchkszapi, self._parsewithxcvtsapi, ] # svip
-        l2_parser_funcs = [self._parsewithnkiapi, self._parsewithtangapi, self._parsewithhk0ccapi, ] # vip
+        l2_parser_funcs = [self._parsewithqqovoapi, self._parsewithnkiapi, self._parsewithtangapi, self._parsewithhk0ccapi, ] # vip
         l3_parser_funcs = [self._parsewithcyapi, self._parsewithlzmhhhapi, self._parsewithxunhuisiapi, self._parsewithmikusapi, ] # vip account but only mp3 or m4a files can be requested
         l4_parser_funcs = [self._parsewithxianyuwapi, self._parsewithyutangxiaowuapi, self._parsewithlxmusicapi, self._parsewithlpzapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
