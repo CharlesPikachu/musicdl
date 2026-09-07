@@ -10,7 +10,11 @@ import re
 import os
 import copy
 import json
+import time
+import hmac
 import uuid
+import base64
+import hashlib
 import requests
 import json_repair
 from typing import Any
@@ -20,8 +24,9 @@ from typing_extensions import Unpack
 from collections.abc import Callable
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import SODA_MUSIC_HOSTS
-from urllib.parse import urlencode, urlparse, parse_qs
 from .base import BaseMusicClient, BaseMusicClientKwargs
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from urllib.parse import urlencode, urlparse, parse_qs, parse_qsl
 from ..utils.sodautils import AudioDecryptor, SodaTimedLyricsParser
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import extractdurationsecondsfromlrc, searchdictbykey, cookies2string, legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, IOUtils
@@ -59,11 +64,12 @@ class SodaMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides, self.search_size_per_page = rule or {}, request_overrides or {}, min(self.search_size_per_page, 20)
-        (default_rule := {'aid': '386088', 'app_name': 'luna_pc', 'region': 'cn', 'geo_region': 'cn', 'os_region': 'cn', 'sim_region': '', 'device_id': self.device_id, 'cdid': '', 'iid': '3753066532713946', 'version_name': '3.5.1', 'version_code': '30050100', 'channel': 'official', 'build_mode': 'master', 'network_carrier': '', 'ac': 'wifi', 'tz_name': 'Asia/Shanghai', 'resolution': '', 'device_platform': 'windows', 'device_type': 'Windows', 'os_version': 'Windows 10 Education', 'fp': self.device_id, 'q': keyword, 'cursor': 0, 'search_id': str(uuid.uuid4()), 'search_method': 'input', 'debug_params': '', 'from_search_id': '', 'search_scene': ''}).update(rule)
+        (default_rule := {"device_platform": "android", "os": "android", "ssmix": "a", "cdid": "46556f98-1720-4248-83da-62b74b60b46a", "channel": "xiaomi_8478_64", "aid": "386088", "app_name": "luna", "version_code": "100198030", "version_name": "19.8.0", "manifest_version_code": "100198030", "update_version_code": "100198030", "resolution": "1080*1920", "dpi": "480", "device_type": "ABR-AL80", "device_brand": "HUAWEI", "language": "zh", "os_api": "35", "os_version": "15", "ac": "wifi", "device_model": "ABR-AL80", "save_power": "0", "font_size": "1.00", "luna_first_launch_apk_type": "normal_apk", "diversion_channel_name": "xiaomi_8478_64", "is_car_play": "0", "battery": "0.99", "network_speed": "10156", "hybrid_version_code": "100198030", "tz_name": "Asia/Shanghai", "tz_offset": "28800", "luna_register_time": "1784311292", "diversion_category_level_two": "Xiaomi%E5%95%86%E5%BA%97-%E8%87%AA%E7%84%B6", "package": "com.luna.music", "charge": "0", "luna_apk_type": "normal_apk", "output_device_type": "Phone", "volume": "1.00", "brightness": "0.08", "need_personal_recommend": "1", "is_teen_mode": "0", "sim_region": "cn", "diversion_category_level_one": "%E5%8E%82%E5%95%86%E5%95%86%E5%BA%97-%E8%87%AA%E7%84%B6", "android_device_type": "default", "iid": "2204957404569386", "device_id": "2204957404565290", "_rticket": str(int(time.time() * 1000)), "q": keyword, "cursor": 0, "count": self.search_size_per_page,}).update(rule)
         # construct search urls
-        base_url, search_urls, page_size, count = 'https://api.qishui.com/luna/pc/search/track?', [], self.search_size_per_page, 0
+        base_url, search_urls, page_size, count = "https://api.qishui.com/luna/search/track?", [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
             (page_rule := copy.deepcopy(default_rule))['cursor'] = count
+            page_rule['count'] = page_size
             search_urls.append(base_url + urlencode(page_rule))
             count += page_size
         # return
@@ -72,22 +78,48 @@ class SodaMusicClient(BaseMusicClient):
     def _parsewithqiuyu520api(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id = request_overrides or {}, safeextractfromdict(search_result, ['entity', 'track', 'id'], None)
-        headers = {"Accept": "application/json, text/plain, */*", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Referer": "http://qiuyu520.fun/qishui/", "Origin": "http://qiuyu520.fun"}
+        headers = {"Accept": "application/json, text/plain, */*", "Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36", "Referer": "https://qiuyu520.fun/qishui/", "Origin": "https://qiuyu520.fun"}
         with suppress(Exception): download_result = {}; download_result = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides)
         # parse
-        (resp := requests.post(f"http://qiuyu520.fun/qishuiParse/api/track/v2", headers=headers, json={"track_id": song_id}, timeout=10, **request_overrides)).raise_for_status(); download_result['track'] = resp2json(resp=resp)
+        nonce, data = os.urandom(12), json.dumps({"t": int(time.time() * 1000), "n": base64.b64encode(os.urandom(16)).decode(), "b": {"track_id": song_id}}, separators=(',', ':')).encode()
+        d = base64.b64encode(nonce + AESGCM(bytes.fromhex('bf0e991833b2bdfc27f621f01b9a65348f3e89484362cdcc77e6d1606b4a3584')).encrypt(nonce, data, None)).decode()
+        (resp := requests.post(f"https://qiuyu520.fun/qishuiParse/api/track_v2?_={time.time_ns()}", headers=headers, json={"d": d}, timeout=10, **request_overrides)).raise_for_status(); download_result['track'] = resp2json(resp=resp)
         download_url, play_auth = safeextractfromdict(download_result['track'], ['data', 'url'], ''), safeextractfromdict(download_result['track'], ['data', 'playAuth'], '')
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(download_result.get('name') or safeextractfromdict(download_result['track'], ['data', 'title'], None)), singers=legalizestring(download_result.get('artist') or safeextractfromdict(download_result['track'], ['data', 'artist'], None)), album=legalizestring(download_result.get('album') or safeextractfromdict(download_result['track'], ['data', 'album'], None)), 
-            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=download_result.get('duration'), duration=SongInfoUtils.seconds2hms(download_result.get('duration')), lyric=download_result.get('lyric'), cover_url=download_result.get('cover') or safeextractfromdict(download_result['track'], ['data', 'cover'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(download_result.get('name') or safeextractfromdict(download_result['track'], ['data', 'title'], None)), singers=legalizestring(download_result.get('artist') or safeextractfromdict(download_result['track'], ['data', 'artist'], None)), album=legalizestring(download_result.get('album') or safeextractfromdict(download_result['track'], ['data', 'album'], None)),
+            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=download_result.get('duration'), duration=SongInfoUtils.seconds2hms(download_result.get('duration')), lyric=download_result.get('lyric'), cover_url=download_result.get('cover') or safeextractfromdict(download_result['track'], ['data', 'cover'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status,
+        )
+        # return
+        return song_info
+    '''_parsewithqqovoapi'''
+    def _parsewithqqovoapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, safeextractfromdict(search_result, ['entity', 'track', 'id'], None)
+        headers = {"Accept": "*/*", "Cache-Control": "no-cache", "Pragma": "no-cache", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36", "Referer": "https://qqovo.top/room/4SVWQK", "Origin": "https://qqovo.top"}
+        get_qqovo_headers_func = lambda url, api_sign_key: (lambda parsed, timestamp, nonce, query, payload: {**headers, "X-OM-Ts": timestamp, "X-OM-Nonce": nonce, "X-OM-Sign": base64.urlsafe_b64encode(hmac.new(api_sign_key.encode(), payload.encode(), hashlib.sha256).digest()).decode().rstrip('=')})(*(lambda parsed, timestamp, nonce: (parsed, timestamp, nonce, '&'.join(f'{key}={value}' for key, value in sorted(parse_qsl(parsed.query, keep_blank_values=True), key=lambda x: x[0])), '\n'.join(['GET', parsed.path, '&'.join(f'{key}={value}' for key, value in sorted(parse_qsl(parsed.query, keep_blank_values=True), key=lambda x: x[0])), '', timestamp, nonce])))(urlparse(url), str(int(time.time())), str(uuid.uuid4())))
+        with suppress(Exception): download_result = {}; download_result = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides)
+        # bootstrap
+        qqovo_session, qqovo_device_id = requests.Session(), str(uuid.uuid4())
+        (resp := qqovo_session.post("https://qqovo.top/api/session/bootstrap", headers={**headers, "Content-Type": "application/json"}, data=json.dumps({"deviceId": qqovo_device_id}, separators=(',', ':')), timeout=10, **request_overrides)).raise_for_status()
+        qqovo_api_sign_key = safeextractfromdict(resp2json(resp=resp), ['apiSignKey'], '')
+        # parse
+        track_url = f"https://qqovo.top/api/meting?server=qishui&type=url&id={song_id}&quality=exhigh"
+        (resp := qqovo_session.get(track_url, headers=get_qqovo_headers_func(track_url, qqovo_api_sign_key), timeout=10, **request_overrides)).raise_for_status(); download_result['track'] = resp2json(resp=resp)
+        source_url = safeextractfromdict(download_result['track'], ['url'], '')
+        (resp := qqovo_session.get(source_url, headers=get_qqovo_headers_func(source_url, qqovo_api_sign_key), timeout=10, **request_overrides)).raise_for_status(); download_result['source'] = resp2json(resp=resp)
+        download_url, play_auth = safeextractfromdict(download_result['source'], ['url'], ''), safeextractfromdict(download_result['source'], ['auth'], '')
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(download_result.get('artist')), album=legalizestring(download_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=download_result.get('duration'), duration=SongInfoUtils.seconds2hms(download_result.get('duration')), lyric=download_result.get('lyric'), cover_url=download_result.get('cover'), download_url=download_url_status['download_url'], download_url_status=download_url_status,
         )
         # return
         return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.soda_auth_info or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithqiuyu520api, ]:
+        for parser_func in [self._parsewithqiuyu520api, self._parsewithqqovoapi, ]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
