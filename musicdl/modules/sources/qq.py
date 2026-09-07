@@ -344,12 +344,25 @@ class QQMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithmikusapi'''
+    def _parsewithmikusapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        download_url_status: dict = self.audio_link_tester.test(url=f'https://meting.mikus.ink/api?server=tencent&type=url&id={song_id}', request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=int(float(search_result.get('interval', 0) or 0)), duration=SongInfoUtils.seconds2hms(int(float(search_result.get('interval', 0) or 0))), lyric=None, cover_url=f"https://y.gtimg.cn/music/photo_new/T002R800x800M000{safeextractfromdict(search_result, ['album', 'mid'], '') or search_result.get('albummid')}.jpg", download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or (request_overrides := request_overrides or {}).get('cookies'): return SongInfo(source=self.source)
         l1_parser_funcs = [self._parsewithvkeysapi, self._parsewith317akapi, self._parsewithxingmianapi, self._parsewithchkszapi, self._parsewithxcvtsapi, ] # svip
         l2_parser_funcs = [self._parsewithnkiapi, self._parsewithtangapi, self._parsewithhk0ccapi, ] # vip
-        l3_parser_funcs = [self._parsewithcyapi, self._parsewithlzmhhhapi, self._parsewithxunhuisiapi, ] # vip account but only mp3 or m4a files can be requested
+        l3_parser_funcs = [self._parsewithcyapi, self._parsewithlzmhhhapi, self._parsewithxunhuisiapi, self._parsewithmikusapi, ] # vip account but only mp3 or m4a files can be requested
         l4_parser_funcs = [self._parsewithxianyuwapi, self._parsewithyutangxiaowuapi, self._parsewithlxmusicapi, self._parsewithlpzapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
