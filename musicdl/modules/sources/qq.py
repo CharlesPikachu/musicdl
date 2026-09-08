@@ -216,7 +216,7 @@ class QQMusicClient(BaseMusicClient):
         if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", "Content-Type": "application/json"}
-        (resp := requests.get(f'https://api.hk0.cc/api/qqmusic?mid={song_id}', headers=headers, **request_overrides)).raise_for_status()
+        (resp := requests.get(f'https://api.hk0.cc/api/qqmusic?mid={song_id}', headers=headers, verify=False, timeout=10, **request_overrides)).raise_for_status()
         download_url: str = (download_result := resp2json(resp=resp)).get('song_play_url_sq') or download_result.get('song_play_url_pq') or download_result.get('song_play_url_accom') or download_result.get('song_play_url_hq') or download_result.get('song_play_url') or download_result.get('song_play_url_standard') or download_result.get('song_play_url_fq')
         if not download_url or not str(download_url).startswith('http'): return song_info
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -385,8 +385,8 @@ class QQMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or (request_overrides := request_overrides or {}).get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithvkeysapi, self._parsewith317akapi, self._parsewithxingmianapi, self._parsewithchkszapi, self._parsewithxcvtsapi, ] # svip
-        l2_parser_funcs = [self._parsewithqqovoapi, self._parsewithnkiapi, self._parsewithtangapi, self._parsewithhk0ccapi, ] # vip
+        l1_parser_funcs = [self._parsewithvkeysapi, self._parsewithxcvtsapi, self._parsewith317akapi, self._parsewithxingmianapi, ][:2] # svip
+        l2_parser_funcs = [self._parsewithchkszapi, self._parsewithqqovoapi, self._parsewithnkiapi, self._parsewithtangapi, self._parsewithhk0ccapi, ] # vip
         l3_parser_funcs = [self._parsewithcyapi, self._parsewithlzmhhhapi, self._parsewithxunhuisiapi, self._parsewithmikusapi, ] # vip account but only mp3 or m4a files can be requested
         l4_parser_funcs = [self._parsewithxianyuwapi, self._parsewithyutangxiaowuapi, self._parsewithlxmusicapi, self._parsewithlpzapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
