@@ -1,6 +1,6 @@
 # Release Log
 
-- 2026-09-08: Released musicdl v2.13.11 — regularly maintain the APIs for Kugou Music, NetEase Cloud Music, Soda Music, and QQ Music.
+- 2026-09-08: Released musicdl v2.13.11 — regularly maintain the APIs for Kugou Music, NetEase Cloud Music, Soda Music, and QQ Music, fixing or deprecating endpoints that are no longer functional.
 
 - 2026-09-05: Released musicdl v2.13.10 — perform routine checks and maintenance on the Audius, ccMixter, FMA, JOOX, MOOV, SoundCloud, Spotify, and YouTube music clients to ensure that all their interfaces remain valid.
 
