@@ -285,9 +285,10 @@ class KugouMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithqqovoapi, self._parsewithlzmhhhapi, self._parsewith90svipapi, self._parsewithtomapi, self._parsewithjbsouapi, self._parsewithxianyuwapi, ] # vip
-        l2_parser_funcs = [self._parsewith317akapi, self._parsewithchkszapi, self._parsewithbakaapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable vip accounts
-        for parser_func in (l1_parser_funcs + l2_parser_funcs):
+        l1_parser_funcs = [self._parsewithbakaapi, ]
+        l2_parser_funcs = [self._parsewithqqovoapi, self._parsewithlzmhhhapi, self._parsewith90svipapi, self._parsewithtomapi, self._parsewithjbsouapi, self._parsewithxianyuwapi, ] # vip
+        l3_parser_funcs = [self._parsewith317akapi, self._parsewithchkszapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable vip accounts
+        for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
@@ -330,8 +331,8 @@ class KugouMusicClient(BaseMusicClient):
                 if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         if not (song_info := song_info if song_info.with_valid_download_url else song_info_flac).with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
         # supplement lyric results
-        params, lyric_result, lyric = {'keyword': search_result.get('filename') or search_result.get('FileName') or '', 'duration': search_result.get('duration') or search_result.get('Duration') or '-1', 'hash': song_id}, {}, 'NULL'
-        with suppress(Exception): (resp := self.get('http://lyrics.kugou.com/search', params=params, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp); (resp := self.get(f"http://lyrics.kugou.com/download?ver=1&client=pc&id={lyric_result['candidates'][0]['id']}&accesskey={lyric_result['candidates'][0]['accesskey']}&fmt=lrc&charset=utf8", **request_overrides)).raise_for_status(); lyric_result['lyrics.kugou.com/download'] = resp2json(resp=resp); lyric = cleanlrc(base64.b64decode(lyric_result['lyrics.kugou.com/download']['content']).decode('utf-8') or '')
+        params, lyric_result, lyric = {'keyword': search_result.get('filename') or search_result.get('FileName') or '', 'duration': search_result.get('duration') or search_result.get('Duration') or '-1', 'hash': song_id, 'ver': '1', 'man': 'yes', 'client': 'mobi'}, {}, 'NULL'
+        with suppress(Exception): (resp := self.get('https://krcs.kugou.com/search', params=params, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp); (resp := self.get(f"https://lyrics.kugou.com/download?ver=1&client=pc&id={lyric_result['candidates'][0]['id']}&accesskey={lyric_result['candidates'][0]['accesskey']}&fmt=lrc&charset=utf8", **request_overrides)).raise_for_status(); lyric_result['lyrics.kugou.com/download'] = resp2json(resp=resp); lyric = cleanlrc(base64.b64decode(lyric_result['lyrics.kugou.com/download']['content']).decode('utf-8') or '')
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         # return
