@@ -15,11 +15,12 @@ import base64
 import requests
 from pathlib import Path
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from ..utils.zarz import ZarzDeezerClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import DEEZER_MUSIC_HOSTS
 from ..utils.deezerutils import DeezerMusicClientUtils
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from urllib.parse import urlencode, urlparse, urljoin, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient, IOUtils
@@ -28,7 +29,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownl
 '''DeezerMusicClient'''
 class DeezerMusicClient(BaseMusicClient):
     source = 'DeezerMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         kwargs['maintain_session'] = True
         super(DeezerMusicClient, self).__init__(**kwargs)
         if self.default_search_cookies: assert "arl" in self.default_search_cookies, '"arl" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#deezermusicclient-built-in-premium-account"'
@@ -114,18 +115,18 @@ class DeezerMusicClient(BaseMusicClient):
     '''_parsewithantrahoshiapi'''
     def _parsewithantrahoshiapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, song_id, headers = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://antra.hoshi.cfd", "Referer": "https://antra.hoshi.cfd/"}
+        request_overrides, song_id, headers = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36", "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Cache-Control": "no-cache", "Pragma": "no-cache", "Origin": "https://antra.hoshi.cfd", "Referer": "https://antra.hoshi.cfd/", "Sec-CH-UA": '"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"', "Sec-CH-UA-Mobile": "?0", "Sec-CH-UA-Platform": '"Windows"', "Sec-Fetch-Dest": "empty", "Sec-Fetch-Mode": "cors", "Sec-Fetch-Site": "same-origin"}
         accounts = [
             ('charlespikachubGFvd2FuZw==', 'charlespikachubGFvd2FuZzk2MDIxMg=='), ('charlespikachuZ2lybHNsb3ZldG9t', 'charlespikachuZ2lybHNsb3ZldG9tMTIzNDU2'), ('charlespikachuRXJpYw==', 'charlespikachucmFuZG9tOTk5'), ('charlespikachuZ3JlYXRtYW5hbnRyYQ==', 'charlespikachuZ3JlYXRtYW5hbnRyYQ=='), ('charlespikachuaWxpa2V0aGlzc2l0ZQ==', 'charlespikachuaWxpa2V0aGlzc2l0ZQ=='), 
-            ('charlespikachubWFya2hlcmU=', 'charlespikachubWFya2hlcmU5OTk2NjY='), ('charlespikachubGFkeWdhZ2FmYW5z', 'charlespikachuMTIzNDU2Nzc2NTQzMjE='), ('charlespikachudGFsYXlvcg==', 'charlespikachudGFsYXlvcnRhbGF5b3I='), ('charlespikachuYnVzaW5lc3M=', 'charlespikachuYnVzaW5lc3M='), 
+            ('charlespikachubWFya2hlcmU=', 'charlespikachubWFya2hlcmU5OTk2NjY='), ('charlespikachubGFkeWdhZ2FmYW5z', 'charlespikachuMTIzNDU2Nzc2NTQzMjE='), ('charlespikachudGFsYXlvcg==', 'charlespikachudGFsYXlvcnRhbGF5b3I='), ('charlespikachuYnVzaW5lc3M=', 'charlespikachuYnVzaW5lc3M='), ('charlespikachuZ29kbG92ZXlvdQ==', 'charlespikachuZ29kbG92ZXlvdTEyMzEyMw=='),
         ]
         decrypt_func = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         username, password = random.choice(accounts); username, password = decrypt_func(username), decrypt_func(password)
         # parse
         download_result = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides); session = requests.Session(); session.headers.update(headers)
         (resp := session.post(f"https://antra.hoshi.cfd/api/auth/login", json={"username": username, "password": password,}, **request_overrides)).raise_for_status()
-        (resp := session.post(f"https://antra.hoshi.cfd/api/resolve", json={"url": f"https://www.deezer.com/en/track/{song_id}", "format": "lossless-24",}, **request_overrides)).raise_for_status()
-        (resp := session.post(f"https://antra.hoshi.cfd/api/jobs", json={"url": f"https://www.deezer.com/en/track/{song_id}", "format": "lossless-24", "start_index": 0, "end_index": 1,}, **request_overrides)).raise_for_status()
+        (resp := session.post(f"https://antra.hoshi.cfd/api/resolve", json={"url": f"https://www.deezer.com/en/track/{song_id}", "format": "lossless-16",}, **request_overrides)).raise_for_status()
+        (resp := session.post(f"https://antra.hoshi.cfd/api/jobs", json={"url": f"https://www.deezer.com/en/track/{song_id}", "format": "lossless-16", "start_index": 0, "end_index": 1, "client_packaging": False,}, **request_overrides)).raise_for_status()
         job_id, max_retry_times, time_interval, status = resp2json(resp=resp)["job_id"], 120, 1, None
         for _ in range(max_retry_times):
             (resp := session.get(f"https://antra.hoshi.cfd/api/jobs/{job_id}/status", **request_overrides)).raise_for_status(); status = resp2json(resp=resp)
@@ -141,29 +142,6 @@ class DeezerMusicClient(BaseMusicClient):
             ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content,
         )
         song_info = SongInfo(source=self.source, raw_data={'id': song_id}) if (song_info.file_size_bytes * 8 < 320000 * song_info.duration_s) else song_info
-        # return
-        return song_info
-    '''_parsewithflacdownloaderapi'''
-    def _parsewithflacdownloaderapi(self, search_result: dict, request_overrides: dict = None):
-        # init
-        PREPARE_URL = "https://flacdownloader.com/prepare"; ASSET_URL = "https://flacdownloader.com/asset"
-        request_overrides, song_id, headers = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json", "Referer": "https://flacdownloader.com/it/download"}
-        # parse
-        (resp := requests.get(PREPARE_URL, headers=headers, timeout=20, **request_overrides)).raise_for_status(); token = resp2json(resp=resp).get("t")
-        download_result = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides)
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json", "Content-Type": "application/json", "Referer": "https://flacdownloader.com/it/download", "X-Dl-Token": token,}
-        payload = {
-            "url": f"https://www.deezer.com/track/{song_id}", "title": safeextractfromdict(download_result, ['results', 'SNG_TITLE'], None) or download_result.get('title'),
-            "artist": safeextractfromdict(download_result, ['results', 'ART_NAME'], None) or safeextractfromdict(download_result, ['artist', 'name'], None), "format": "flac",
-        }
-        (resp := requests.post(ASSET_URL, headers=headers, json=payload, timeout=20, **request_overrides)).raise_for_status()
-        download_result['track_details'] = resp2json(resp=resp); download_url = safeextractfromdict(download_result['track_details'], ['u'], '')
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(safeextractfromdict(download_result, ['results', 'DURATION'], 0) or download_result.get('duration', 0) or 0)
-        song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'id': song_id}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['results', 'SNG_TITLE'], None) or download_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['results', 'ART_NAME'], None) or safeextractfromdict(download_result, ['artist', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['results', 'ALB_TITLE'], None) or safeextractfromdict(download_result, ['album', 'title'], None)), 
-            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
-        )
         # return
         return song_info
     '''_parsewithdeemixerapi'''
@@ -222,11 +200,9 @@ class DeezerMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies: return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithanandserverapi, self._parsewithantrahoshiapi, self._parsewithzarzapi, ] # vip accounts
-        l2_parser_funcs = [self._parsewithflacdownloaderapi, self._parsewithdeemixerapi, ] # vip accounts but unstable
-        l3_parser_funcs = [self._parsewithmusicfabapi, ] # free accounts
-        l4_parser_funcs = [self._parsewithdeezdownloadersapi, ] # free accounts but unstable
-        for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
+        l1_parser_funcs = [self._parsewithanandserverapi, self._parsewithantrahoshiapi, self._parsewithdeemixerapi, self._parsewithzarzapi, ] # vip accounts
+        l2_parser_funcs = [self._parsewithdeezdownloadersapi, self._parsewithmusicfabapi, ] # free accounts
+        for parser_func in (l1_parser_funcs + l2_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
