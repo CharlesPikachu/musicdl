@@ -54,7 +54,7 @@ class CommunityClientBase:
     SESSION_RETRY_STATUS_CODES = {401, 428}
     TRANSIENT_STATUS_CODES = {429, 502, 504}
     VERIFY_BASE_URL = "https://verify.spotbye.qzz.io"
-    def __init__(self, app_version: str = "7.2.0", platform: str = "desktop", session_file: Optional[str | Path] = None, request_timeout: float = 60, verification_timeout: float = 300, session_skew_seconds: int = 300, max_retries: int = 6, browser_opener: Optional[Callable[[str], Any]] = None,) -> None:
+    def __init__(self, app_version: str = "7.2.2", platform: str = "desktop", session_file: Optional[str | Path] = None, request_timeout: float = 60, verification_timeout: float = 300, session_skew_seconds: int = 300, max_retries: int = 6, browser_opener: Optional[Callable[[str], Any]] = None,) -> None:
         self.platform = str(platform).strip() or "desktop"
         self.app_version = str(app_version).strip() or "unknown"
         self.max_retries = max(0, int(max_retries))

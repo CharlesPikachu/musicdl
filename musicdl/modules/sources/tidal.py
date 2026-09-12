@@ -13,10 +13,11 @@ import base64
 import tempfile
 from pathlib import Path
 from contextlib import suppress
-from .base import BaseMusicClient
+from typing_extensions import Unpack
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import TIDAL_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from .base import BaseMusicClient, BaseMusicClientKwargs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.tidalutils import TIDALMusicClientUtils, SearchResult, SessionStorage, Track, TidalTvSession, StreamUrl, Artist
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, useparseheaderscookies, hostmatchessuffix, obtainhostname, cleanlrc, SongInfo, SongInfoUtils, IOUtils, AudioLinkTester
@@ -25,7 +26,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownl
 '''TIDALMusicClient'''
 class TIDALMusicClient(BaseMusicClient):
     source = 'TIDALMusicClient'
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         super(TIDALMusicClient, self).__init__(**kwargs)
         assert self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies, f'cookies are not configured, so TIDAL is unavailable, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#tidalmusicclient-built-in-premium-account".'
         TIDALMusicClientUtils.SESSION_STORAGE = SessionStorage(**(self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies))
