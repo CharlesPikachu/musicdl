@@ -8,6 +8,7 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import copy
+import uuid
 import time
 import random
 import base64
@@ -251,16 +252,32 @@ class QobuzMusicClient(BaseMusicClient):
         real_music_quality = real_music_quality[0] if isinstance((real_music_quality := parse_qs(urlparse(str(download_url)).query, keep_blank_values=True).get('fmt') or safeextractfromdict(download_result, ['format_id'], QobuzMusicClientUtils.MUSIC_QUALITIES[-1])), list) else real_music_quality
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': real_music_quality}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-            file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(search_result.get('duration') or 0)), duration=SongInfoUtils.seconds2hms(int(float(search_result.get('duration') or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['album', 'image', 'large'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status,
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': real_music_quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['track', 'title'], None) or search_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['track', 'artist', 'name'], None) or safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['track', 'album', 'title'], None) or safeextractfromdict(search_result, ['album', 'title'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(safeextractfromdict(download_result, ['track', 'duration'], None) or search_result.get('duration') or 0)), duration=SongInfoUtils.seconds2hms(int(float(safeextractfromdict(download_result, ['track', 'duration'], None) or search_result.get('duration') or 0))), lyric=None, cover_url=safeextractfromdict(download_result, ['track', 'album', 'image', 'lg'], None) or safeextractfromdict(search_result, ['album', 'image', 'large'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status,
         )
         song_info = SongInfo(source=self.source, raw_data={'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]}) if (song_info.file_size_bytes * 8 < 64000 * song_info.duration_s) else song_info
+        # return
+        return song_info
+    '''_parsewithclashflacapi'''
+    def _parsewithclashflacapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36", "Origin": "https://clashflac.pages.dev", "Referer": "https://clashflac.pages.dev/"}
+        # parse
+        (resp := requests.post("https://clashflac.kanjijewels.com/api/qobuz/resolve", json={"input": song_id, "quality": "UHD"}, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        download_result = resp2json(resp=resp); track = {"id": f"song-qobuz-{song_id}", "asin": song_id, "amazonAsin": "", "qobuzAsin": song_id, "tidalAsin": "", "title": download_result.get("title") or search_result.get("title"), "artist": download_result.get("artist") or safeextractfromdict(search_result, ['performer', 'name'], None), "album": download_result.get("album") or safeextractfromdict(search_result, ['album', 'title'], None), "duration": int(download_result.get("duration_sec") or search_result.get("duration") or 0), "image": download_result.get("thumbnail_url") or safeextractfromdict(search_result, ['album', 'image', 'large'], None), "amazonUrl": "", "qobuzUrl": f"https://open.qobuz.com/track/{song_id}", "tidalUrl": "", "spotifyUrl": "", "previewPageUrl": "", "streamUrl": "qobuz://stream", "streamType": "qobuz-hifi", "previewId": "", "spotifyId": "", "codec": "flac", "bitrate": 0, "language": "", "label": "", "copyright": "", "playCount": "", "genre": "", "trackNumber": "", "discNumber": "", "explicit": False, "source": "spotify_unified", "downloadSource": "qobuz", "downloadInput": song_id, "hasAmazon": False, "hasQobuz": True, "hasTidal": False, "hasBothSources": False, "hasTripleSources": False, "audioQuality": "HI_RES", "relevance": 0}
+        headers.update({"X-Download-Job-ID": str(uuid.uuid4()), "X-Turnstile-Token": ''})
+        (resp := requests.post("https://clashflac.kanjijewels.com/api/qobuz/download", json={"input": song_id, "track": track, "quality": "UHD"}, headers=headers, timeout=120, **request_overrides)).raise_for_status()
+        download_url_status = {'ok': True, 'ext': SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 'file_size_bytes': resp.content.__sizeof__(), 'file_size': SongInfoUtils.byte2mb(resp.content.__sizeof__()), 'download_url': 'https://clashflac.kanjijewels.com/api/qobuz/download', 'json': {"input": song_id, "track": track, "quality": "UHD"}}
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[0]}, source=self.source, song_name=legalizestring(download_result.get('title') or search_result.get('title')), singers=legalizestring(download_result.get('artist') or safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(download_result.get('album') or safeextractfromdict(search_result, ['album', 'title'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
+            identifier=song_id, duration_s=int(float(download_result.get('duration_sec') or search_result.get('duration') or 0)), duration=SongInfoUtils.seconds2hms(int(float(download_result.get('duration_sec') or search_result.get('duration') or 0))), lyric=None, cover_url=download_result.get('thumbnail_url') or safeextractfromdict(search_result, ['album', 'image', 'large'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, default_download_headers=headers,
+        )
         # return
         return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token"): return SongInfo(source=self.source, raw_data={'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
-        l1_parser_funcs = [self._parsewithanandserverapi, self._parsewithzarzqbzapi, self._parsewithspotbyeqzzapi, self._parsewithdezaltyapi] # vip accounts
+        l1_parser_funcs = [self._parsewithanandserverapi, self._parsewithzarzqbzapi, self._parsewithspotbyeqzzapi, self._parsewithclashflacapi, self._parsewithdezaltyapi] # vip accounts
         l2_parser_funcs = [self._parsewitharcodapi, self._parsewithgdstudioxyzapi, self._parsewithgdstudioorgapi, ] # vip accounts but unstable
         for parser_func in (l1_parser_funcs + l2_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
