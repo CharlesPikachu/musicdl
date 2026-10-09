@@ -77,7 +77,7 @@ class GequbaoMusicClient(BaseMusicClient):
         request_overrides, song_info, play_id = request_overrides or {}, SongInfo(source=self.source), search_result.get("play_id")
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse download url
-        (resp := self.post('https://www.gequbao.com/member/common-play-url', json={'id': play_id}, **request_overrides)).raise_for_status()
+        (resp := self.post('https://www.gequbao.com/member/common-play-url', data={'id': play_id, 'purpose': 'play'}, **request_overrides)).raise_for_status()
         download_result = resp2json(resp=resp); download_url = safeextractfromdict(download_result, ['data', 'url'], '')
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
