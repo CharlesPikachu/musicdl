@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of FangpiMusicClient: https://www.fangpi.net/
+    Implementation of FangpiMusicClient: https://www.fangpiw.com/
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -28,7 +28,7 @@ class FangpiMusicClient(BaseMusicClient):
         if not self.quark_parser_config.get('cookies'): self.logger_handle.warning(f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so song downloads are restricted and only mp3 files can be downloaded.')
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Upgrade-Insecure-Requests": "1",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8", "Origin": "https://www.fangpi.net", "Referer": "https://www.fangpi.net/",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8", "Origin": "https://www.fangpiw.com/", "Referer": "https://www.fangpiw.com/",
         }
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
@@ -38,12 +38,12 @@ class FangpiMusicClient(BaseMusicClient):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
         # construct search urls
-        search_urls = [f'https://www.fangpi.net/s/{quote(keyword)}']
+        search_urls = [f'https://www.fangpiw.com/s/{quote(keyword)}']
         self.search_size_per_page = self.search_size_per_source
         # return
         return search_urls
     '''_parsesearchresultsfromhtml'''
-    def _parsesearchresultsfromhtml(self, html, base_url="https://www.fangpi.net"):
+    def _parsesearchresultsfromhtml(self, html, base_url="https://www.fangpiw.com/"):
         soup, search_results, seen = BeautifulSoup(html, "lxml"), [], set()
         if (result_card := next((card for card in soup.select("div.card") if "搜索结果" in card.get_text(" ", strip=True) and card.select_one("h1.mark")), None)) is None: return []
         for row in result_card.select("div.row"):
@@ -80,7 +80,7 @@ class FangpiMusicClient(BaseMusicClient):
         request_overrides, song_info, play_id = request_overrides or {}, SongInfo(source=self.source), search_result.get("play_id")
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse download url
-        (resp := self.post('https://www.fangpi.net/member/common-play-url', json={'id': play_id}, **request_overrides)).raise_for_status()
+        (resp := self.post('https://www.fangpiw.com/member/common-play-url', data={'id': play_id, 'purpose': 'play'}, **request_overrides)).raise_for_status()
         download_result = resp2json(resp=resp); download_url = safeextractfromdict(download_result, ['data', 'url'], '')
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(

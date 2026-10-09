@@ -2669,7 +2669,7 @@ No extra CLI tools like ffmpeg or N_m3u8DL-RE are needed. Just run pip install m
 
 #### FangpiMusicClient
 
-[Fangpi.net](https://www.fangpi.net/) is a music website that offers online streaming and free MP3 downloads, along with charts, recommendations, and song collections.
+[Fangpi.net](https://www.fangpiw.com/) is a music website that offers online streaming and free MP3 downloads, along with charts, recommendations, and song collections.
 
 FangpiMusicClient makes it easy to download music from the platform above.
 
