@@ -55,11 +55,10 @@ class XiagebaMusicClient(BaseMusicClient):
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
                 if not isinstance(search_result, dict) or (not (song_id := search_result.get('id'))): continue
-                with suppress(Exception): resp = None; (resp := self.get(f"https://xiageba.liumingye.cn/music/{song_id}/_payload.json?{uuid.uuid4()}", **request_overrides)).raise_for_status()
+                with suppress(Exception): resp = None; (resp := self.get(f"https://so.liumingye.cn/api/music/{song_id}", **request_overrides)).raise_for_status()
                 if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
                 download_result, song_info = resp2json(resp=resp), SongInfo(source=self.source, raw_data={'search': search_result})
-                lyrics = next(((lambda v: download_result[v] if type(v) is int and 0 <= v < len(download_result) else v)(x["lyrics"]) for x in download_result if isinstance(x, dict) and "lyrics" in x), None)
-                for quark_link in [u for x in download_result if isinstance(x, dict) and "url" in x for u in [(lambda v: download_result[v] if type(v) is int and 0 <= v < len(download_result) else v)(x["url"])] if isinstance(u, str) and u.startswith("https://pan.quark.cn/")]:
+                for quark_link in [u.get('url') for u in (download_result.get('downloads') or []) if isinstance(u, dict) and str(u.get('url')).startswith('https://pan.quark.cn/')]:
                     quark_parse_result, download_url = QuarkParser.parsefromurl(quark_link, **self.quark_parser_config)
                     download_result_constructed = {'quark_parse_result': quark_parse_result, 'downloads': download_result}
                     if not download_url or not str(download_url).startswith('http'): continue
@@ -67,7 +66,7 @@ class XiagebaMusicClient(BaseMusicClient):
                     duration_in_secs = duration[0] if (duration := [int(float(d)) for d in searchdictbykey(download_result_constructed, 'duration') if int(float(d)) > 0]) else 0
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result_constructed, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('artist')), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
-                        identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(lyrics), cover_url=search_result.get('cover'), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.quark_default_download_headers,
+                        identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(download_result.get('lyrics') or 'NULL'), cover_url=search_result.get('cover'), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.quark_default_download_headers,
                     )
                     if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
                 # --append to song_infos
