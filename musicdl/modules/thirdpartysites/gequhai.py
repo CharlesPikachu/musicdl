@@ -67,6 +67,7 @@ class GequhaiMusicClient(BaseMusicClient):
         seen = set(out); out.update({k: {"true": True, "false": False, "null": None}[str(v).lower()] for k, v in re.findall(r"window\.(\w+)\s*=\s*(true|false|null)\s*;", js_text, flags=re.I) if not (k in seen or seen.add(k))})
         if "mp3_title" in out and "mp3_author" in out: out.setdefault("mp3_name", f"{out['mp3_title']}-{out['mp3_author']}")
         if "mp3_extra_url" in out: out["mp3_extra_url_decoded"] = decode_quark_url_func(out["mp3_extra_url"])
+        if "mp3_extra_url2" in out: out["mp3_extra_url2_decoded"] = decode_quark_url_func(out["mp3_extra_url2"])
         if out.get("mp3_extra_url_decoded") and "pan.quark.cn" in out["mp3_extra_url_decoded"]: return out
         if url := next((url for text in normalize_texts_func(js_text) for url in re.findall(r"https?://pan\.quark\.cn/s/[A-Za-z0-9_-]+", text) if url), None): out["mp3_extra_url_decoded"] = url
         return out
@@ -75,7 +76,7 @@ class GequhaiMusicClient(BaseMusicClient):
         # init
         request_overrides, song_info, song_id = request_overrides or {}, SongInfo(source=self.source), download_result.get('mp3_id') or urlparse(str(search_result['play_url'])).path.strip('/').split('/')[-1]
         # parse download url
-        if not (quark_download_url := download_result.get('mp3_extra_url_decoded')) or not str(quark_download_url).startswith('http'): return song_info
+        if not (quark_download_url := download_result.get('mp3_extra_url2_decoded') or download_result.get('mp3_extra_url_decoded')) or not str(quark_download_url).startswith('http'): return song_info
         download_result['quark_parse_result'], download_url = QuarkParser.parsefromdirurl(quark_download_url, **self.quark_parser_config)
         if not download_url: download_result['quark_parse_result'], download_url = QuarkParser.parsefromurl(quark_download_url, **self.quark_parser_config)
         download_url_status: dict = self.quark_audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -99,7 +100,7 @@ class GequhaiMusicClient(BaseMusicClient):
             "Accept": "application/json, text/javascript, */*; q=0.01", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "X-Requested-With": "Http",
             "Origin": "https://www.gequhai.com", "Sec-Ch-Ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"", "Sec-Ch-Ua-Mobile": "?0", "Sec-Ch-Ua-Platform": "\"Windows\"", "Sec-Fetch-Dest": "empty", "Sec-Fetch-Mode": "cors", "Sec-Fetch-Site": "same-origin", "X-Custom-Header": "Key", 
         }
-        (resp := self.post('https://www.gequhai.com/api/music', data={'id': song_id, 'type': '0'}, headers=headers, **request_overrides)).raise_for_status()
+        (resp := self.post('https://www.gequhai.com/api/music', data={'id': song_id, 'type': str(download_result.get('mp3_type', 0))}, headers=headers, **request_overrides)).raise_for_status()
         download_result['api/music'] = resp2json(resp=resp); download_url = safeextractfromdict(download_result['api/music'], ['data', 'url'], '')
         if not download_url or not str(download_url).startswith('http'): return song_info
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -129,7 +130,7 @@ class GequhaiMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or not search_result.get('play_url'): continue
                 # ----obtain basic information
-                with suppress(Exception): resp = None; (resp := self.get(search_result['play_url'], **request_overrides)).raise_for_status(); download_result = self._extractappdataandwindowvars(resp.text)
+                with suppress(Exception): resp, download_result = None, None; (resp := self.get(search_result['play_url'], **request_overrides)).raise_for_status(); download_result = self._extractappdataandwindowvars(resp.text)
                 if not locals().get('resp') or not locals().get('download_result') or not hasattr(locals().get('resp'), 'text'): continue
                 # ----parse from quark links
                 with suppress(Exception): song_info = self._parsesearchresultfromquark(search_result, download_result, BeautifulSoup(resp.text, 'lxml'), request_overrides) if self.quark_parser_config.get('cookies') else SongInfo(source=self.source)

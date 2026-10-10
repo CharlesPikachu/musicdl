@@ -2822,6 +2822,48 @@ GequhaiMusicClient is truly plug-and-play: no external CLI tools such as ffmpeg 
   music_client.startcmdui()
   ```
 
+#### GequkeMusicClient
+
+[gequke.com](https://www.gequke.com/) is a free online music website that allows users to search for songs, listen to music, and download MP3 files and lyrics.
+
+GequkeMusicClient enables users to download music directly from the platform mentioned above.
+
+GequkeMusicClient works out of the box, requiring no additional command-line tools like ffmpeg or N_m3u8DL-RE. Simply install musicdl and start using it right away.
+
+(1) Command-Line Usage
+
+- Search for and Download Playable Music Files from Websites
+
+  `musicdl -m GequkeMusicClient`
+
+- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
+
+  `musicdl -m GequkeMusicClient -i "{'GequkeMusicClient': {'quark_parser_config': {'cookies': 'Your Quark Drive Login Cookies'}}}"`
+
+(2) Invoke It in Python
+
+- Search for and Download Playable Music Files from Websites
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['GequkeMusicClient'])
+  music_client.startcmdui()
+  ```
+
+- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
+
+  ```python
+  from musicdl import musicdl
+  
+  your_quark_drive_login_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'GequkeMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
+  }
+  music_client = musicdl.MusicClient(music_sources=['GequkeMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
 #### HTQYYMusicClient
 
 [htqyy.com](http://www.htqyy.com/) is a light music platform focused on instrumental, relaxing, and background music, offering online listening, recommendations, and MP3 downloads.
@@ -2940,35 +2982,6 @@ LivePOOMusicClient operates without reliance on supplementary CLI tools, includi
     'LivePOOMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
   }
   music_client = musicdl.MusicClient(music_sources=['LivePOOMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-  music_client.startcmdui()
-  ```
-
-#### LiziYYMusicClient
-
-[liziyy.top](https://liziyy.top/) is a free music search and sharing platform where users can discover songs, view lyrics, and access available MP3 and lossless audio resources.
-
-To retrieve music from the platform above, we can use LiziYYMusicClient.
-
-LiziYYMusicClient works without additional command-line tools such as FFmpeg or N_m3u8DL-RE; installing musicdl via pip is sufficient for out-of-the-box use.
-
-(1) Command-Line Usage
-
-- Configure Quark Drive Cookies to Search for and Download High-Quality Music Files
-
-  `musicdl -m LiziYYMusicClient -i "{'LiziYYMusicClient': {'quark_parser_config': {'cookies': 'Your Quark Drive Login Cookies'}}}"`
-
-(2) Invoke It in Python
-
-- Configure Quark Drive Cookies to Search for and Download High-Quality Music Files
-
-  ```python
-  from musicdl import musicdl
-  
-  your_quark_drive_login_cookies_with_str_or_dict_format = ''
-  init_music_clients_cfg = {
-    'LiziYYMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
-  }
-  music_client = musicdl.MusicClient(music_sources=['LiziYYMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
   music_client.startcmdui()
   ```
 
