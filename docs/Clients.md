@@ -2889,6 +2889,35 @@ There is no need to set up external command-line tools like ffmpeg or N_m3u8DL-R
   music_client.startcmdui()
   ```
 
+#### HeishanMusicClient
+
+[163cn.cc](https://www.163cn.cc/) is a Chinese music website offering free MP3 and lossless music downloads, including individual songs, albums, and music collections.
+
+To get music from the platform above, we can rely on HeishanMusicClient.
+
+HeishanMusicClient operates without reliance on supplementary CLI tools, including ffmpeg and N_m3u8DL-RE. Installation of musicdl via pip alone enables out-of-the-box usage.
+
+(1) Command-Line Usage
+
+- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
+
+  `musicdl -m HeishanMusicClient -i "{'HeishanMusicClient': {'quark_parser_config': {'cookies': 'Your Quark Drive Login Cookies'}}}"`
+
+(2) Invoke It in Python
+
+- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
+
+  ```python
+  from musicdl import musicdl
+  
+  your_quark_drive_login_cookies_with_str_or_dict_format = ''
+  init_music_clients_cfg = {
+    'HeishanMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
+  }
+  music_client = musicdl.MusicClient(music_sources=['HeishanMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
 #### KKWSMusicClient
 
 [kkws.cc](https://www.kkws.cc/) is a lossless music sharing website that provides free MP3 and high-quality music downloads, including trending songs and curated music collections.
@@ -2915,48 +2944,6 @@ KKWSMusicClient now works without requiring extra CLI tools like ffmpeg or N_m3u
     'KKWSMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
   }
   music_client = musicdl.MusicClient(music_sources=['KKWSMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
-  music_client.startcmdui()
-  ```
-
-#### LivePOOMusicClient
-
-[livepoo.cn](https://www.livepoo.cn/) is a music download website that offers free MP3 and lossless songs, with categories such as trending tracks, classic songs, DJ music, and regional music.
-
-To get music from the platform above, we can rely on LivePOOMusicClient.
-
-LivePOOMusicClient operates without reliance on supplementary CLI tools, including ffmpeg and N_m3u8DL-RE. Installation of musicdl via pip alone enables out-of-the-box usage.
-
-(1) Command-Line Usage
-
-- Search for and Download Playable Music Files from Websites
-
-  `musicdl -m LivePOOMusicClient`
-
-- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
-
-  `musicdl -m LivePOOMusicClient -i "{'LivePOOMusicClient': {'quark_parser_config': {'cookies': 'Your Quark Drive Login Cookies'}}}"`
-
-(2) Invoke It in Python
-
-- Search for and Download Playable Music Files from Websites
-
-  ```python
-  from musicdl import musicdl
-
-  music_client = musicdl.MusicClient(music_sources=['LivePOOMusicClient'])
-  music_client.startcmdui()
-  ```
-
-- Configure Quark Drive Cookies to Search for and Download Higher-Quality Music Files
-
-  ```python
-  from musicdl import musicdl
-  
-  your_quark_drive_login_cookies_with_str_or_dict_format = ''
-  init_music_clients_cfg = {
-    'LivePOOMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
-  }
-  music_client = musicdl.MusicClient(music_sources=['LivePOOMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
   music_client.startcmdui()
   ```
 

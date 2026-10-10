@@ -33,7 +33,7 @@ from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicCli
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient, XiaoBaiMusicClient
 from ..thirdpartysites import (
     MituMusicClient, BuguyyMusicClient, YinyuedaoMusicClient, FiveSongMusicClient, FangpiMusicClient, TwoT58MusicClient, YinyuekuMusicClient, HTQYYMusicClient, XiagebaMusicClient, GequbaoMusicClient, 
-    KKWSMusicClient, GequhaiMusicClient, LivePOOMusicClient, GequkeMusicClient, MGMP3MusicClient, LeedodoMusicClient, SgogoMusicClient, XMFWAVMusicClient
+    KKWSMusicClient, GequhaiMusicClient, HeishanMusicClient, GequkeMusicClient, MGMP3MusicClient, LeedodoMusicClient, SgogoMusicClient, XMFWAVMusicClient
 )
 
 
@@ -56,7 +56,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'XiaoBaiMusicClient' : XiaoBaiMusicClient,
         # Unofficial Download Sites / Scrapers
         'MituMusicClient'    : MituMusicClient,        'BuguyyMusicClient'     : BuguyyMusicClient,         'GequbaoMusicClient'    : GequbaoMusicClient,        'YinyuedaoMusicClient'       : YinyuedaoMusicClient,           'XiagebaMusicClient'   : XiagebaMusicClient,
-        'FangpiMusicClient'  : FangpiMusicClient,      'FiveSongMusicClient'   : FiveSongMusicClient,       'KKWSMusicClient'       : KKWSMusicClient,           'GequhaiMusicClient'         : GequhaiMusicClient,             'LivePOOMusicClient'   : LivePOOMusicClient,
+        'FangpiMusicClient'  : FangpiMusicClient,      'FiveSongMusicClient'   : FiveSongMusicClient,       'KKWSMusicClient'       : KKWSMusicClient,           'GequhaiMusicClient'         : GequhaiMusicClient,             'HeishanMusicClient'   : HeishanMusicClient,
         'HTQYYMusicClient'   : HTQYYMusicClient,       'TwoT58MusicClient'     : TwoT58MusicClient,         'YinyuekuMusicClient'   : YinyuekuMusicClient,       'GequkeMusicClient'          : GequkeMusicClient,              'MGMP3MusicClient'     : MGMP3MusicClient,
         'LeedodoMusicClient' : LeedodoMusicClient,     'SgogoMusicClient'      : SgogoMusicClient,          'XMFWAVMusicClient'     : XMFWAVMusicClient,
     }

@@ -372,8 +372,8 @@ End users usually do not create this class directly. Instead, they use subclasse
 - `musicdl.modules.thirdpartysites.GequhaiMusicClient`
 - `musicdl.modules.thirdpartysites.GequkeMusicClient`
 - `musicdl.modules.thirdpartysites.HTQYYMusicClient`
+- `musicdl.modules.thirdpartysites.HeishanMusicClient`
 - `musicdl.modules.thirdpartysites.KKWSMusicClient`
-- `musicdl.modules.thirdpartysites.LivePOOMusicClient`
 - `musicdl.modules.thirdpartysites.LeedodoMusicClient`
 - `musicdl.modules.thirdpartysites.MituMusicClient`
 - `musicdl.modules.thirdpartysites.MGMP3MusicClient`
