@@ -1,6 +1,6 @@
 # Release Log
 
-- 2026-10-10: Released musicdl v2.14.1 — during monthly maintenance of third-party music clients, seven platforms were updated: four with API issues were fixed, and three discontinued platforms were replaced with similar alternatives.
+- 2026-10-10: Released musicdl v2.14.1 — monthly maintenance of third-party music clients covered seven platforms: four with API issues were fixed, and three discontinued platforms were replaced with similar alternatives.
 
 - 2026-09-23: Released musicdl v2.14.0 — fix several bugs in Apple Music, and refactor parts of the third-party parsing interfaces for Qobuz, Deezer, and TIDAL Music.
 
