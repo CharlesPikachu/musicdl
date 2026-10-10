@@ -2889,31 +2889,6 @@ There is no need to set up external command-line tools like ffmpeg or N_m3u8DL-R
   music_client.startcmdui()
   ```
 
-#### ITingWaMusicClient
-
-[itingwa.com](https://www.itingwa.com/) is a Chinese community-driven pure-music website where users can discover, stream, download, recommend, and discuss instrumental tracks, albums, and radio content.
-
-ITingWaMusicClient provides built-in support for downloading tracks from iTingWa.
-
-ITingWaMusicClient does not require external command-line tools such as ffmpeg or N_m3u8DL-RE. Simply install musicdl with pip, and you’re ready to go.
-
-(1) Command-Line Usage
-
-- Search for and Download Playable Music Files from Websites
-
-  `musicdl -m ITingWaMusicClient`
-
-(2) Invoke It in Python
-
-- Search for and Download Playable Music Files from Websites
-
-  ```python
-  from musicdl import musicdl
-
-  music_client = musicdl.MusicClient(music_sources=['ITingWaMusicClient'])
-  music_client.startcmdui()
-  ```
-
 #### KKWSMusicClient
 
 [kkws.cc](https://www.kkws.cc/) is a lossless music sharing website that provides free MP3 and high-quality music downloads, including trending songs and curated music collections.
@@ -2982,6 +2957,31 @@ LivePOOMusicClient operates without reliance on supplementary CLI tools, includi
     'LivePOOMusicClient': {'quark_parser_config': {'cookies': your_quark_drive_login_cookies_with_str_or_dict_format}},
   }
   music_client = musicdl.MusicClient(music_sources=['LivePOOMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+  music_client.startcmdui()
+  ```
+
+#### LeedodoMusicClient
+
+[music.leedodo.com](https://music.leedodo.com/) is a platform for streaming and downloading light and instrumental music, featuring curated playlists across genres such as piano, traditional Chinese music, soundtracks, and relaxation music.
+
+LeedodoMusicClient provides built-in support for downloading tracks from [music.leedodo.com](https://music.leedodo.com/).
+
+LeedodoMusicClient does not require external command-line tools such as ffmpeg or N_m3u8DL-RE. Simply install musicdl with pip, and you’re ready to go.
+
+(1) Command-Line Usage
+
+- Search for and Download Playable Music Files from Websites
+
+  `musicdl -m LeedodoMusicClient`
+
+(2) Invoke It in Python
+
+- Search for and Download Playable Music Files from Websites
+
+  ```python
+  from musicdl import musicdl
+
+  music_client = musicdl.MusicClient(music_sources=['LeedodoMusicClient'])
   music_client.startcmdui()
   ```
 

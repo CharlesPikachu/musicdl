@@ -370,11 +370,11 @@ End users usually do not create this class directly. Instead, they use subclasse
 - `musicdl.modules.thirdpartysites.FangpiMusicClient`
 - `musicdl.modules.thirdpartysites.GequbaoMusicClient`
 - `musicdl.modules.thirdpartysites.GequhaiMusicClient`
+- `musicdl.modules.thirdpartysites.GequkeMusicClient`
 - `musicdl.modules.thirdpartysites.HTQYYMusicClient`
-- `musicdl.modules.thirdpartysites.ITingWaMusicClient`
 - `musicdl.modules.thirdpartysites.KKWSMusicClient`
 - `musicdl.modules.thirdpartysites.LivePOOMusicClient`
-- `musicdl.modules.thirdpartysites.GequkeMusicClient`
+- `musicdl.modules.thirdpartysites.LeedodoMusicClient`
 - `musicdl.modules.thirdpartysites.MituMusicClient`
 - `musicdl.modules.thirdpartysites.MGMP3MusicClient`
 - `musicdl.modules.thirdpartysites.SgogoMusicClient`

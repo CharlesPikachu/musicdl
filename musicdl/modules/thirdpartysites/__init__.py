@@ -10,7 +10,7 @@ from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient
 from .gequke import GequkeMusicClient
 from .xiageba import XiagebaMusicClient
-from .itingwa import ITingWaMusicClient
+from .leedodo import LeedodoMusicClient
 from .gequbao import GequbaoMusicClient
 from .gequhai import GequhaiMusicClient
 from .livepoo import LivePOOMusicClient
