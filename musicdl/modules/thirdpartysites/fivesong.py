@@ -26,7 +26,7 @@ class FiveSongMusicClient(BaseMusicClient):
         assert self.quark_parser_config.get('cookies'), f'{self.source}.__init__ >>> "quark_parser_config" is not configured, so the songs cannot be downloaded.'
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
         self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
-        self.default_headers = self.default_search_headers
+        self.default_headers = self.default_search_headers; self.maintain_session = True
         self._initsession()
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
@@ -78,7 +78,8 @@ class FiveSongMusicClient(BaseMusicClient):
                 # ----obtain basic information
                 with suppress(Exception): resp = None; (resp := self.get(search_result['detail_url'], **request_overrides)).raise_for_status(); soup = BeautifulSoup(resp.text, "lxml")
                 if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
-                quark_links.extend({"label": (a.get_text(" ", strip=True) if (a := li.select_one("a[href]")) else None), "quark_url": quark_url} for li in soup.select("div.download ul li[data-url]") if (quark_url := (li.get("data-url") or "").strip()) and "quark" in quark_url)
+                for li in (li for li in soup.select('div.download li.mobileDown[data-t]') if '夸克' in li.get_text()):
+                    with suppress(Exception): data: dict = self.post('https://www.5song.xyz/play/songdown.php', json={'id': song_id, 'terminal': 'pc', 't': li['data-t'], 'visitor': ''}, **request_overrides).json(); quark_links.extend([{'label': li.get_text(' ', strip=True), 'quark_url': data['url']}] if data.get('code') == 200 and str(data.get('url') or '').startswith('https://pan.quark.cn/') else [])
                 if not (download_result := dict(quark_links=quark_links))['quark_links']: continue
                 # ----parse from quark links
                 for quark_link in sort_by_audio_quality_func(download_result['quark_links']):
@@ -91,7 +92,8 @@ class FiveSongMusicClient(BaseMusicClient):
                         duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc("\n".join([p.get_text(strip=True) for p in soup.select_one("div.viewCon div.text").select("p") if p.get_text(strip=True)])), cover_url=search_result.get('cover_url'), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.quark_default_download_headers,
                     )
                     if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
-                # ----supplement some meta information
+                # --lyric result
+                with suppress(Exception): (resp := self.get(f'https://www.5song.xyz/play/lrc.php?id={song_id}', **request_overrides)).raise_for_status(); song_info.lyric = resp.content.decode('utf-8-sig')
                 if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
                 if song_info.duration in {'-:-:-', '00:00:00'}: song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
                 # --append to song_infos

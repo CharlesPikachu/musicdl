@@ -6,7 +6,6 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
-import uuid
 import copy
 from contextlib import suppress
 from rich.progress import Progress
