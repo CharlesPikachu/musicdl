@@ -21,19 +21,22 @@ from ..utils import resp2json, legalizestring, usesearchheaderscookies, safeextr
 '''GDStudioMusicClient'''
 class GDStudioMusicClient(BaseMusicClient):
     source = 'GDStudioMusicClient'
-    VERSION = "2026.08.01"
+    VERSION = "2026.09.25"
     HOST = "music.gdstudio.xyz"
     BASE_URL = "https://music.gdstudio.xyz/"
     TIME_URL = "https://music.gdstudio.xyz/time"
     API_URL = "https://music.gdstudio.xyz/api.php"
     MUSIC_QUALITIES = [999, 740, 320, 192, 128]
-    SUPPORTED_SITES = ['netease', 'joox', 'tidal', 'qobuz', 'apple', 'bilibili', 'ytmusic', 'spotify', 'kuwo', 'tencent']
-    def __init__(self, allowed_music_sources: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+    SUPPORTED_SITES = ['netease', 'joox', 'kuwo', 'tidal', 'qobuz', 'apple', 'bilibili', 'ytmusic', 'embeat', 'tencent', 'spotify', ] # spotify is removed by gdstudio now
+    def __init__(self, host: str = 'music.gdstudio.xyz', allowed_music_sources: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
+        assert (not host) or (host in {'music.gdstudio.xyz', 'music.gdstudio.org'})
         self.allowed_music_sources = list(set(allowed_music_sources or GDStudioMusicClient.SUPPORTED_SITES[:-4]))
         super(GDStudioMusicClient, self).__init__(**kwargs)
+        GDStudioMusicClient.HOST = host or GDStudioMusicClient.HOST; GDStudioMusicClient.BASE_URL = f"https://{GDStudioMusicClient.HOST}/"
+        GDStudioMusicClient.TIME_URL = f"https://{GDStudioMusicClient.HOST}/time"; GDStudioMusicClient.API_URL = f"https://{GDStudioMusicClient.HOST}/api.php"
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Referer": "https://music.gdstudio.xyz/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01", "Origin": "https://music.gdstudio.xyz", 
+            "Referer": f"https://{GDStudioMusicClient.HOST}/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01", "Origin": f"https://{GDStudioMusicClient.HOST}", 
         }
         self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'}
         self.default_bilibili_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Referer': 'https://www.bilibili.com/'}
@@ -58,7 +61,7 @@ class GDStudioMusicClient(BaseMusicClient):
         shifts = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
         table = [
             0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501, 0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
-            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4D8A,
+            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8, 0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCFEA3F8, 0x676F02D9, 0x8D2A4C8A,
             0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70, 0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
             0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039, 0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1, 0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1, 0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
         ]
@@ -89,24 +92,23 @@ class GDStudioMusicClient(BaseMusicClient):
     '''_getsongurl'''
     def _getsongurl(self, song_id: str, source: str = "netease", br: int = 999, request_overrides: dict = None) -> Dict[str, Any]:
         encoded_id = GDStudioMusicClient.jsencodeuricomponent((song_id := str(song_id)))
-        data = {"types": "url", "id": song_id, "source": source, "br": str(br), "s": self._sign(encoded_id, request_overrides)}
-        (resp := self.post(GDStudioMusicClient.API_URL, data=data, timeout=10, **(request_overrides or {}))).raise_for_status()
+        params = {"types": "url", "id": song_id, "source": source, "br": str(br), "s": self._sign(encoded_id, request_overrides)}
+        (resp := self.get(GDStudioMusicClient.API_URL, params=params, timeout=10, **(request_overrides or {}))).raise_for_status()
         return resp2json(resp=resp)
     '''_getpic'''
     def _getpic(self, pic_id: str, source: str = "netease", size: int = 300, request_overrides: dict = None) -> Dict[str, Any]:
         kuwo_cover_cdn_hosts = ["http://img1.kwcdn.kuwo.cn/star/albumcover/", "http://img2.kwcdn.kuwo.cn/star/albumcover/", "http://img3.kwcdn.kuwo.cn/star/albumcover/"]
         if source in {'kuwo'}: return {'url': urljoin(kuwo_cover_cdn_hosts[0], f'{size}/' + str(pic_id)[4:] if str(pic_id).startswith('120/') else pic_id)}
-        if source in {'apple'}: return {'url': str(pic_id).format(w=size, h=size)}
         if source in {'bilibili'}: return {'url': pic_id if str(pic_id).startswith('http') else f"https:{pic_id}"}
         encoded_id = GDStudioMusicClient.jsencodeuricomponent((pic_id := str(pic_id)))
-        data = {"types": "pic", "id": pic_id, "source": source, "size": str(size), "s": self._sign(encoded_id, request_overrides)}
-        (resp := self.post(GDStudioMusicClient.API_URL, data=data, timeout=10, **(request_overrides or {}))).raise_for_status()
+        params = {"types": "pic", "id": pic_id, "source": source, "size": str(size), "s": self._sign(encoded_id, request_overrides)}
+        (resp := self.get(GDStudioMusicClient.API_URL, params=params, timeout=10, **(request_overrides or {}))).raise_for_status()
         return resp2json(resp=resp)
     '''_getlyric'''
     def _getlyric(self, lyric_id: str, source: str = "netease", request_overrides: dict = None) -> Dict[str, Any]:
         encoded_id = GDStudioMusicClient.jsencodeuricomponent((lyric_id := str(lyric_id)))
-        data = {"types": "lyric", "id": lyric_id, "source": source, "s": self._sign(encoded_id, request_overrides)}
-        (resp := self.post(GDStudioMusicClient.API_URL, data=data, timeout=10, **(request_overrides or {}))).raise_for_status()
+        params = {"types": "lyric", "id": lyric_id, "source": source, "s": self._sign(encoded_id, request_overrides)}
+        (resp := self.get(GDStudioMusicClient.API_URL, params=params, timeout=10, **(request_overrides or {}))).raise_for_status()
         return resp2json(resp=resp)
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
@@ -129,12 +131,12 @@ class GDStudioMusicClient(BaseMusicClient):
     def _search(self, keyword: str = '', search_url: dict = None, request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
         self.default_headers, request_overrides, search_meta, search_result_idx = copy.deepcopy(self.default_headers), copy.deepcopy(request_overrides or {}), copy.deepcopy(search_url), -1
-        search_url, post_data, page_no, root_source = search_meta.pop('url'), search_meta.pop('data'), search_meta.pop('page_no'), search_meta.pop('source')
+        search_url, get_params, page_no, root_source = search_meta.pop('url'), search_meta.pop('data'), search_meta.pop('page_no'), search_meta.pop('source')
         task_id = progress.add_task(f"{self.source}.{root_source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
-            (resp := self.post(GDStudioMusicClient.API_URL, data=post_data, timeout=10, **request_overrides)).raise_for_status()
+            (resp := self.get(GDStudioMusicClient.API_URL, params=get_params, timeout=10, **request_overrides)).raise_for_status()
             for search_result_idx, search_result in enumerate(resp2json(resp=resp)[:self.search_size_per_page]):
                 # --update progress
                 progress.update(task_id, description=f"{self.source}.{root_source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}", completed=search_result_idx+1, total=search_result_idx+1)

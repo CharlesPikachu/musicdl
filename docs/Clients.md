@@ -2337,6 +2337,7 @@ The table below shows all music platforms currently supported by GDStudioMusicCl
 
 | Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
 | -----------------       | -------------------                | -----------------------------------   | -------------------          |
+| Embeat                  | Embeat                             | https://sectarian-match407.github.io/ | `embeat`                     |
 | Spotify                 | Spotify                            | https://www.spotify.com               | `spotify`                    |
 | Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `tencent`                    |
 | NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
@@ -2376,8 +2377,9 @@ There’s no need to set up extra CLI tools such as ffmpeg or N_m3u8DL-RE. Just 
   ```python
   from musicdl import musicdl
 
-  # allowed_music_sources can be set to any subset (i.e., any combination) of ['spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic']
-  init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['kuwo', 'netease', 'tidal', 'apple']}}
+  # allowed_music_sources can be set to any subset (i.e., any combination) of ['embeat', 'spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic']
+  # host should be in {'music.gdstudio.xyz', 'music.gdstudio.org'}. The former is the full-featured overseas version, while the latter is intended for users in mainland China without VPN access
+  init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['kuwo', 'netease', 'tidal', 'apple'], 'host': 'music.gdstudio.xyz'}}
   music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
   music_client.startcmdui()
   ```
