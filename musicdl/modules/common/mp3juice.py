@@ -22,6 +22,7 @@ from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextr
 '''MP3JuiceMusicClient'''
 class MP3JuiceMusicClient(BaseMusicClient):
     source = 'MP3JuiceMusicClient'
+    API_KEY = None
     def __init__(self, **kwargs: Unpack[BaseMusicClientKwargs]):
         kwargs['search_size_per_source'] = kwargs['search_size_per_source'] * 2
         super(MP3JuiceMusicClient, self).__init__(**kwargs)
@@ -33,7 +34,8 @@ class MP3JuiceMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
-        (default_rule := {'y': 's', 'q': base64.b64encode(quote(keyword, safe="").encode("utf-8")).decode("utf-8"), '_': str(int(time.time() * 1000))}).update(rule)
+        MP3JuiceMusicClient.API_KEY = self.get('https://mp3juice.sc/', **request_overrides).text.split("var apiKey='")[1].split("'")[0]
+        (default_rule := {'api_key': MP3JuiceMusicClient.API_KEY, 'y': 's', 'q': base64.b64encode(quote(keyword, safe="").encode("utf-8")).decode("utf-8"), '_': str(int(time.time() * 1000))}).update(rule)
         # construct search urls
         base_url, page_rule = 'https://mp3juice.sc/api/v1/search?', copy.deepcopy(default_rule)
         search_urls = [base_url + urlencode(page_rule)]
@@ -46,6 +48,7 @@ class MP3JuiceMusicClient(BaseMusicClient):
         # init
         request_overrides, page_no, search_result_idx = request_overrides or {}, 1, -1
         task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
+        MP3JuiceMusicClient.API_KEY = MP3JuiceMusicClient.API_KEY or self.get('https://mp3juice.sc/', **request_overrides).text.split("var apiKey='")[1].split("'")[0]
         # successful
         try:
             # --search results
@@ -64,7 +67,7 @@ class MP3JuiceMusicClient(BaseMusicClient):
                 if search_result['root_source'] in ['SoundCloud']: download_url = f"https://thetacloud.org/s/{search_result['id_base64']}/{search_result['title_base64']}/"
                 # ----YouTube
                 else:
-                    with suppress(Exception): (auth_resp := self.get("https://theta.thetacloud.org/api/v1/auth?", params={"_": str(int(time.time() * 1000))}, **request_overrides)).raise_for_status(); download_result['auth'] = resp2json(resp=auth_resp)
+                    with suppress(Exception): (auth_resp := self.get("https://theta.thetacloud.org/api/v1/auth?", params={"api_key": MP3JuiceMusicClient.API_KEY, "_": str(int(time.time() * 1000))}, **request_overrides)).raise_for_status(); download_result['auth'] = resp2json(resp=auth_resp)
                     if not (auth_key := safeextractfromdict(download_result['auth'], ['key'], None)): continue
                     (headers := (copy.deepcopy(self.default_headers)))["Authorization"] = f"Bearer {auth_key}"
                     with suppress(Exception): (init_resp := self.get('https://theta.thetacloud.org/api/v1/init?', headers=headers, params={'_': str(int(time.time() * 1000))}, **request_overrides)).raise_for_status(); download_result['init'] = resp2json(resp=init_resp)
@@ -73,7 +76,7 @@ class MP3JuiceMusicClient(BaseMusicClient):
                     if not locals().get('convert_resp') or not hasattr(locals().get('convert_resp'), 'text') or ('convert' not in download_result) or (not (redirect_url := download_result['convert'].get('redirectURL', ''))): continue
                     with suppress(Exception): (redirect_resp := self.get(redirect_url, **request_overrides)).raise_for_status(); download_result['redirect'] = resp2json(resp=redirect_resp)
                     if not locals().get('redirect_resp') or not hasattr(locals().get('redirect_resp'), 'text') or ('redirect' not in download_result) or (not (download_url := download_result['redirect'].get('downloadURL', ''))): continue
-                    del init_resp; del convert_resp; del redirect_resp
+                    download_url += f'&v={song_id}&f=mp3&r=mp3juice.sc'; del init_resp; del convert_resp; del redirect_resp
                 # ----summarize
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 song_info = SongInfo(
