@@ -6,6 +6,7 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import re
 import copy
 from contextlib import suppress
 from urllib.parse import urljoin
@@ -26,13 +27,21 @@ class JBSouMusicClient(BaseMusicClient):
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",}
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''_setmkvisit'''
+    def _setmkvisit(self, request_overrides: dict = None):
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br, zstd", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+        (resp := self.get('https://www.jbsou.cn/', headers=headers, **request_overrides)).raise_for_status()
+        if match := re.search(r'document\.cookie="mk_visit=([^;"]+)', resp.text): self.session.cookies.set("mk_visit", match.group(1), domain="www.jbsou.cn", path="/",)
+        (resp := self.get('https://www.jbsou.cn/', headers=headers, **request_overrides)).raise_for_status()
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides, self.search_size_per_page, allowed_music_sources = rule or {}, request_overrides or {}, min(self.search_size_per_page, 10), copy.deepcopy(self.allowed_music_sources)
         # construct search urls
-        base_url, search_urls, page_size = 'https://www.jbsou.cn/', [], self.search_size_per_page
-        (resp := self.get(base_url, headers={"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding": "gzip, deflate, br, zstd", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",}, **request_overrides)).raise_for_status()
+        base_url, search_urls, page_size = 'https://www.jbsou.cn/', [], self.search_size_per_page; self._setmkvisit(request_overrides=request_overrides)
         for source in JBSouMusicClient.ALLOWED_SITES:
             if source not in allowed_music_sources: continue
             (source_default_rule := {'input': keyword, 'filter': 'name', 'type': source, 'page': 1}).update(rule); count = 0
