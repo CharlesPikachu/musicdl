@@ -65,7 +65,7 @@
 
 # 🎉 What's New
 
-- 2026-10-16: Released musicdl v2.14.2 — perform monthly routine maintenance on common music clients and fix all broken APIs.
+- 2026-10-16: Released musicdl v2.14.2 — performed monthly maintenance on common music clients and fixed broken API integrations in four affected clients.
 - 2026-10-10: Released musicdl v2.14.1 — monthly maintenance of third-party music clients: fixed API issues on four platforms and replaced three discontinued ones with similar alternatives.
 - 2026-09-23: Released musicdl v2.14.0 — fix several bugs in Apple Music, and refactor parts of the third-party parsing interfaces for Qobuz, Deezer, and TIDAL Music.
 
