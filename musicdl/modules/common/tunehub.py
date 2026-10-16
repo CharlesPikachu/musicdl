@@ -26,7 +26,7 @@ class TuneHubMusicClient(BaseMusicClient):
     METING_API_MUSIC_QUALITIES = ['400', '380', '320', '128']
     REQUEST_API_KEYS = ['charlespikachudGhfZGQ2YzNmZDFhZjI1ZTkyNTZmODY5YjU4MzkyNjhiZGNhMjlhYjcwZGY5ZmU4NWYy']
     def __init__(self, tunehub_api_key: str = None, allowed_music_sources: list = None, **kwargs: Unpack[BaseMusicClientKwargs]):
-        self.allowed_music_sources = list(set(allowed_music_sources or TuneHubMusicClient.ALLOWED_SITES))
+        self.allowed_music_sources = list(set(allowed_music_sources or TuneHubMusicClient.ALLOWED_SITES[:1]))
         super(TuneHubMusicClient, self).__init__(**kwargs)
         tunehub_api_key = tunehub_api_key if tunehub_api_key else (lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'))(random.choice(TuneHubMusicClient.REQUEST_API_KEYS))
         self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'X-API-Key': tunehub_api_key}
@@ -103,7 +103,7 @@ class TuneHubMusicClient(BaseMusicClient):
                 elif root_source in {'kuwo', 'qq'}:
                     for quality in TuneHubMusicClient.TUNEHUB_API_MUSIC_QUALITIES:
                         with suppress(Exception): tune_resp = None; (tune_resp := self.post('https://tunehub.sayqz.com/api/v1/parse?', timeout=10, json={'quality': quality, 'ids': song_id, 'platform': root_source}, **request_overrides)).raise_for_status()
-                        if not locals().get('tune_resp') or not hasattr(locals().get('tune_resp'), 'text'): (tune_resp := self.post('https://api.yexin.de5.net/api/tunehub/parse?', timeout=10, json={'quality': quality, 'ids': song_id, 'platform': root_source}, headers=headers, **request_overrides)).raise_for_status()
+                        if not locals().get('tune_resp') or not safeextractfromdict(resp2json(resp=tune_resp), ['data', 'data', 0, 'url'], ''): (tune_resp := self.post('https://api.yexin.de5.net/api/tunehub/parse?', timeout=10, json={'quality': quality, 'ids': song_id, 'platform': root_source}, headers=headers, **request_overrides)).raise_for_status()
                         download_url = safeextractfromdict((download_result := resp2json(resp=tune_resp)), ['data', 'data', 0, 'url'], '')
                         if not download_url or not str(download_url).startswith('http'): continue
                         duration_in_secs = safeextractfromdict(download_result, ['data', 'data', 0, 'info', 'duration'], 0)
