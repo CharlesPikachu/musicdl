@@ -277,7 +277,7 @@ class QobuzMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token"): return SongInfo(source=self.source, raw_data={'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
-        l1_parser_funcs = [self._parsewithanandserverapi, self._parsewithzarzqbzapi, self._parsewithspotbyeqzzapi, self._parsewithclashflacapi, self._parsewithdezaltyapi] # vip accounts
+        l1_parser_funcs = [self._parsewithzarzqbzapi, self._parsewithspotbyeqzzapi, self._parsewithclashflacapi, self._parsewithdezaltyapi] # vip accounts
         l2_parser_funcs = [self._parsewitharcodapi, self._parsewithgdstudioxyzapi, self._parsewithgdstudioorgapi, ] # vip accounts but unstable
         for parser_func in (l1_parser_funcs + l2_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})

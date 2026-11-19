@@ -200,7 +200,7 @@ class DeezerMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies: return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithanandserverapi, self._parsewithantrahoshiapi, self._parsewithdeemixerapi, self._parsewithzarzapi, ] # vip accounts
+        l1_parser_funcs = [self._parsewithdeemixerapi, self._parsewithzarzapi, ] # vip accounts
         l2_parser_funcs = [self._parsewithdeezdownloadersapi, self._parsewithmusicfabapi, ] # free accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
